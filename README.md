@@ -1,7 +1,7 @@
 # Online Exam System
 
 ## Current Stage
-The repository is now in the "core exam chain implemented and verified" stage. It remains a clear monolith and has been upgraded from a shallow admin scaffold into a runnable exam platform seed with authoring, exam publication, candidate answering, grading, score output, and anti-cheat event capture.
+The repository is now in the "core exam chain implemented, verified, and delivered" stage. It remains a clear monolith and has been upgraded from a shallow admin scaffold into a runnable exam platform seed with authoring, exam publication, candidate answering, grading, score output, and anti-cheat event capture.
 
 ## Implemented Modules
 - User and RBAC baseline: seeded admin, org admin, teacher, grader, proctor, and student accounts with JWT login and menu visibility separation.
@@ -42,5 +42,5 @@ The repository is now in the "core exam chain implemented and verified" stage. I
 
 ## Delivery Status
 - Git repository: initialized locally
-- Remote: target is `https://github.com/qinghe-zy/exam_system.git`
-- Push status: pending final remote operation
+- Remote: `https://github.com/qinghe-zy/exam_system.git`
+- Default branch push: completed on `main`

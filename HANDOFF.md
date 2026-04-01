@@ -1,7 +1,7 @@
 # HANDOFF
 
 ## Current Phase
-Core exam chain implemented; delivery hardening and remote push handling are the remaining steps.
+Delivery complete.
 
 ## What Was Delivered
 - JWT login with seeded role separation
@@ -14,13 +14,19 @@ Core exam chain implemented; delivery hardening and remote push handling are the
 - Proctor event list from candidate telemetry
 - AI environment placeholder via `app.ai.*`
 
-## What Is Baseline Only
+## Which Modules Are Runnable
+- Backend API on Spring Boot
+- Frontend admin and candidate routes after Vite launch
+- Local H2 quick-start runtime
+- Local MySQL initialization via `sql/mysql/init.sql`
+
+## Which Modules Are Baseline Only
 - Anti-cheat is event capture only
 - Analytics is exam-level summary only
 - No browser E2E suite yet
 - No advanced AI workflow beyond configuration placeholder
 
-## Verification Performed
+## Validation Performed
 - Backend compile, package, and test context
 - Frontend build
 - HTTP smoke with real login tokens and exam endpoints
@@ -31,14 +37,14 @@ Core exam chain implemented; delivery hardening and remote push handling are the
 - Synced runtime schema/data to `sql/mysql/init.sql`
 - Recreated local database `exam_system` and imported the script successfully
 
-## Git Status
+## Git And Remote Status
 - Local Git repository initialized
-- Remote push not yet recorded in this file
+- Remote configured as `origin -> https://github.com/qinghe-zy/exam_system.git`
+- `main` pushed successfully
 
-## Remaining Risks
-- Chunk-size warning on frontend build
-- Anti-cheat is not yet a full risk engine
-- Remote push may still require credentials or repository permission
+## Remaining Issues
+- Frontend build emits a chunk-size warning
+- Anti-cheat remains baseline only
 
-## First Step For The Next Handoff Round
-Configure remote `origin`, attempt push to `https://github.com/qinghe-zy/exam_system.git`, and record the exact result here.
+## First Step If Someone Continues
+- Start with `docs/runbooks/local-startup.md`, then inspect `docs/testing/smoke-test.md` before changing flows.
