@@ -1,0 +1,178 @@
+export interface QuestionBank {
+  id: number
+  questionCode: string
+  subject: string
+  questionType: string
+  difficultyLevel: string
+  stem: string
+  optionsJson?: string
+  answerKey: string
+  analysisText?: string
+  knowledgePoint?: string
+  chapterName?: string
+  sourceName?: string
+  tags?: string
+  defaultScore: number
+  reviewerStatus: string
+  versionNo: number
+  status: number
+}
+
+export interface PaperQuestionItem {
+  questionId: number
+  sortNo: number
+  score: number
+  requiredFlag: number
+  questionCode?: string
+  questionType?: string
+  stem?: string
+}
+
+export interface ExamPaper {
+  id: number
+  paperCode: string
+  paperName: string
+  subject: string
+  assemblyMode: string
+  descriptionText?: string
+  durationMinutes: number
+  totalScore: number
+  passScore: number
+  questionCount: number
+  publishStatus: number
+  questionItems: PaperQuestionItem[]
+}
+
+export interface ExamPlan {
+  id: number
+  examCode: string
+  examName: string
+  paperId: number
+  paperName: string
+  subject: string
+  startTime: string
+  endTime: string
+  durationMinutes: number
+  passScore: number
+  candidateScope: string
+  attemptLimit: number
+  examPassword?: string
+  lateEntryMinutes: number
+  earlySubmitMinutes: number
+  autoSubmitEnabled: number
+  antiCheatLevel: string
+  instructionText?: string
+  status: number
+  publishStatus: number
+  candidateCount: number
+  submittedCount: number
+  candidateUserIds: number[]
+}
+
+export interface CandidateExam {
+  examPlanId: number
+  examName: string
+  paperName: string
+  subject: string
+  startTime: string
+  endTime: string
+  candidateStatus: string
+  attemptCount: number
+  answerSheetStatus: string
+}
+
+export interface CandidateAnswerItem {
+  answerItemId?: number
+  questionId: number
+  questionOrder: number
+  questionCode?: string
+  questionType: string
+  stem: string
+  optionsJson?: string
+  maxScore: number
+  answerContent?: string
+  scoreAwarded?: number
+  status: string
+  markedFlag: number
+  reviewComment?: string
+}
+
+export interface CandidateExamWorkspace {
+  examPlanId: number
+  examName: string
+  paperName: string
+  subject: string
+  instructionText?: string
+  startTime: string
+  endTime: string
+  durationMinutes: number
+  answerSheetId: number
+  answerSheetStatus: string
+  items: CandidateAnswerItem[]
+}
+
+export interface GradingTask {
+  answerSheetId: number
+  examName: string
+  candidateName: string
+  submittedAt: string
+  objectiveScore: number
+  subjectiveQuestionCount: number
+  pendingQuestionCount: number
+  status: string
+}
+
+export interface GradingWorkspace {
+  answerSheetId: number
+  examName: string
+  candidateName: string
+  objectiveScore: number
+  subjectiveScore: number
+  finalScore: number
+  items: CandidateAnswerItem[]
+}
+
+export interface ExamRecord {
+  id: number
+  candidateName: string
+  examName: string
+  paperName: string
+  submittedAt: string
+  objectiveScore: number
+  subjectiveScore: number
+  finalScore: number
+  passedFlag: number
+  publishedFlag: number
+  status: string
+}
+
+export interface ExamPerformance {
+  examPlanId: number
+  examName: string
+  candidateCount: number
+  submittedCount: number
+  gradedCount: number
+  averageScore: number
+  highestScore: number
+  lowestScore: number
+  passRate: number
+}
+
+export interface AnalysisOverview {
+  totalExamPlans: number
+  totalAnswerSheets: number
+  averageScore: number
+  passRate: number
+  examPerformances: ExamPerformance[]
+}
+
+export interface AntiCheatEvent {
+  id: number
+  examPlanId: number
+  answerSheetId?: number
+  userId: number
+  eventType: string
+  severity: string
+  detailText?: string
+  occurredAt: string
+}

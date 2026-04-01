@@ -1,0 +1,23 @@
+package com.projectexample.examsystem.vo;
+
+import lombok.Builder;
+import lombok.Data;
+
+import java.time.LocalDateTime;
+
+@Data
+@Builder
+public class ExamRecordVO {
+
+    private Long id;
+    private String candidateName;
+    private String examName;
+    private String paperName;
+    private LocalDateTime submittedAt;
+    private Double objectiveScore;
+    private Double subjectiveScore;
+    private Double finalScore;
+    private Integer passedFlag;
+    private Integer publishedFlag;
+    private String status;
+}
