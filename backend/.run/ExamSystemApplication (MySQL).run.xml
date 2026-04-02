@@ -1,0 +1,18 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="ExamSystemApplication (MySQL)" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.projectexample.examsystem.ExamSystemApplication" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <module name="exam-system-backend" />
+    <envs>
+      <env name="SPRING_PROFILES_ACTIVE" value="mysql" />
+      <env name="MYSQL_HOST" value="127.0.0.1" />
+      <env name="MYSQL_PORT" value="3306" />
+      <env name="MYSQL_DATABASE" value="exam_system" />
+      <env name="MYSQL_USERNAME" value="root" />
+      <env name="MYSQL_PASSWORD" value="123456" />
+    </envs>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

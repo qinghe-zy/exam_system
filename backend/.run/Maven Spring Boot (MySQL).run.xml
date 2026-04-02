@@ -1,0 +1,31 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Maven Spring Boot (MySQL)" type="MavenRunConfiguration" factoryName="Maven">
+    <MavenSettings>
+      <option name="myRunnerParameters">
+        <MavenRunnerParameters>
+          <option name="goals">
+            <list>
+              <option value="spring-boot:run" />
+            </list>
+          </option>
+          <option name="workingDirPath" value="$PROJECT_DIR$" />
+        </MavenRunnerParameters>
+      </option>
+      <option name="myRunnerSettings">
+        <MavenRunnerSettings>
+          <option name="environmentProperties">
+            <map>
+              <entry key="SPRING_PROFILES_ACTIVE" value="mysql" />
+              <entry key="MYSQL_HOST" value="127.0.0.1" />
+              <entry key="MYSQL_PORT" value="3306" />
+              <entry key="MYSQL_DATABASE" value="exam_system" />
+              <entry key="MYSQL_USERNAME" value="root" />
+              <entry key="MYSQL_PASSWORD" value="123456" />
+            </map>
+          </option>
+        </MavenRunnerSettings>
+      </option>
+    </MavenSettings>
+    <method v="2" />
+  </configuration>
+</component>
