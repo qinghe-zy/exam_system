@@ -49,6 +49,18 @@ public class SysUserServiceImpl implements SysUserService {
     }
 
     @Override
+    public List<SysUserVO> listAssignableCandidates() {
+        List<Long> accessibleIds = accessScopeService.accessibleOrganizationIds();
+        return sysUserMapper.selectList(Wrappers.lambdaQuery(SysUser.class)
+                        .eq(SysUser::getRoleCode, "STUDENT")
+                        .in(!accessScopeService.isAdmin(), SysUser::getOrganizationId, accessibleIds)
+                        .orderByAsc(SysUser::getId))
+                .stream()
+                .map(this::toVO)
+                .toList();
+    }
+
+    @Override
     public SysUserVO createUser(SysUserSaveRequest request) {
         if (findByUsername(request.getUsername()) != null) {
             throw new BusinessException(4009, "Username already exists");

@@ -42,15 +42,22 @@ const generator = reactive({
   targetCount: 4
 })
 
+const availableSubjects = computed(() => [...new Set(questions.value.map((item) => item.subject))])
+
 async function loadData() {
   loading.value = true
   try {
-    const [paperList, questionList] = await Promise.all([fetchPapers(), fetchQuestions()])
-    papers.value = paperList
-    questions.value = questionList
+    const [paperResult, questionResult] = await Promise.allSettled([fetchPapers(), fetchQuestions()])
+    papers.value = paperResult.status === 'fulfilled' ? paperResult.value : []
+    questions.value = questionResult.status === 'fulfilled' ? questionResult.value : []
   } finally {
     loading.value = false
   }
+}
+
+async function ensureQuestionPoolLoaded() {
+  if (questions.value.length > 0) return
+  questions.value = await fetchQuestions()
 }
 
 function resetForm() {
@@ -72,6 +79,7 @@ function resetForm() {
 function openCreate() {
   dialogMode.value = 'create'
   resetForm()
+  ensureQuestionPoolLoaded()
   dialogVisible.value = true
 }
 
@@ -168,6 +176,14 @@ async function removeItem(id: number) {
   ElMessage.success('试卷已删除')
   await loadData()
 }
+
+async function openGenerator() {
+  await ensureQuestionPoolLoaded()
+  if (!generator.subject && availableSubjects.value.length > 0) {
+    generator.subject = availableSubjects.value[0]
+  }
+  generatorDialogVisible.value = true
+}
 </script>
 
 <template>
@@ -178,7 +194,7 @@ async function removeItem(id: number) {
   >
     <template #actions>
       <div class="hero-actions">
-        <el-button @click="generatorDialogVisible = true">随机/策略组卷</el-button>
+        <el-button @click="openGenerator">随机/策略组卷</el-button>
         <el-button type="primary" @click="openCreate">新建试卷</el-button>
       </div>
     </template>
@@ -264,7 +280,7 @@ async function removeItem(id: number) {
       <div class="grid-two">
         <el-form-item label="科目">
           <el-select v-model="generator.subject" clearable>
-            <el-option v-for="subject in [...new Set(questions.map((item) => item.subject))]" :key="subject" :label="subject" :value="subject" />
+            <el-option v-for="subject in availableSubjects" :key="subject" :label="subject" :value="subject" />
           </el-select>
         </el-form-item>
         <el-form-item label="目标题数">

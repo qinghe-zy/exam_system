@@ -4,7 +4,7 @@ import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'elem
 
 import AppShellSection from '../../components/AppShellSection.vue'
 import { createExamPlan, deleteExamPlan, fetchExamPlans, fetchPapers, updateExamPlan } from '../../api/exam'
-import { fetchUsers, type SystemUser } from '../../api/system'
+import { fetchAssignableCandidates, type SystemUser } from '../../api/system'
 import type { ExamPaper, ExamPlan } from '../../types/exam'
 
 const loading = ref(false)
@@ -48,10 +48,10 @@ const rules: FormRules<typeof form> = {
 async function loadData() {
   loading.value = true
   try {
-    const [planList, paperList, userList] = await Promise.all([fetchExamPlans(), fetchPapers(), fetchUsers()])
+    const [planList, paperList, userList] = await Promise.all([fetchExamPlans(), fetchPapers(), fetchAssignableCandidates()])
     plans.value = planList
     papers.value = paperList.filter((item) => item.publishStatus === 1)
-    users.value = userList.filter((item) => item.roleCode === 'STUDENT')
+    users.value = userList
   } finally {
     loading.value = false
   }

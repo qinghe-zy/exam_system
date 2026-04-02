@@ -78,6 +78,10 @@ export function fetchUsers() {
   return http.get<never, SystemUser[]>('/api/system/users')
 }
 
+export function fetchAssignableCandidates() {
+  return http.get<never, SystemUser[]>('/api/system/users/assignable-candidates')
+}
+
 export function createUser(payload: {
   username: string
   nickname: string

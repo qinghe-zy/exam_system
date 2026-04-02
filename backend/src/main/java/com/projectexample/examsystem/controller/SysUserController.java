@@ -26,6 +26,12 @@ public class SysUserController {
         return ApiResponse.success(sysUserService.listUsers());
     }
 
+    @GetMapping("/assignable-candidates")
+    @PreAuthorize("hasAnyRole('ADMIN','ORG_ADMIN','TEACHER')")
+    public ApiResponse<List<SysUserVO>> assignableCandidates() {
+        return ApiResponse.success(sysUserService.listAssignableCandidates());
+    }
+
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','ORG_ADMIN')")
     public ApiResponse<SysUserVO> create(@Valid @RequestBody SysUserSaveRequest request) {

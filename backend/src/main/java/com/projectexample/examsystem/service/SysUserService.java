@@ -14,6 +14,8 @@ public interface SysUserService {
 
     List<SysUserVO> listUsers();
 
+    List<SysUserVO> listAssignableCandidates();
+
     SysUserVO createUser(SysUserSaveRequest request);
 
     SysUserVO updateUser(Long id, SysUserSaveRequest request);
