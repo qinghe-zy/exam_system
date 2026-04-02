@@ -1,25 +1,46 @@
-# IMPLEMENT
+# 实施说明
 
-## Delivery Order
-1. Keep the system as a single deployable application with explicit module ownership.
-2. Extend schema and services before polishing pages.
-3. Use runtime verification after each milestone.
-4. Sync root docs and detailed docs immediately after milestone completion.
+## 一、文档目的
+本文档用于说明当前工程实施策略、开发顺序、数据库策略、验证策略与风险控制原则，确保后续继续开发时不偏离项目边界。
 
-## Current Implementation Notes
-- Question, paper, exam plan, candidate, answer sheet, grading, score, and anti-cheat flows are implemented as direct MyBatis-Plus services.
-- Paper composition is relational through `biz_paper_question`, not hidden inside a JSON blob.
-- Candidate answering writes answer sheets and answer items incrementally.
-- Objective scoring happens on submit. Subjective scoring is finalized in the grading center.
-- Anti-cheat events are baseline telemetry and not yet a full risk engine.
+## 二、实施原则
+1. 保持单体架构，不在当前阶段盲目拆微服务
+2. 先补真实业务能力，再补说明文档与演示外观
+3. 所有数据库变更都必须同步到初始化脚本与数据模型文档
+4. 所有重要里程碑必须带真实验证结果
+5. 所有正式文档必须为中文主文档
 
-## Verification Rhythm
-- Backend: `mvn -q -DskipTests compile`, `mvn -q test`, `mvn -q -DskipTests package`
-- Frontend: `npm.cmd run build`
-- API smoke: login + candidate + grading + analytics
-- MySQL: recreate and import `sql/mysql/init.sql`, then verify key table counts
+## 三、当前开发顺序
+1. 缺口盘点
+2. 数据库自检与回归
+3. 高优先级功能补齐
+4. 中文文档整改
+5. 验证与 Git 收口
 
-## Current Risks
-- Frontend bundle size warning remains and should be optimized later.
-- Candidate anti-cheat logic is baseline only.
-- No automated browser E2E suite exists yet.
+## 四、当前已采用实现策略
+- 用户、组织、题库、试卷、考试、作答、阅卷、成绩均通过 Spring Boot + MyBatis-Plus 直接落地
+- 试卷题目关系采用关系表 `biz_paper_question`
+- 考生作答采用 `biz_answer_sheet + biz_answer_item`
+- 客观题在交卷时自动判分
+- 主观题在阅卷中心完成评分
+- 监考基础能力采用前端事件采集 + 后端事件表留痕
+- AI 能力仅保留配置边界，不接入真实服务
+
+## 五、数据库实施要求
+- 正式数据库以 MySQL 为准
+- 每次关键变更后，应重新同步 `sql/mysql/init.sql`
+- 当前默认采用全量重建方式进行数据库回归
+- 若未来新增增量脚本，必须单独说明执行顺序与适用条件
+
+## 六、验证节奏
+- 后端：`compile`、`test`、`package`
+- 前端：`build`
+- 数据库：删除并重建 `exam_system`，导入初始化脚本并检查核心表与种子数据
+- API：登录、组织、用户、题库、考试、分析等关键接口 smoke
+- 文档：README、数据模型、模块说明、API 说明、HANDOFF 与当前实现一致性检查
+
+## 七、当前主要风险
+- 前端构建体积仍偏大
+- 数据权限仍为基础版
+- 自动化测试覆盖仍不足
+- 部分高级能力仍是扩展预留

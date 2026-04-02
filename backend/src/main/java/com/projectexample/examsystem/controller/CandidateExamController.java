@@ -31,8 +31,9 @@ public class CandidateExamController {
     @GetMapping("/exams/{examPlanId}")
     @PreAuthorize("hasRole('STUDENT')")
     public ApiResponse<CandidateExamWorkspaceVO> workspace(@PathVariable Long examPlanId,
+                                                           @RequestParam(required = false) String examPassword,
                                                            @AuthenticationPrincipal UserPrincipal userPrincipal) {
-        return ApiResponse.success(candidateExamService.getWorkspace(examPlanId, userPrincipal.getUsername()));
+        return ApiResponse.success(candidateExamService.getWorkspace(examPlanId, examPassword, userPrincipal.getUsername()));
     }
 
     @PostMapping("/exams/{examPlanId}/save")

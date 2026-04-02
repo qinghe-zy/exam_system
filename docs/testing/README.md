@@ -1,7 +1,7 @@
-# Testing Docs
+# 测试文档说明
 
-Store test design and verification notes here, including:
-- smoke test cases
-- manual scenario scripts
-- build verification reports
-- regression considerations
+## 一、文档目的
+本目录用于记录当前系统测试范围、关键 smoke 场景、回归要求和已知不足。
+
+## 二、当前覆盖情况
+当前以构建验证、数据库回归和关键接口 smoke 为主，浏览器级 E2E 尚未完成。

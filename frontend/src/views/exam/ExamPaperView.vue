@@ -35,6 +35,11 @@ const rules: FormRules<typeof form> = {
 }
 
 const totalQuestionScore = computed(() => form.questionItems.reduce((sum, item) => sum + Number(item.score || 0), 0))
+const generatorDialogVisible = ref(false)
+const generator = reactive({
+  subject: '',
+  targetCount: 4
+})
 
 async function loadData() {
   loading.value = true
@@ -96,6 +101,46 @@ function removeQuestion(questionId: number) {
   })
 }
 
+function generateRandom() {
+  const pool = questions.value.filter((item) => !generator.subject || item.subject === generator.subject)
+  const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, generator.targetCount)
+  form.questionItems = shuffled.map((question, index) => ({
+    questionId: question.id,
+    sortNo: index + 1,
+    score: question.defaultScore,
+    requiredFlag: 1,
+    questionCode: question.questionCode,
+    questionType: question.questionType,
+    stem: question.stem
+  }))
+  generatorDialogVisible.value = false
+}
+
+function generateStrategy() {
+  const pool = questions.value.filter((item) => !generator.subject || item.subject === generator.subject)
+  const easy = pool.filter((item) => item.difficultyLevel === 'EASY')
+  const medium = pool.filter((item) => item.difficultyLevel === 'MEDIUM')
+  const hard = pool.filter((item) => item.difficultyLevel === 'HARD')
+  const targetEasy = Math.max(1, Math.floor(generator.targetCount * 0.3))
+  const targetMedium = Math.max(1, Math.floor(generator.targetCount * 0.5))
+  const targetHard = Math.max(0, generator.targetCount - targetEasy - targetMedium)
+  const selected = [
+    ...easy.slice(0, targetEasy),
+    ...medium.slice(0, targetMedium),
+    ...hard.slice(0, targetHard)
+  ].slice(0, generator.targetCount)
+  form.questionItems = selected.map((question, index) => ({
+    questionId: question.id,
+    sortNo: index + 1,
+    score: question.defaultScore,
+    requiredFlag: 1,
+    questionCode: question.questionCode,
+    questionType: question.questionType,
+    stem: question.stem
+  }))
+  generatorDialogVisible.value = false
+}
+
 async function submit() {
   if (!formRef.value) return
   await formRef.value.validate(async (valid) => {
@@ -132,6 +177,7 @@ async function removeItem(id: number) {
   >
     <template #actions>
       <div class="hero-actions">
+        <el-button @click="generatorDialogVisible = true">随机/策略组卷</el-button>
         <el-button type="primary" @click="openCreate">New Paper</el-button>
       </div>
     </template>
@@ -212,6 +258,23 @@ async function removeItem(id: number) {
         <el-button type="primary" @click="submit">Save</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="generatorDialogVisible" title="随机 / 策略组卷" width="min(720px, 94vw)">
+      <div class="grid-two">
+        <el-form-item label="科目">
+          <el-select v-model="generator.subject" clearable>
+            <el-option v-for="subject in [...new Set(questions.map((item) => item.subject))]" :key="subject" :label="subject" :value="subject" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="目标题数">
+          <el-input-number v-model="generator.targetCount" :min="1" :max="20" />
+        </el-form-item>
+      </div>
+      <div class="generator-actions">
+        <el-button @click="generateRandom">随机组卷</el-button>
+        <el-button type="primary" @click="generateStrategy">按难度策略组卷</el-button>
+      </div>
+    </el-dialog>
   </AppShellSection>
 </template>
 
@@ -235,6 +298,12 @@ async function removeItem(id: number) {
   grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
   gap: 1rem;
   margin-top: 1rem;
+}
+
+.generator-actions {
+  display: flex;
+  gap: 0.8rem;
+  justify-content: flex-end;
 }
 
 .sub-card {

@@ -1,53 +1,88 @@
-# Architecture
+# 架构设计说明
 
-## Architecture Strategy
-The system intentionally stays as a clear monolith at this stage. Package boundaries are explicit so future extraction remains possible, but current delivery optimizes for understandable end-to-end iteration speed.
+## 一、文档目的
+本文档说明系统当前采用的技术架构、模块边界、数据流向、安全边界与扩展策略，作为后续实现、评审与交付的技术依据。
 
-## Backend Package Shape
-- `controller`: HTTP entry points
-- `service`: domain orchestration
-- `entity`: persistence entities
-- `mapper`: MyBatis-Plus repositories
-- `dto`: request contracts
-- `vo`: response contracts
-- `config`: framework configuration
-- `security`: JWT parsing and principal model
-- `common`: shared response/entity abstractions
-- `infra`: environment-driven external integration placeholders such as AI gateway
-- `exception`: business and global exception handling
+## 二、总体架构策略
+系统当前采用单体架构。选择理由如下：
+- 当前优先目标是形成完整考试业务闭环，而不是提前引入运维复杂度
+- 单体更适合当前阶段快速验证题库、考试、作答、阅卷、成绩等高耦合链路
+- 在包结构、数据结构、接口层面保留未来拆分空间即可，不需要过早上微服务
 
-## Frontend Package Shape
-- `api`: backend API wrappers
-- `views`: route-level screens
-- `components`: reusable UI components
-- `stores`: state containers
-- `router`: route table and auth guard
-- `utils`: storage and helpers
-- `hooks`: reusable composition helpers
-- `layouts`: shell layout
-- `constants`: front-end enums and option lists
-- `types`: shared domain types
+## 三、后端模块边界
+### 1. controller
+负责 HTTP 接口入口、参数接收、权限注解与响应输出。
 
-## Main Runtime Flow
-1. Teachers maintain questions and build papers.
-2. Teachers publish an exam plan with a paper and candidate roster.
-3. Candidates load assigned exams and enter the workspace.
-4. Save and submit actions persist answer sheets and answer items.
-5. Objective items are auto-scored at submit time.
-6. Graders review subjective items and finalize scores.
-7. Score center and analytics consume published score records.
-8. Candidate workspace telemetry writes anti-cheat events for proctor review.
+### 2. service
+负责业务编排，包括考试规则校验、自动判分、阅卷落库、分析计算等。
 
-## Security Model
-- Authentication: JWT
-- Authorization: role-based route and controller checks
-- Role separation: menus filtered by visible role list and controller-level pre-authorization
-- Secrets: environment variables only for AI and MySQL-sensitive values
+### 3. entity
+负责数据库表对应实体。
 
-## Persistence Strategy
-- H2 file profile remains the default quick-start runtime for local smoke and test context.
-- MySQL is the authoritative delivery target and receives synchronized initialization SQL under `sql/mysql/init.sql`.
+### 4. mapper
+负责 MyBatis-Plus 数据访问。
 
-## Extension Strategy
-- AI gateway is pre-wired through `app.ai.*` environment bindings only.
-- Advanced proctoring, richer analytics, and deeper collaboration remain additive modules instead of blockers for the current mainline.
+### 5. dto
+负责请求参数结构。
+
+### 6. vo
+负责响应结构、前端展示结构与分析聚合结构。
+
+### 7. config
+负责安全、JWT、MyBatis-Plus 等框架配置。
+
+### 8. security
+负责 JWT 解析、登录主体、认证过滤器。
+
+### 9. common
+负责统一响应、基础实体等共享结构。
+
+### 10. infra
+负责外部依赖边界，目前已加入 AI 接入占位适配层。
+
+### 11. exception
+负责业务异常与全局异常处理。
+
+## 四、前端模块边界
+- `api`：接口封装
+- `views`：页面视图
+- `components`：复用组件
+- `stores`：状态存储
+- `router`：路由与守卫
+- `utils`：工具函数
+- `hooks`：组合式逻辑
+- `layouts`：页面布局
+- `constants`：前端字典与固定选项
+- `types`：领域类型定义
+
+## 五、核心业务流
+1. 教师在题库中维护题目元数据
+2. 教师通过手工、随机或策略方式组装试卷
+3. 教师发布考试计划并绑定考生名单
+4. 考生查看待考列表并进入考试工作区
+5. 系统执行保存、自动保存、交卷、客观题自动判分
+6. 阅卷老师完成主观题评分
+7. 系统生成成绩记录与统计结果
+8. 监考员或管理员查看考试行为事件
+
+## 六、权限与安全边界
+- 鉴权方式：JWT
+- 权限模型：RBAC + 菜单可见性 + 接口级角色校验
+- 数据边界：当前以组织字段和角色进行基础隔离，后续需要继续加强
+- 密钥策略：真实数据库密码、AI Key 均不得提交到仓库正式配置中
+
+## 七、数据库策略
+- 正式交付数据库：MySQL
+- 快速本地验证：H2 文件模式
+- 数据结构以 `sql/mysql/init.sql` 为交付口径，以运行时 `schema.sql` / `data.sql` 为应用启动口径
+
+## 八、扩展策略
+- AI：通过 `app.ai.*` 环境变量绑定，当前仅为占位
+- 监考增强：为摄像头、人脸识别、设备策略预留结构空间
+- 分析增强：后续可扩展更细报表与知识画像
+- 运维增强：后续可引入 Redis、限流、监控告警
+
+## 九、当前架构限制
+- 尚未完成严格的数据权限行级过滤
+- 尚未完成浏览器级自动化测试
+- 前端构建产物体积偏大，需要后续拆包优化

@@ -1,7 +1,16 @@
-# API Docs
+# API 文档说明
 
-Store API-facing materials here, including:
-- endpoint inventories
-- example payloads
-- role and permission expectations
-- integration notes
+## 一、文档目的
+本目录用于说明系统关键接口、调用关系、主要入参、返回结构和使用场景，支撑接口联调、验收和后续维护。
+
+## 二、当前覆盖范围
+当前已覆盖：
+- 登录认证
+- 组织管理
+- 用户管理与考生导入
+- 题库导入导出与维护
+- 试卷、考试、作答、阅卷、成绩、分析、监考基础接口
+
+## 三、当前限制
+- 目前主要记录关键流程接口，不是完整 OpenAPI 明细导出替代品
+- 后续可补充更细字段级参数说明与示例报文

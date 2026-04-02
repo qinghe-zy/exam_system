@@ -21,7 +21,11 @@ const { data: overview, run } = useAsyncState({
     highestScore: number
     lowestScore: number
     passRate: number
-  }>
+  }>,
+  rankings: [] as Array<{ rankNo: number; candidateName: string; examName: string; finalScore: number }>,
+  scoreBands: [] as Array<{ bandName: string; candidateCount: number }>,
+  knowledgePoints: [] as Array<{ knowledgePoint: string; averageScoreRate: number; answerCount: number }>,
+  questionScoreRates: [] as Array<{ questionId: number; questionCode?: string; stem?: string; averageScoreRate: number; answerCount: number }>
 })
 
 onMounted(() => {
@@ -43,6 +47,7 @@ onMounted(() => {
     </div>
 
     <section class="panel-card section-card">
+      <h3>考试表现概览</h3>
       <el-table :data="overview.examPerformances">
         <el-table-column prop="examName" label="Exam" min-width="220" />
         <el-table-column prop="candidateCount" label="Candidates" min-width="100" />
@@ -53,6 +58,47 @@ onMounted(() => {
         <el-table-column prop="lowestScore" label="Lowest" min-width="100" />
         <el-table-column prop="passRate" label="Pass Rate" min-width="100" />
       </el-table>
+    </section>
+
+    <section class="analysis-grid">
+      <article class="panel-card section-card">
+        <h3>总分排名</h3>
+        <el-table :data="overview.rankings">
+          <el-table-column prop="rankNo" label="名次" min-width="80" />
+          <el-table-column prop="candidateName" label="考生" min-width="120" />
+          <el-table-column prop="examName" label="考试" min-width="180" />
+          <el-table-column prop="finalScore" label="成绩" min-width="90" />
+        </el-table>
+      </article>
+
+      <article class="panel-card section-card">
+        <h3>分数段分布</h3>
+        <el-table :data="overview.scoreBands">
+          <el-table-column prop="bandName" label="分数段" min-width="120" />
+          <el-table-column prop="candidateCount" label="人数" min-width="100" />
+        </el-table>
+      </article>
+    </section>
+
+    <section class="analysis-grid">
+      <article class="panel-card section-card">
+        <h3>知识点掌握分析</h3>
+        <el-table :data="overview.knowledgePoints">
+          <el-table-column prop="knowledgePoint" label="知识点" min-width="180" />
+          <el-table-column prop="averageScoreRate" label="平均得分率" min-width="120" />
+          <el-table-column prop="answerCount" label="作答次数" min-width="100" />
+        </el-table>
+      </article>
+
+      <article class="panel-card section-card">
+        <h3>题目得分率</h3>
+        <el-table :data="overview.questionScoreRates">
+          <el-table-column prop="questionCode" label="题目编码" min-width="120" />
+          <el-table-column prop="averageScoreRate" label="平均得分率" min-width="120" />
+          <el-table-column prop="answerCount" label="作答次数" min-width="100" />
+          <el-table-column prop="stem" label="题干" min-width="220" show-overflow-tooltip />
+        </el-table>
+      </article>
     </section>
   </AppShellSection>
 </template>
@@ -68,8 +114,23 @@ onMounted(() => {
   padding: 1rem;
 }
 
+.section-card h3 {
+  margin: 0 0 0.9rem;
+  font-family: 'Literata', Georgia, serif;
+}
+
+.analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
 @media (max-width: 980px) {
   .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .analysis-grid {
     grid-template-columns: 1fr;
   }
 }

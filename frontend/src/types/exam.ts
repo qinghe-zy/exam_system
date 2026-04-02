@@ -164,6 +164,28 @@ export interface AnalysisOverview {
   averageScore: number
   passRate: number
   examPerformances: ExamPerformance[]
+  rankings: Array<{
+    rankNo: number
+    candidateName: string
+    examName: string
+    finalScore: number
+  }>
+  scoreBands: Array<{
+    bandName: string
+    candidateCount: number
+  }>
+  knowledgePoints: Array<{
+    knowledgePoint: string
+    averageScoreRate: number
+    answerCount: number
+  }>
+  questionScoreRates: Array<{
+    questionId: number
+    questionCode?: string
+    stem?: string
+    averageScoreRate: number
+    answerCount: number
+  }>
 }
 
 export interface AntiCheatEvent {

@@ -1,7 +1,12 @@
-# Runbooks
+# Runbook 目录说明
 
-Store operational runbooks here, including:
-- local startup
-- database initialization
-- failure recovery
-- release checklist
+## 一、文档目的
+本目录用于存放可直接执行的运行、初始化、排障和恢复说明。
+
+## 二、当前内容
+- `local-startup.md`：本地启动说明
+- `mysql-init.md`：MySQL 初始化与回归说明
+
+## 三、使用原则
+- runbook 必须写清前置条件、执行步骤、预期结果、失败时的处理方式
+- runbook 不是概述文档，必须可直接操作

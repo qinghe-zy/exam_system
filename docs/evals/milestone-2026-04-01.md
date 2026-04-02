@@ -1,11 +1,13 @@
-# Milestone Evidence 2026-04-01
+# 里程碑验证记录（2026-04-01）
 
-## Evidence Summary
-- Back-end compile/test/package: passed
-- Front-end build: passed
-- API smoke: passed for login, candidate list, workspace, save, grading tasks, teacher analytics
-- MySQL import: passed
+## 一、记录目的
+用于保存 2026-04-01 阶段性构建、数据库与接口验证结果。
 
-## Notes
-- Frontend chunk-size warning remains but does not block build
-- Push evidence will be added after remote operation
+## 二、已执行项目
+- 后端 compile/test/package
+- 前端 build
+- MySQL 初始化导入
+- API smoke
+
+## 三、当前说明
+该记录可作为阶段性证据，但最终验收仍以根目录 `Documentation.md`、`EVALS.md`、`HANDOFF.md` 为准。

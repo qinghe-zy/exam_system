@@ -1,7 +1,10 @@
-# Ops Docs
+# 运维与交付说明
 
-Store environment and operations notes here, including:
-- observability
-- backup strategy
-- health checks
-- environment conventions
+## 一、用途
+本目录用于存放交付整改清单、运维建议、故障处理与后续扩展说明。
+
+## 二、当前内容
+- `文档整改清单.md`：正式文档逐份整改状态清单
+
+## 三、后续建议
+后续可继续补充故障处理、备份恢复、日常巡检等运维文档。

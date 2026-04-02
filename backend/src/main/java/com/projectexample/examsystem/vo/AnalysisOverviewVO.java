@@ -14,4 +14,8 @@ public class AnalysisOverviewVO {
     private Double averageScore;
     private Double passRate;
     private List<ExamPerformanceVO> examPerformances;
+    private List<RankingVO> rankings;
+    private List<ScoreBandVO> scoreBands;
+    private List<KnowledgePointAnalysisVO> knowledgePoints;
+    private List<QuestionScoreRateVO> questionScoreRates;
 }

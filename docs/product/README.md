@@ -1,7 +1,7 @@
-# Product Docs
+# 产品补充说明
 
-Store product-level materials here, including:
-- role journeys
-- domain scope decomposition
-- phased functional boundaries
-- business rules and terminology
+## 一、用途
+本目录用于在根目录 `PRD.md` 基础上继续补充角色旅程、场景拆分、阶段规划等内容。
+
+## 二、当前状态
+当前产品说明以根目录 `PRD.md` 为主，本目录为后续扩展入口。

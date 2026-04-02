@@ -1,13 +1,11 @@
-# Module Docs
+# 模块文档说明
 
-Store module-level documentation here, one document per business capability where practical.
+## 一、文档目的
+本目录用于说明各业务模块的职责、页面、接口、表结构和验证方式。
 
-Expected module coverage:
-- users and permissions
-- question bank
-- paper assembly
-- exam publication
-- candidate exam flow
-- grading
-- scoring and analytics
-- notices and coordination
+## 二、当前模块
+- exam-core：考试核心模块说明
+
+## 三、维护要求
+- 模块文档必须与页面、接口、表结构一致
+- 若模块能力新增或调整，需同步更新本目录文档

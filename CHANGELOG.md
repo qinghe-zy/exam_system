@@ -2,21 +2,23 @@
 
 ## [Unreleased]
 
-### Added
-- Added core exam domain tables: exam plan, candidate assignment, answer sheet, answer item, grading record, score record, anti-cheat event, and audit log
-- Added backend controllers and services for exam release, candidate workflow, grading, analytics, and proctor event viewing
-- Added frontend pages for exam release, candidate center, grading center, analytics, and proctor events
-- Added AI gateway placeholder configuration and infra package
-- Added detailed docs directories and delivery support directories
+### 新增
+- 新增组织管理后端与前端页面
+- 新增用户新增/编辑与考生批量导入基础能力
+- 新增题库 JSON 导入导出
+- 新增试卷随机组卷与基础策略组卷
+- 新增考生端答题卡、自动保存与考试口令进入能力
+- 新增审计日志接口与审计日志页面
+- 新增分析中的排名、分数段、知识点掌握、题目得分率
+- 新增文档整改清单 `docs/ops/文档整改清单.md`
 
-### Changed
-- Upgraded question bank and paper models from lightweight CRUD into richer operational structures
-- Reworked score center from manual CRUD into read-only published score records
-- Synchronized MySQL init SQL with runtime schema and seed data
-- Improved `.gitignore` and `.env.example`
+### 变更
+- 考试作答链路补入迟到、参考次数、提前交卷基础规则校验
+- 同步更新 MySQL 初始化脚本与运行时种子数据
+- 根目录和 docs 正式文档全面中文化与详细化整改
 
-### Verified
-- Backend compile, package, and test context
-- Frontend production build
-- HTTP smoke flow for candidate, grading, and analytics
-- Local MySQL initialization import
+### 验证
+- 后端 compile / test / package
+- 前端 build
+- MySQL 空库重建导入
+- MySQL 模式关键接口 smoke

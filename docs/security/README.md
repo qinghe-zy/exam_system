@@ -1,7 +1,7 @@
-# Security Docs
+# 安全文档说明
 
-Store security and compliance notes here, including:
-- RBAC model
-- audit logging scope
-- anti-cheat baseline
-- secret management rules
+## 一、文档目的
+本目录用于存放更细化的安全、权限、风控和配置安全说明。
+
+## 二、当前状态
+当前安全详细说明以根目录 `SECURITY.md` 为主，本目录作为后续细化扩展入口。

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 
 import AppShellSection from '../../components/AppShellSection.vue'
@@ -14,7 +14,11 @@ const workspaceVisible = ref(false)
 const workspace = ref<CandidateExamWorkspace | null>(null)
 const answers = ref<Record<number, string | string[]>>({})
 const countdownText = ref('--:--:--')
+const passwordDialogVisible = ref(false)
+const pendingExamPlanId = ref<number | null>(null)
+const examPassword = ref('')
 let countdownTimer: number | undefined
+let autoSaveTimer: number | undefined
 
 function parseOptions(item: CandidateAnswerItem) {
   try {
@@ -57,9 +61,17 @@ async function loadExams() {
 }
 
 async function openWorkspace(examPlanId: number) {
-  workspace.value = await fetchCandidateWorkspace(examPlanId)
+  pendingExamPlanId.value = examPlanId
+  examPassword.value = ''
+  passwordDialogVisible.value = true
+}
+
+async function confirmWorkspace() {
+  if (!pendingExamPlanId.value) return
+  workspace.value = await fetchCandidateWorkspace(pendingExamPlanId.value, examPassword.value || undefined)
   hydrateAnswers(workspace.value.items)
   workspaceVisible.value = true
+  passwordDialogVisible.value = false
 }
 
 async function saveCurrent() {
@@ -84,6 +96,16 @@ async function submitCurrent() {
     await loadExams()
   } finally {
     submitting.value = false
+  }
+}
+
+async function autoSaveCurrent() {
+  if (!workspaceVisible.value || !workspace.value || saving.value || submitting.value) return
+  try {
+    workspace.value = await saveCandidateAnswers(workspace.value.examPlanId, collectAnswers())
+    hydrateAnswers(workspace.value.items)
+  } catch {
+    // Keep the exam flow going and let the user save manually if the network fluctuates.
   }
 }
 
@@ -127,6 +149,15 @@ function stopCountdown() {
   window.clearInterval(countdownTimer)
 }
 
+function startAutoSave() {
+  window.clearInterval(autoSaveTimer)
+  autoSaveTimer = window.setInterval(autoSaveCurrent, 20000)
+}
+
+function stopAutoSave() {
+  window.clearInterval(autoSaveTimer)
+}
+
 async function handleVisibilityChange() {
   if (!workspaceVisible.value || !workspace.value) return
   if (document.hidden) {
@@ -150,11 +181,21 @@ async function enterFullscreen() {
   await document.documentElement.requestFullscreen?.()
 }
 
+async function jumpToQuestion(questionId: number) {
+  await nextTick()
+  document.getElementById(`question-${questionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
 watch(
   workspaceVisible,
   (visible) => {
-    if (visible) startCountdown()
-    else stopCountdown()
+    if (visible) {
+      startCountdown()
+      startAutoSave()
+    } else {
+      stopCountdown()
+      stopAutoSave()
+    }
   },
   { immediate: false }
 )
@@ -168,6 +209,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   stopCountdown()
+  stopAutoSave()
   document.removeEventListener('visibilitychange', handleVisibilityChange)
   window.removeEventListener('blur', handleWindowBlur)
   document.removeEventListener('fullscreenchange', handleFullscreenChange)
@@ -195,6 +237,15 @@ onBeforeUnmount(() => {
       </el-table>
     </section>
 
+    <el-dialog v-model="passwordDialogVisible" title="进入考试" width="min(460px, 92vw)">
+      <p class="muted">如该考试配置了考试口令，请输入后进入；未配置口令时可直接进入。</p>
+      <el-input v-model="examPassword" type="password" show-password placeholder="请输入考试口令（如有）" />
+      <template #footer>
+        <el-button @click="passwordDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="confirmWorkspace">进入考试</el-button>
+      </template>
+    </el-dialog>
+
     <el-drawer v-model="workspaceVisible" size="70%" :with-header="false">
       <template v-if="workspace">
         <section class="exam-shell">
@@ -213,7 +264,26 @@ onBeforeUnmount(() => {
           </header>
 
           <section class="workspace-grid">
-            <article v-for="item in workspace.items" :key="item.questionId" class="panel-card question-card">
+            <aside class="panel-card answer-card-nav">
+              <div class="answer-card-header">
+                <strong>答题卡</strong>
+                <span class="muted">每 20 秒自动保存一次</span>
+              </div>
+              <div class="answer-card-grid">
+                <button
+                  v-for="item in workspace.items"
+                  :key="item.questionId"
+                  type="button"
+                  class="answer-card-cell"
+                  :class="{ filled: !!answers[item.questionId] && String(answers[item.questionId]).length > 0 }"
+                  @click="jumpToQuestion(item.questionId)"
+                >
+                  {{ item.questionOrder }}
+                </button>
+              </div>
+            </aside>
+
+            <article v-for="item in workspace.items" :id="`question-${item.questionId}`" :key="item.questionId" class="panel-card question-card">
               <div class="question-header">
                 <span class="eyebrow">{{ item.questionCode }} · {{ item.questionType }}</span>
                 <strong>{{ item.maxScore }} pts</strong>
@@ -283,6 +353,41 @@ onBeforeUnmount(() => {
   gap: 1rem;
 }
 
+.answer-card-nav {
+  padding: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.answer-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 0.9rem;
+}
+
+.answer-card-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.answer-card-cell {
+  min-height: 2.3rem;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklch, var(--line) 85%, white);
+  background: color-mix(in oklch, white 88%, var(--panel-soft));
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.answer-card-cell.filled {
+  background: color-mix(in oklch, var(--brand) 18%, white);
+  color: var(--brand-deep);
+}
+
 .question-card {
   padding: 1rem;
   display: grid;
@@ -309,6 +414,10 @@ onBeforeUnmount(() => {
   .workspace-meta {
     width: 100%;
     justify-items: stretch;
+  }
+
+  .answer-card-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 </style>

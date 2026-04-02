@@ -1,30 +1,32 @@
-# Prompt
+# 当前任务提示
 
-## Current Project Goal
-Turn the existing repository into a high-spec online examination system project with real, verifiable business implementation rather than a shallow demo.
+## 一、当前目标
+在一期可运行闭环基础上，继续推进在线考试系统，直到满足二期完成定义或出现真实 blocker。
 
-## Scope
-- Continue from the existing codebase instead of rebuilding from scratch.
-- Keep the current technology stack unless a documented decision justifies change.
-- Prioritize the core exam lifecycle:
-  - user and permission foundation
-  - question bank
-  - paper assembly
-  - exam publication
-  - candidate exam taking
-  - grading
-  - result analytics
-- Maintain long-term project memory and delivery docs inside the repository.
+## 二、当前缺口清单
+### 已完成且已验证
+- 核心考试主链路一期
+- MySQL 空库重建与接口读取验证
+- Git 远端同步
 
-## Success Criteria
-- Root docs accurately reflect the current system.
-- Backend and frontend both implement a real exam mainline.
-- SQL scripts and runtime schema match the code.
-- Verification evidence is recorded and reproducible.
-- Git delivery state and handoff instructions are ready.
+### 已实现但不完整
+- 数据隔离
+- 防作弊
+- 通知协同
+- 自动化测试
+- 系统配置中心
 
-## Out of Scope for This Stage
-- Production-grade facial proctoring
-- Full AI scoring or AI invigilation
-- Distributed microservice deployment
-- Full SaaS tenant isolation rollout
+### 缺失实现
+- 更严格的数据权限策略
+- 更完善的通知链路
+- 浏览器级 E2E 与权限矩阵测试
+
+### 缺失文档
+- docs 子目录正式文档仍需逐份中文化与详细化整改
+
+## 三、成功标准
+1. 高优先级缺口尽可能补齐
+2. 数据库可从空库完整重建
+3. 全部正式文档为中文主文档
+4. 文档与代码、数据库、接口、验证结果一致
+5. Git 工作区干净，远端同步最新成果

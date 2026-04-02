@@ -1,23 +1,88 @@
-# PLAN
+# 项目推进计划
 
-## Current Phase
-- Phase: delivery complete
-- Status: completed
+## 一、文档目的
+本文档用于说明当前项目阶段、缺口清单、里程碑目标、完成条件和当前续跑计划，是项目执行与验收跟踪的主控制文档。
 
-## Milestones
-1. M0 Governance and repository memory: complete
-2. M1 User/auth/question foundation: complete
-3. M2 Paper composition and exam release: complete
-4. M3 Candidate answer workflow: complete
-5. M4 Grading and score analytics: complete
-6. M5 Anti-cheat, docs, and delivery hardening: complete
-7. M6 Remote push and final handoff closure: complete
+## 二、当前阶段
+- 阶段名称：二期缺口补齐与中文文档整改阶段
+- 当前状态：进行中
+- 当前目标：在现有一期闭环基础上继续补齐高优先级缺口，并完成全部正式文档中文化与数据库回归验收
 
-## Remaining Work
-- Optional future work only: bundle optimization, richer anti-cheat logic, browser E2E, advanced analytics, AI-assisted features
+## 三、缺口清单
+### 1. 已完成且已验证
+- 核心考试主链路一期实现
+- 题库、试卷、考试发布、考生作答、阅卷、成绩、基础分析、防作弊事件留痕
+- 后端 compile/test/package
+- 前端 build
+- MySQL 空库重建与初始化脚本导入
+- Git 推送到 `origin/main`
 
-## Delivery Outcome
-- Backend and frontend validated
-- SQL synchronized and verified on local MySQL
-- Root docs and detailed docs updated
-- Remote `origin` configured and `main` pushed successfully
+### 2. 已实现但不完整
+- 数据隔离：仅基础版
+- 防作弊：仅基础事件留痕
+- 通知：仅公告 CRUD 基础版
+- 系统管理：用户、组织、日志等能力已补，但配置中心仍不足
+- 自动化测试：仍不足
+
+### 3. 缺失实现
+- 更严格的数据权限过滤
+- 更完整的通知投递通道
+- 更完整的系统配置中心
+- 浏览器级 E2E 与权限矩阵测试
+
+### 4. 缺失文档
+- 全量正式文档中文化与详细化尚未完全完成
+- 部分 docs 子文档仍偏英文或偏提纲
+
+### 5. 缺失数据库或回归项
+- 当前无独立增量修复脚本说明，需在文档中明确当前全量脚本口径
+
+## 四、当前优先级
+### 优先级 1
+- 用户与权限增强
+- 题库增强
+- 试卷与组卷增强
+- 考试发布规则增强
+- 考生端体验增强
+- 阅卷与评分增强
+- 成绩与分析增强
+
+### 优先级 2
+- 防作弊与监考增强
+- 通知与流程协同增强
+- 系统管理后台增强
+
+### 优先级 3
+- 运维与安全增强
+- 扩展能力适配层
+- 更细粒度测试与 runbook
+
+## 五、本轮已新增工作
+- 组织管理 CRUD
+- 用户新增/编辑
+- 批量导入考生基础版
+- 题库 JSON 导入导出
+- 试卷随机组卷与基础策略组卷
+- 考生端答题卡与自动保存
+- 迟到、提前交卷、参考次数限制基础校验
+- 审计日志查询页
+- 分析页增强：排名、分数段、知识点、题目得分率
+
+## 六、文档整改专项清单要求
+全部正式文档必须逐份确认：
+1. 是否已中文化
+2. 是否已扩写
+3. 是否已与当前实现同步
+4. 是否达到交付标准
+
+详细清单见：`docs/ops/文档整改清单.md`
+
+## 七、阶段完成条件
+二期任务只有在以下条件全部满足时，才允许视为完成：
+1. 缺口清单中高优先级未完成项已尽可能补齐
+2. 数据库已完成真实检查，并在必要时完成建库、建表、改表、初始化与回归验证
+3. 全部正式交付文档已整改为中文主文档，且达到详细、科学、可验收标准
+4. 所有新增功能均已同步到代码、SQL、数据模型文档、模块说明、验证记录
+5. 关键验证已真实执行并写回 `Documentation.md`、`EVALS.md`、`HANDOFF.md`
+6. Git 工作区干净，远端 `origin/main` 已同步最新成果
+7. 未完成项必须是当前环境下无法自行解决的真实 blocker，并已明确记录

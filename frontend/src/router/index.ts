@@ -14,6 +14,8 @@ import LoginView from '../views/login/LoginView.vue'
 import NoticeView from '../views/notices/NoticeView.vue'
 import QuestionBankView from '../views/exam/QuestionBankView.vue'
 import MenuView from '../views/system/MenuView.vue'
+import AuditLogView from '../views/system/AuditLogView.vue'
+import OrganizationView from '../views/system/OrganizationView.vue'
 import RoleView from '../views/system/RoleView.vue'
 import UserView from '../views/system/UserView.vue'
 
@@ -42,6 +44,12 @@ const router = createRouter({
           meta: { title: 'Dashboard' }
         },
         {
+          path: 'system/organizations',
+          name: 'system-organizations',
+          component: OrganizationView,
+          meta: { title: 'Organizations' }
+        },
+        {
           path: 'system/users',
           name: 'system-users',
           component: UserView,
@@ -58,6 +66,12 @@ const router = createRouter({
           name: 'system-menus',
           component: MenuView,
           meta: { title: 'Menus' }
+        },
+        {
+          path: 'system/audit-logs',
+          name: 'system-audit-logs',
+          component: AuditLogView,
+          meta: { title: 'Audit Logs' }
         },
         {
           path: 'notices',

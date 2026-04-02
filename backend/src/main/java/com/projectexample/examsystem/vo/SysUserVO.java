@@ -12,6 +12,7 @@ public class SysUserVO {
     private String nickname;
     private String fullName;
     private String roleCode;
+    private Long organizationId;
     private String organizationName;
     private String departmentName;
     private String email;

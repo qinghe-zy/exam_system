@@ -1,7 +1,7 @@
-# Evaluation Docs
+# 评测记录目录说明
 
-Store evaluation artefacts here, including:
-- milestone scorecards
-- validation evidence
-- blockers and remediation logs
-- acceptance traceability
+## 一、用途
+本目录用于存放按日期或里程碑归档的验证证据、评测记录和验收辅助材料。
+
+## 二、当前状态
+当前关键评测结果已同步到根目录 `EVALS.md`，本目录存放里程碑型证据文档。

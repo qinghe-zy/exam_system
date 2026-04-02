@@ -86,12 +86,15 @@ public class CandidateExamServiceImpl implements CandidateExamService {
     }
 
     @Override
-    public CandidateExamWorkspaceVO getWorkspace(Long examPlanId, String username) {
+    public CandidateExamWorkspaceVO getWorkspace(Long examPlanId, String examPassword, String username) {
         SysUser user = requireUser(username);
         ExamPlan plan = requirePlan(examPlanId);
-        requireCandidate(plan.getId(), user.getId());
-        ensurePlanOpen(plan);
-        return buildWorkspace(plan, getOrCreateSheet(plan, user, false));
+        ExamCandidate candidate = requireCandidate(plan.getId(), user.getId());
+        AnswerSheet sheet = getOrCreateSheet(plan, user, false);
+        ensurePlanOpen(plan, sheet);
+        ensureAttemptAllowed(plan, candidate, sheet);
+        ensurePasswordAllowed(plan, sheet, examPassword);
+        return buildWorkspace(plan, sheet);
     }
 
     @Override
@@ -99,9 +102,9 @@ public class CandidateExamServiceImpl implements CandidateExamService {
         SysUser user = requireUser(username);
         ExamPlan plan = requirePlan(examPlanId);
         ExamCandidate candidate = requireCandidate(plan.getId(), user.getId());
-        ensurePlanOpen(plan);
-
         AnswerSheet sheet = getOrCreateSheet(plan, user, true);
+        ensurePlanOpen(plan, sheet);
+        ensureAttemptAllowed(plan, candidate, sheet);
         Map<Long, PaperQuestion> paperQuestionMap = paperQuestionMapper.selectList(Wrappers.lambdaQuery(PaperQuestion.class)
                         .eq(PaperQuestion::getPaperId, plan.getPaperId()))
                 .stream()
@@ -138,6 +141,7 @@ public class CandidateExamServiceImpl implements CandidateExamService {
         sheet.setSaveVersion((sheet.getSaveVersion() == null ? 0 : sheet.getSaveVersion()) + 1);
         sheet.setStatus(submit ? "SUBMITTED" : "IN_PROGRESS");
         if (submit) {
+            ensureEarlySubmitAllowed(plan, sheet);
             finalizeSubmission(plan, user, candidate, sheet, paperQuestionMap, questionMap, existingItems);
         } else {
             answerSheetMapper.updateById(sheet);
@@ -351,7 +355,7 @@ public class CandidateExamServiceImpl implements CandidateExamService {
         return candidate;
     }
 
-    private void ensurePlanOpen(ExamPlan plan) {
+    private void ensurePlanOpen(ExamPlan plan, AnswerSheet sheet) {
         LocalDateTime now = LocalDateTime.now();
         if (plan.getPublishStatus() == null || plan.getPublishStatus() != 1) {
             throw new BusinessException(4005, "This exam is not published");
@@ -359,8 +363,36 @@ public class CandidateExamServiceImpl implements CandidateExamService {
         if (now.isBefore(plan.getStartTime())) {
             throw new BusinessException(4006, "This exam has not started yet");
         }
+        if (sheet.getStartedAt() == null && plan.getLateEntryMinutes() != null && now.isAfter(plan.getStartTime().plusMinutes(plan.getLateEntryMinutes()))) {
+            throw new BusinessException(4006, "The allowed late-entry window has ended");
+        }
         if (now.isAfter(plan.getEndTime())) {
             throw new BusinessException(4007, "This exam is already closed");
+        }
+    }
+
+    private void ensureAttemptAllowed(ExamPlan plan, ExamCandidate candidate, AnswerSheet sheet) {
+        boolean finished = List.of("SUBMITTED", "PARTIALLY_GRADED", "GRADED").contains(sheet.getStatus());
+        if (finished && candidate.getAttemptCount() != null && plan.getAttemptLimit() != null && candidate.getAttemptCount() >= plan.getAttemptLimit()) {
+            throw new BusinessException(4005, "The allowed attempt count has been exhausted");
+        }
+    }
+
+    private void ensurePasswordAllowed(ExamPlan plan, AnswerSheet sheet, String examPassword) {
+        if (plan.getExamPassword() == null || plan.getExamPassword().isBlank() || sheet.getStartedAt() != null) {
+            return;
+        }
+        if (examPassword == null || !plan.getExamPassword().equals(examPassword)) {
+            throw new BusinessException(4005, "Exam password is required or invalid");
+        }
+    }
+
+    private void ensureEarlySubmitAllowed(ExamPlan plan, AnswerSheet sheet) {
+        if (sheet.getStartedAt() == null || plan.getEarlySubmitMinutes() == null || plan.getEarlySubmitMinutes() <= 0) {
+            return;
+        }
+        if (LocalDateTime.now().isBefore(sheet.getStartedAt().plusMinutes(plan.getEarlySubmitMinutes()))) {
+            throw new BusinessException(4005, "Early submission is not allowed yet");
         }
     }
 

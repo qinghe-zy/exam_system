@@ -1,15 +1,21 @@
-# Documentation Map
+# 详细文档总览
 
-The `docs/` tree is the detailed knowledge base for the online examination system.
+## 一、文档目的
+`docs/` 目录用于存放可直接支撑验收、交接、汇报和后续维护的详细说明文档。
 
-- `docs/product/`: product decomposition, scope, personas, and process design
-- `docs/architecture/`: architecture views, module boundaries, and technical strategy
-- `docs/data/`: schema explanations, table ownership, and data lifecycle
-- `docs/security/`: security baseline, risk controls, and audit design
-- `docs/evals/`: evaluation plans, scorecards, and milestone evidence
-- `docs/testing/`: test cases, smoke tests, and verification notes
-- `docs/api/`: API contracts, endpoint notes, and request/response examples
-- `docs/runbooks/`: operator and troubleshooting runbooks
-- `docs/ops/`: deployment, monitoring, and environment operations
-- `docs/modules/`: module-level documentation for business domains
-- `docs/deployment/`: release and deployment documentation
+## 二、目录说明
+- `docs/api/`：接口说明与关键流程说明
+- `docs/architecture/`：架构补充说明
+- `docs/data/`：数据库与数据结构说明
+- `docs/deployment/`：部署与发布说明
+- `docs/evals/`：评测记录与里程碑证据
+- `docs/modules/`：模块级说明
+- `docs/ops/`：运营、交付、整改清单等说明
+- `docs/runbooks/`：启动、初始化、故障处理 runbook
+- `docs/security/`：安全边界与风控说明
+- `docs/testing/`：测试与烟雾验证说明
+
+## 三、使用原则
+- 所有正式文档以中文为主
+- 文档必须与代码、数据库、接口、验证结果一致
+- 重要修改后必须同步更新对应文档

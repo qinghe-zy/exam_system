@@ -1,6 +1,7 @@
 package com.projectexample.examsystem.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.projectexample.examsystem.dto.QuestionImportRequest;
 import com.projectexample.examsystem.dto.QuestionBankSaveRequest;
 import com.projectexample.examsystem.entity.QuestionBank;
 import com.projectexample.examsystem.exception.BusinessException;
@@ -23,6 +24,18 @@ public class QuestionBankServiceImpl implements QuestionBankService {
         return questionBankMapper.selectList(Wrappers.lambdaQuery(QuestionBank.class).orderByDesc(QuestionBank::getUpdateTime))
                 .stream()
                 .map(this::toVO)
+                .toList();
+    }
+
+    @Override
+    public List<QuestionBankVO> exportQuestions() {
+        return listQuestions();
+    }
+
+    @Override
+    public List<QuestionBankVO> importQuestions(QuestionImportRequest request) {
+        return request.getQuestions().stream()
+                .map(this::createQuestion)
                 .toList();
     }
 

@@ -4,7 +4,7 @@ import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'elem
 
 import AppShellSection from '../../components/AppShellSection.vue'
 import { DIFFICULTY_OPTIONS, QUESTION_TYPE_OPTIONS, REVIEW_STATUS_OPTIONS } from '../../constants/exam'
-import { createQuestion, deleteQuestion, fetchQuestions, updateQuestion } from '../../api/exam'
+import { createQuestion, deleteQuestion, exportQuestions, fetchQuestions, importQuestions, updateQuestion } from '../../api/exam'
 import type { QuestionBank } from '../../types/exam'
 
 const loading = ref(false)
@@ -13,6 +13,8 @@ const dialogVisible = ref(false)
 const dialogMode = ref<'create' | 'edit'>('create')
 const editingId = ref<number | null>(null)
 const formRef = ref<FormInstance>()
+const importDialogVisible = ref(false)
+const importText = ref('')
 
 const form = reactive<Omit<QuestionBank, 'id'>>({
   questionCode: '',
@@ -112,6 +114,21 @@ async function removeItem(id: number) {
   await loadData()
 }
 
+async function handleExport() {
+  const payload = await exportQuestions()
+  await navigator.clipboard.writeText(JSON.stringify(payload, null, 2))
+  ElMessage.success('题库 JSON 已复制到剪贴板')
+}
+
+async function handleImport() {
+  const questions = JSON.parse(importText.value)
+  await importQuestions({ questions })
+  ElMessage.success('题目导入完成')
+  importDialogVisible.value = false
+  importText.value = ''
+  await loadData()
+}
+
 onMounted(loadData)
 </script>
 
@@ -123,6 +140,8 @@ onMounted(loadData)
   >
     <template #actions>
       <div class="hero-actions">
+        <el-button @click="handleExport">导出 JSON</el-button>
+        <el-button @click="importDialogVisible = true">导入 JSON</el-button>
         <el-button type="primary" @click="openCreate">New Question</el-button>
       </div>
     </template>
@@ -170,6 +189,15 @@ onMounted(loadData)
       <template #footer>
         <el-button @click="dialogVisible = false">Cancel</el-button>
         <el-button type="primary" @click="submit">Save</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="importDialogVisible" title="导入题目 JSON" width="min(900px, 96vw)">
+      <p class="muted">请粘贴题目数组 JSON，字段结构与导出结果一致。</p>
+      <el-input v-model="importText" type="textarea" :rows="12" />
+      <template #footer>
+        <el-button @click="importDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleImport">导入</el-button>
       </template>
     </el-dialog>
   </AppShellSection>

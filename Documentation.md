@@ -1,44 +1,102 @@
-# Documentation
+# 开发记录
 
-## Current Stage
-- Stage: delivery complete
+## 一、文档目的
+本文档记录本轮开发的真实进展、缺口盘点、数据库检查结果、验证结果、文档整改结果与剩余问题，用于过程追踪和阶段验收。
 
-## This Round Completed
-- Initialized the local Git repository
-- Expanded the backend schema from lightweight CRUD tables to a core exam lifecycle model
-- Added exam plan, candidate answering, grading, analytics, anti-cheat, and AI placeholder backend modules
-- Rebuilt the frontend around question bank, paper studio, exam release, candidate center, grading center, score center, analytics, and proctor pages
-- Created detailed documentation directories and delivery support directories
-- Synchronized MySQL initialization SQL with the runtime schema and seed data
-- Configured remote `origin` and pushed `main` to `https://github.com/qinghe-zy/exam_system.git`
+## 二、当前阶段
+- 阶段名称：二期缺口补齐与中文文档整改阶段
+- 当前状态：已完成一轮高优先级补齐与正式文档中文化整改，仍有少量增强项可继续推进
 
-## Verification Results
-- `mvn -q -DskipTests compile`: passed
-- `mvn -q test`: passed
-- `mvn -q -DskipTests package`: passed
-- `npm.cmd run build`: passed with chunk-size warning only
-- HTTP smoke checks:
-  - student login: passed
-  - grader login: passed
-  - student my-exams: passed
-  - candidate workspace load: passed
-  - candidate answer save: passed
-  - grading task list: passed
-  - teacher analytics overview: passed
-- MySQL validation:
-  - recreated local `exam_system`
-  - imported `sql/mysql/init.sql`
-  - verified key counts: users `7`, questions `4`, exam plans `2`, answer sheets `1`, anti-cheat events `1`
-- Git delivery:
-  - `git push -u origin main`: passed
+## 三、缺口盘点结果
+### 1. 已完成且已验证
+- 组织管理基础版
+- 用户新增/编辑与考生批量导入基础版
+- 题库导入导出基础版
+- 手工组卷、随机组卷、基础策略组卷
+- 考试发布、考试密码、迟到/提前交卷/参考次数基础规则校验
+- 考生端答题卡、自动保存、手动保存、交卷
+- 主观题阅卷与成绩回写
+- 成绩分析中的排名、分数段、知识点分析、题目得分率
+- 反作弊事件展示与审计日志基础版
+- 全部正式交付文档中文化整改
 
-## Skills and Automation Used
-- `planning-with-files`: used to create persistent planning memory (`task_plan.md`, `findings.md`, `progress.md`) and keep phase tracking explicit. No external dependency introduced.
-- `frontend-design`: consulted before restructuring frontend routes and views to keep the UI deliberate and consistent with the existing visual system. No external dependency introduced.
+### 2. 已实现但不完整
+- 数据隔离仍是基础版
+- 防作弊仍是基础版
+- 通知协同仍是基础版
+- 系统配置中心仍不足
+- 自动化测试仍不足
 
-## Current Risks
-- Frontend production bundle remains large and needs code-splitting later.
-- Anti-cheat behavior is still baseline event capture, not full risk adjudication.
+### 3. 当前仍属扩展预留
+- AI 深度能力
+- 高级监考
+- 编程题
+- 多租户
+- 外部通知通道
 
-## Next Step
-- Future work can start from bundle optimization, browser E2E, richer analytics, and advanced proctoring/AI extensions.
+## 四、数据库检查与回归结果
+### 1. 配置检查
+- `application-mysql.yml` 通过环境变量读取 MySQL 参数：已核实
+- `.env.example` 提供示例配置：已核实
+- 未提交真实数据库密码作为正式配置：已核实
+
+### 2. 空库重建验证
+已执行：
+1. 删除 `exam_system`
+2. 重建 `exam_system`
+3. 导入 `sql/mysql/init.sql`
+4. 校验核心表与种子数据
+5. 以 MySQL 模式启动应用并验证关键接口读取数据库
+
+### 3. 当前关键表计数
+- `biz_organization = 3`
+- `sys_user = 7`
+- `sys_role = 6`
+- `sys_menu = 18`
+- `biz_question_bank = 4`
+- `biz_exam_paper = 1`
+- `biz_exam_plan = 2`
+- `biz_answer_sheet = 1`
+- `biz_answer_item = 4`
+- `biz_score_record = 1`
+- `biz_anti_cheat_event = 1`
+
+### 4. 说明
+在回归过程中发现演示考试计划的迟到窗口种子值不利于持续 smoke，因此已修正种子数据并同步回初始化脚本。
+
+## 五、验证结果
+### 后端
+- `mvn -q -DskipTests compile`：通过
+- `mvn -q test`：通过
+- `mvn -q -DskipTests package`：通过
+
+### 前端
+- `npm.cmd run build`：通过
+- 备注：仍有 chunk size warning
+
+### MySQL 模式关键接口 smoke
+- 管理员登录：通过
+- 学生登录：通过
+- 组织列表：通过
+- 用户列表：通过
+- 审计日志列表：通过
+- 待考列表：通过
+- 考试口令进入工作区：通过
+- 工作区题目读取：通过（4 题）
+- 分析接口读取排名、分数段、知识点：通过
+
+## 六、文档中文化整改结果
+- 根目录正式文档：已全部改为中文主文档
+- docs 关键正式文档：已逐份整改为中文版本
+- 文档清单与状态见：`docs/ops/文档整改清单.md`
+
+## 七、当前剩余风险
+- 数据权限仍需进一步加强为更严格的组织级隔离
+- 通知与系统配置中心仍需继续完善
+- 自动化测试仍需继续增强
+- 前端构建体积仍偏大
+
+## 八、下一步建议
+1. 继续增强数据权限与通知协同
+2. 补浏览器级 E2E 与权限矩阵自动化
+3. 进行前端拆包优化

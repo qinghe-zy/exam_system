@@ -1,6 +1,7 @@
 package com.projectexample.examsystem.controller;
 
 import com.projectexample.examsystem.common.ApiResponse;
+import com.projectexample.examsystem.dto.QuestionImportRequest;
 import com.projectexample.examsystem.dto.QuestionBankSaveRequest;
 import com.projectexample.examsystem.service.QuestionBankService;
 import com.projectexample.examsystem.vo.QuestionBankVO;
@@ -19,6 +20,12 @@ public class QuestionBankController {
 
     @GetMapping
     public ApiResponse<List<QuestionBankVO>> list() { return ApiResponse.success(questionBankService.listQuestions()); }
+
+    @GetMapping("/export")
+    public ApiResponse<List<QuestionBankVO>> export() { return ApiResponse.success(questionBankService.exportQuestions()); }
+
+    @PostMapping("/import")
+    public ApiResponse<List<QuestionBankVO>> importQuestions(@Valid @RequestBody QuestionImportRequest request) { return ApiResponse.success("questions imported", questionBankService.importQuestions(request)); }
 
     @PostMapping
     public ApiResponse<QuestionBankVO> create(@Valid @RequestBody QuestionBankSaveRequest request) { return ApiResponse.success("question created", questionBankService.createQuestion(request)); }

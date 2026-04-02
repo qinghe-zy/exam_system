@@ -23,20 +23,22 @@ INSERT INTO sys_user (id, username, password, nickname, full_name, role_code, or
 INSERT INTO sys_menu (id, name, path, component, icon, permission_code, visible_roles, parent_id, sort_no, menu_type, deleted) VALUES
     (1, 'Dashboard', '/dashboard', 'dashboard/DashboardView', 'Odometer', 'dashboard:view', 'ADMIN,ORG_ADMIN,TEACHER,GRADER,PROCTOR,STUDENT', 0, 1, 'MENU', 0),
     (2, 'System Management', '/system', '', 'Setting', 'system:view', 'ADMIN,ORG_ADMIN', 0, 2, 'MENU', 0),
-    (3, 'Users', '/system/users', 'system/UserView', 'User', 'sys:user:view', 'ADMIN,ORG_ADMIN', 2, 1, 'PAGE', 0),
-    (4, 'Roles', '/system/roles', 'system/RoleView', 'Collection', 'sys:role:view', 'ADMIN', 2, 2, 'PAGE', 0),
-    (5, 'Menus', '/system/menus', 'system/MenuView', 'Menu', 'sys:menu:view', 'ADMIN', 2, 3, 'PAGE', 0),
-    (6, 'Exam Notices', '/notices', 'notices/NoticeView', 'Bell', 'biz:notice:view', 'ADMIN,ORG_ADMIN,TEACHER,GRADER,PROCTOR,STUDENT', 0, 3, 'MENU', 0),
-    (7, 'Exam Operations', '/exam', '', 'Reading', 'exam:view', 'ADMIN,ORG_ADMIN,TEACHER,GRADER,PROCTOR', 0, 4, 'MENU', 0),
-    (8, 'Question Bank', '/exam/questions', 'exam/QuestionBankView', 'Document', 'exam:question:view', 'ADMIN,ORG_ADMIN,TEACHER', 7, 1, 'PAGE', 0),
-    (9, 'Paper Studio', '/exam/papers', 'exam/ExamPaperView', 'Collection', 'exam:paper:view', 'ADMIN,ORG_ADMIN,TEACHER', 7, 2, 'PAGE', 0),
-    (10, 'Exam Plans', '/exam/plans', 'exam/ExamPlanView', 'Calendar', 'exam:plan:view', 'ADMIN,ORG_ADMIN,TEACHER', 7, 3, 'PAGE', 0),
-    (11, 'Grading Center', '/exam/grading', 'exam/GradingView', 'EditPen', 'exam:grading:view', 'ADMIN,ORG_ADMIN,GRADER,TEACHER', 7, 4, 'PAGE', 0),
-    (12, 'Score Center', '/exam/records', 'exam/ExamRecordView', 'Histogram', 'exam:record:view', 'ADMIN,ORG_ADMIN,TEACHER,GRADER', 7, 5, 'PAGE', 0),
-    (13, 'Analytics', '/exam/analytics', 'exam/AnalysisView', 'DataLine', 'exam:analytics:view', 'ADMIN,ORG_ADMIN,TEACHER', 7, 6, 'PAGE', 0),
-    (14, 'Candidate Center', '/candidate', '', 'Tickets', 'candidate:view', 'STUDENT', 0, 5, 'MENU', 0),
-    (15, 'My Exams', '/candidate/exams', 'exam/CandidateExamView', 'Tickets', 'candidate:exam:view', 'STUDENT', 14, 1, 'PAGE', 0),
-    (16, 'Proctor Events', '/exam/proctor', 'exam/ProctorView', 'Warning', 'exam:proctor:view', 'ADMIN,ORG_ADMIN,PROCTOR', 7, 7, 'PAGE', 0);
+    (3, 'Organizations', '/system/organizations', 'system/OrganizationView', 'OfficeBuilding', 'sys:org:view', 'ADMIN,ORG_ADMIN', 2, 1, 'PAGE', 0),
+    (4, 'Users', '/system/users', 'system/UserView', 'User', 'sys:user:view', 'ADMIN,ORG_ADMIN', 2, 2, 'PAGE', 0),
+    (5, 'Roles', '/system/roles', 'system/RoleView', 'Collection', 'sys:role:view', 'ADMIN', 2, 3, 'PAGE', 0),
+    (6, 'Menus', '/system/menus', 'system/MenuView', 'Menu', 'sys:menu:view', 'ADMIN', 2, 4, 'PAGE', 0),
+    (7, 'Audit Logs', '/system/audit-logs', 'system/AuditLogView', 'Document', 'sys:audit:view', 'ADMIN,ORG_ADMIN', 2, 5, 'PAGE', 0),
+    (8, 'Exam Notices', '/notices', 'notices/NoticeView', 'Bell', 'biz:notice:view', 'ADMIN,ORG_ADMIN,TEACHER,GRADER,PROCTOR,STUDENT', 0, 3, 'MENU', 0),
+    (9, 'Exam Operations', '/exam', '', 'Reading', 'exam:view', 'ADMIN,ORG_ADMIN,TEACHER,GRADER,PROCTOR', 0, 4, 'MENU', 0),
+    (10, 'Question Bank', '/exam/questions', 'exam/QuestionBankView', 'Document', 'exam:question:view', 'ADMIN,ORG_ADMIN,TEACHER', 9, 1, 'PAGE', 0),
+    (11, 'Paper Studio', '/exam/papers', 'exam/ExamPaperView', 'Collection', 'exam:paper:view', 'ADMIN,ORG_ADMIN,TEACHER', 9, 2, 'PAGE', 0),
+    (12, 'Exam Plans', '/exam/plans', 'exam/ExamPlanView', 'Calendar', 'exam:plan:view', 'ADMIN,ORG_ADMIN,TEACHER', 9, 3, 'PAGE', 0),
+    (13, 'Grading Center', '/exam/grading', 'exam/GradingView', 'EditPen', 'exam:grading:view', 'ADMIN,ORG_ADMIN,GRADER,TEACHER', 9, 4, 'PAGE', 0),
+    (14, 'Score Center', '/exam/records', 'exam/ExamRecordView', 'Histogram', 'exam:record:view', 'ADMIN,ORG_ADMIN,TEACHER,GRADER', 9, 5, 'PAGE', 0),
+    (15, 'Analytics', '/exam/analytics', 'exam/AnalysisView', 'DataLine', 'exam:analytics:view', 'ADMIN,ORG_ADMIN,TEACHER', 9, 6, 'PAGE', 0),
+    (16, 'Candidate Center', '/candidate', '', 'Tickets', 'candidate:view', 'STUDENT', 0, 5, 'MENU', 0),
+    (17, 'My Exams', '/candidate/exams', 'exam/CandidateExamView', 'Tickets', 'candidate:exam:view', 'STUDENT', 16, 1, 'PAGE', 0),
+    (18, 'Proctor Events', '/exam/proctor', 'exam/ProctorView', 'Warning', 'exam:proctor:view', 'ADMIN,ORG_ADMIN,PROCTOR', 9, 7, 'PAGE', 0);
 
 INSERT INTO biz_notice (id, title, category, status, content, deleted) VALUES
     (1, 'Midterm window published', 'exam', 1, 'The Spring term midterm examination window has been published for Software Engineering Class 2401.', 0),
@@ -58,8 +60,14 @@ INSERT INTO biz_paper_question (id, paper_id, question_id, sort_no, score, requi
     (4, 1, 4, 4, 50, 1, 0);
 
 INSERT INTO biz_exam_plan (id, exam_code, exam_name, organization_id, paper_id, paper_name, subject, start_time, end_time, duration_minutes, pass_score, candidate_scope, attempt_limit, exam_password, late_entry_minutes, early_submit_minutes, auto_submit_enabled, anti_cheat_level, instruction_text, status, publish_status, deleted) VALUES
-    (1, 'EXAM-2026-001', 'Spring Midterm Live Exam', 2, 1, 'Spring Core Midterm Paper', 'Software Engineering', TIMESTAMP '2026-04-01 09:00:00', TIMESTAMP '2026-04-30 23:00:00', 90, 60, 'ASSIGNED', 1, 'MIDTERM2026', 15, 0, 1, 'BASIC', 'Please keep fullscreen enabled, avoid tab switching, and submit before the deadline.', 1, 1, 0),
+    (1, 'EXAM-2026-001', 'Spring Midterm Live Exam', 2, 1, 'Spring Core Midterm Paper', 'Software Engineering', TIMESTAMP '2026-04-01 09:00:00', TIMESTAMP '2026-04-30 23:00:00', 90, 60, 'ASSIGNED', 1, 'MIDTERM2026', 43200, 0, 1, 'BASIC', 'Please keep fullscreen enabled, avoid tab switching, and submit before the deadline.', 1, 1, 0),
     (2, 'EXAM-2026-002', 'Architecture Drill', 2, 1, 'Spring Core Midterm Paper', 'Software Engineering', TIMESTAMP '2026-05-10 09:00:00', TIMESTAMP '2026-05-12 18:00:00', 60, 60, 'ASSIGNED', 1, NULL, 10, 0, 1, 'BASIC', 'Draft training exam for architecture review.', 1, 0, 0);
+
+UPDATE biz_exam_plan
+SET late_entry_minutes = 43200,
+    early_submit_minutes = 0,
+    publish_status = 1
+WHERE id = 1;
 
 INSERT INTO biz_exam_candidate (id, exam_plan_id, user_id, candidate_name, organization_name, status, access_code, attempt_count, deleted) VALUES
     (1, 1, 6, 'Zhang San', 'Software Engineering Class 2401', 'ASSIGNED', 'A001', 0, 0),

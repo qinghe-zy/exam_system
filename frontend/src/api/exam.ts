@@ -20,6 +20,14 @@ export function createQuestion(payload: Omit<QuestionBank, 'id'>) {
   return http.post<never, QuestionBank>('/api/exam/questions', payload)
 }
 
+export function exportQuestions() {
+  return http.get<never, QuestionBank[]>('/api/exam/questions/export')
+}
+
+export function importQuestions(payload: { questions: Omit<QuestionBank, 'id'>[] }) {
+  return http.post<never, QuestionBank[]>('/api/exam/questions/import', payload)
+}
+
 export function updateQuestion(id: number, payload: Omit<QuestionBank, 'id'>) {
   return http.put<never, QuestionBank>(`/api/exam/questions/${id}`, payload)
 }
@@ -68,8 +76,10 @@ export function fetchMyExams() {
   return http.get<never, CandidateExam[]>('/api/exam/candidate/my-exams')
 }
 
-export function fetchCandidateWorkspace(examPlanId: number) {
-  return http.get<never, CandidateExamWorkspace>(`/api/exam/candidate/exams/${examPlanId}`)
+export function fetchCandidateWorkspace(examPlanId: number, examPassword?: string) {
+  return http.get<never, CandidateExamWorkspace>(`/api/exam/candidate/exams/${examPlanId}`, {
+    params: examPassword ? { examPassword } : undefined
+  })
 }
 
 export function saveCandidateAnswers(examPlanId: number, answers: { questionId: number; answerContent?: string }[]) {

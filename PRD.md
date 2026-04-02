@@ -1,43 +1,101 @@
-# PRD
+# 产品需求说明书（PRD）
 
-## Product Goal
-Build a high-spec online examination system for schools or institutions on a clear single-application architecture. The product must support the real operational chain from question authoring to score publication, while leaving controlled extension points for future AI, advanced proctoring, and multi-tenant evolution.
+## 一、文档目的
+本文档用于明确在线考试系统的业务目标、角色范围、功能边界、非功能性要求、阶段目标与验收口径，是功能实现与甲方验收的业务依据。
 
-## Target Roles
-- Super administrator
-- Organization administrator
-- Teacher / item author
-- Grader
-- Proctor
-- Candidate
+## 二、产品背景
+当前考试系统的业务目标不是只做“出题、答题、看分数”的简单演示，而是建设一个可用于学校或机构正式场景的在线考试平台。平台需要支撑多角色、多组织、题库管理、试卷组装、考试发布、考生作答、阅卷评分、成绩分析、基础监考与运营管理。
 
-## Core Problem
-The system must let an institution configure users and roles, manage a structured item bank, assemble exam papers, publish exams to explicit candidate rosters, support timed answering with save/submit behavior, complete subjective grading, publish scores, and review basic anti-cheat events.
+## 三、目标角色
+- 超级管理员：负责平台全局配置、角色、权限和治理
+- 学校/机构管理员：负责本组织内的用户、考试与运营管理
+- 教师/命题人：负责题库、试卷、考试发布
+- 阅卷老师：负责主观题评分与成绩确认
+- 监考员：负责考试行为事件查看与基础监考支持
+- 考生：负责查看待考、进入考试、答题、交卷、查询成绩
 
-## V1 Scope
-- JWT login and RBAC navigation separation
-- Question bank with metadata and review fields
-- Explicit paper-question composition
-- Exam plan release with candidate assignment
-- Candidate exam workspace with save and submit
-- Objective auto-score and subjective grading workflow
-- Score center and analytics overview
-- Baseline anti-cheat event recording and viewing
+## 四、产品目标
+1. 建立清晰、可持续维护的考试业务主链路
+2. 在单体架构内明确模块边界，避免早期过度拆分
+3. 保证数据库、接口、页面、文档、验证结果一致
+4. 为后续 AI、编程题、复杂监考、多租户等能力保留扩展空间
 
-## Deferred or Placeholder Scope
-- Facial recognition and camera invigilation
-- Full AI scoring or recommendation
-- Programming-question sandboxing
-- Distributed deployment topology
-- Multi-tenant SaaS isolation rollout
+## 五、当前版本已覆盖范围
+### 1. 用户与权限
+- JWT 登录
+- 角色种子数据
+- 菜单按角色可见性过滤
+- 组织树基础管理
+- 用户基础维护
+- 考生批量导入基础版
 
-## Non-Functional Requirements
-- Clear module boundaries in one monolith
-- Reproducible build and validation flow
-- No committed real secrets
-- MySQL delivery script consistency
-- Auditability of critical actions
-- Documentation synchronized with implementation
+### 2. 题库管理
+- 单选、多选、判断、简答等主流题型基础支持
+- 题干、选项、答案、解析、知识点、章节、标签、来源、审核状态、版本号、默认分值
+- 题目导入导出基础版
 
-## Acceptance Intent
-The project is only considered complete when the main chain is implemented with code, schema, validation evidence, and handoff documentation rather than only scaffold or diagrams.
+### 3. 试卷与组卷
+- 手工组卷
+- 随机组卷基础版
+- 按难度比例策略组卷基础版
+- 分值配置与总分统计
+
+### 4. 考试发布
+- 考试计划创建与维护
+- 考试时间窗口
+- 考生分配
+- 迟到限制、提前交卷限制、参考次数限制基础版
+- 考试密码字段预留
+
+### 5. 考生端
+- 待考列表
+- 考试工作区
+- 答题卡
+- 自动保存与手动保存
+- 交卷
+- 基础回看与恢复
+
+### 6. 阅卷与评分
+- 客观题自动判分
+- 主观题人工评分
+- 成绩记录与发布基础版
+
+### 7. 成绩与分析
+- 成绩查询中心
+- 考试级平均分、最高分、最低分、及格率
+- 排名、分数段、知识点分析、题目得分率
+
+### 8. 监考与防作弊基础版
+- 切屏、失焦、退出全屏等事件留痕
+- 后台事件查看
+
+### 9. 通知与协同基础版
+- 公告/通知管理基础 CRUD
+
+## 六、当前仍未完全完成的需求
+### 1. 已实现但不完整
+- 数据隔离仍需更严格的服务端约束
+- 防作弊仍为基础留痕
+- 通知未覆盖短信、邮件、企业微信等外部通道
+- 系统配置中心尚未完整建设
+
+### 2. 扩展预留
+- AI 智能出题/评分/推荐
+- 摄像头、麦克风、人脸识别
+- 编程题与沙箱
+- 多租户 SaaS
+- 第三方系统对接
+
+## 七、非功能性要求
+- 架构清晰：单体架构但模块边界明确
+- 安全：不提交真实密钥；角色、数据、操作留痕可解释
+- 可维护：文档、SQL、代码同步
+- 可验证：构建、数据库、API、主流程均可真实验证
+- 可扩展：为后续新题型、新规则、新集成保留空间
+
+## 八、阶段验收原则
+项目只有在以下条件满足时，才可视为阶段完成：
+1. 功能、数据库、文档、验证同步闭环
+2. 数据库可从空库完整重建
+3. 根文档与详细文档为中文主文档
+4. 未完成项已被明确标注为基础版、扩展位或 blocker

@@ -1,19 +1,39 @@
-# MySQL Initialization Runbook
+# MySQL 初始化与回归说明
 
-## Local Target
-- host: `127.0.0.1`
-- port: `3306`
-- database: `exam_system`
-- username: `root`
-- password: local-only secret from the operator environment
+## 一、适用范围
+用于从空数据库开始构建当前系统的正式交付数据库。
 
-## Import Command Pattern
-`mysql --host=127.0.0.1 --port=3306 --user=root --password=*** exam_system < sql/mysql/init.sql`
+## 二、目标数据库
+- 数据库名：`exam_system`
+- Host：`127.0.0.1`
+- Port：`3306`
+- Username：`root`
+- Password：本地开发密码
 
-## Verified Result On 2026-04-01
-- imported successfully
-- users: 7
-- questions: 4
-- exam plans: 2
-- answer sheets: 1
-- anti-cheat events: 1
+## 三、脚本口径
+- 全量初始化脚本：`sql/mysql/init.sql`
+- 当前无独立增量修复脚本
+- 若未来引入增量脚本，必须补充执行顺序与适用条件说明
+
+## 四、回归步骤
+1. 删除旧库：`DROP DATABASE IF EXISTS exam_system;`
+2. 创建新库：`CREATE DATABASE exam_system ...;`
+3. 导入脚本：`sql/mysql/init.sql`
+4. 检查核心表与种子数据
+5. 使用 MySQL 模式启动后端并执行关键接口 smoke
+
+## 五、当前已验证结果
+- 组织：3
+- 用户：7
+- 角色：6
+- 菜单：18
+- 题目：4
+- 试卷：1
+- 考试计划：2
+- 答卷：1
+- 答题项：4
+- 成绩记录：1
+- 反作弊事件：1
+
+## 六、结论
+当前数据库初始化脚本满足“从空库完整重建”的验收要求。

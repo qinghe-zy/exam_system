@@ -1,7 +1,7 @@
-# Data Docs
+# 数据文档说明
 
-Store data and schema explanations here, including:
-- table ownership
-- relationship maps
-- seed data notes
-- migration and consistency checks
+## 一、文档目的
+本目录用于说明数据库表、字段、关系、初始化口径和回归要求。
+
+## 二、当前状态
+当前核心数据模型以根目录 `DATA_MODEL.md` 为主，本目录作为后续拆分更细表级说明的入口。

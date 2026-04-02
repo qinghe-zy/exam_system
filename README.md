@@ -1,46 +1,165 @@
-# Online Exam System
+# 在线考试系统
 
-## Current Stage
-The repository is now in the "core exam chain implemented, verified, and delivered" stage. It remains a clear monolith and has been upgraded from a shallow admin scaffold into a runnable exam platform seed with authoring, exam publication, candidate answering, grading, score output, and anti-cheat event capture.
+## 一、文档目的
+本文档是项目总入口，用于向甲方、教师、验收人员与后续接手开发者说明：本系统当前做到了什么、如何启动、依赖什么数据库、采用什么技术路线、哪些能力已实现、哪些能力仍是基础版或扩展预留。
 
-## Implemented Modules
-- User and RBAC baseline: seeded admin, org admin, teacher, grader, proctor, and student accounts with JWT login and menu visibility separation.
-- Question bank: richer question metadata, review status, score defaults, knowledge fields, options payload, and answer/analysis storage.
-- Paper studio: explicit paper-question composition with per-question score control.
-- Exam plan release: bind papers, windows, password, anti-cheat level, and candidate roster.
-- Candidate exam flow: assigned exam list, workspace loading, save, submit, and event reporting.
-- Grading center: subjective grading workflow with final score publication.
-- Score and analytics: score center and exam-level performance metrics.
-- Proctor view: baseline anti-cheat event visibility.
-- AI placeholder: environment-driven AI gateway configuration without any real key committed.
+## 二、项目概述
+本项目是一个基于单体架构实现的在线考试系统，面向学校、培训机构和课程团队的考试组织场景。系统当前已经具备从题目录入、试卷组装、考试发布、考生答题、阅卷评分、成绩分析到基础防作弊留痕的完整主链路。
 
-## Stack
-- Backend: Java 17+, Spring Boot 3, MyBatis-Plus, JWT, Knife4j/OpenAPI
-- Frontend: Vue 3, TypeScript, Vite, Element Plus, Pinia, Vue Router
-- Database: MySQL as the delivery target, H2 file profile for fast local boot validation
+当前实现坚持“清晰单体 + 明确模块边界 + 便于后续扩展”的工程策略，不在现阶段盲目拆分微服务。
 
-## Repository Structure
-- `backend/`: Spring Boot application
-- `frontend/`: Vue application
-- `sql/`: executable schema and seed scripts
-- `docs/`: detailed knowledge base by domain
-- `database/`, `scripts/`, `tests/`, `infra/`, `monitoring/`: delivery support directories
+## 三、当前实现范围
+### 1. 已实现且可运行
+- 用户认证与 JWT 登录
+- RBAC 角色边界与菜单可见性控制
+- 组织树基础管理
+- 用户管理与考生批量导入基础版
+- 题库管理：题干、题型、选项、答案、解析、知识点、标签、审核状态、版本号、分值
+- 题库导入导出基础版（JSON）
+- 试卷管理：手工组卷、随机组卷、基础策略组卷、题目分值配置
+- 考试计划发布：时间窗口、考试密码字段、迟到限制、提前交卷限制、参考次数限制、考生分配
+- 考生端：待考列表、考试工作区、手动保存、自动保存、答题卡、交卷、基础回看
+- 阅卷中心：客观题自动判分、主观题人工评分、成绩发布基础版
+- 成绩中心与分析：成绩记录、排名、分数段、知识点掌握、题目得分率
+- 通知基础结构：公告/通知 CRUD
+- 监考基础能力：切屏、失焦、退出全屏等事件留痕与查询
+- 审计日志查询基础版
+- AI 接入占位：仅保留环境变量与适配层，不提交真实 Key
 
-## Local Accounts
+### 2. 基础版实现
+- 数据隔离目前以组织字段、角色边界和页面可见性为基础，尚未做到严格的全链路细粒度数据权限策略
+- 防作弊目前是基础事件采集与查看，不是完整的风险决策引擎
+- 通知与协同目前以站内公告为主，未完成短信、邮件、企业微信等外部通道
+- 组卷中的“策略组卷”目前实现为基础难度比例抽题，不是复杂规则引擎
+
+### 3. 扩展预留
+- AI 智能出题、AI 推荐、AI 评分
+- 摄像头/人脸识别/麦克风监考
+- 编程题沙箱与查重
+- 多租户 SaaS
+- 对外 OpenAPI 平台化集成
+- Redis 缓存、限流熔断、监控告警增强
+
+## 四、技术栈
+### 后端
+- Java 17+
+- Spring Boot 3
+- MyBatis-Plus
+- Spring Security
+- JWT
+- Knife4j / OpenAPI
+
+### 前端
+- Vue 3
+- TypeScript
+- Vite
+- Element Plus
+- Pinia
+- Vue Router
+
+### 数据库
+- MySQL：正式交付数据库
+- H2 文件模式：本地快速启动与测试上下文验证用
+
+## 五、目录结构
+- `backend/`：后端应用与测试
+- `frontend/`：前端应用
+- `sql/`：数据库初始化脚本与基线脚本
+- `docs/`：产品、架构、数据、API、测试、运维、部署等详细文档
+- `database/`：数据库相关扩展说明目录
+- `scripts/`：脚本说明目录
+- `tests/`：测试与验证支撑目录
+- `infra/`：基础设施集成说明目录
+- `monitoring/`：监控与观测说明目录
+
+## 六、启动方式
+### 1. 后端启动（默认 H2）
+1. 进入目录：`backend`
+2. 执行构建：`mvn -q -DskipTests package`
+3. 启动服务：`java -jar target/exam-system-backend-0.1.0-SNAPSHOT.jar`
+
+### 2. 后端启动（MySQL 模式）
+需要设置环境变量：
+- `SPRING_PROFILES_ACTIVE=mysql`
+- `MYSQL_HOST=127.0.0.1`
+- `MYSQL_PORT=3306`
+- `MYSQL_DATABASE=exam_system`
+- `MYSQL_USERNAME=root`
+- `MYSQL_PASSWORD=本地密码`
+
+然后执行：
+1. 进入目录：`backend`
+2. 执行构建：`mvn -q -DskipTests package`
+3. 启动服务：`java -jar target/exam-system-backend-0.1.0-SNAPSHOT.jar`
+
+### 3. 前端启动
+1. 进入目录：`frontend`
+2. 安装依赖：`npm.cmd install`
+3. 启动开发服务：`npm.cmd run dev`
+
+### 4. 默认地址
+- 后端：`http://localhost:8083`
+- 前端：`http://localhost:5173`
+
+## 七、数据库说明
+### 1. 当前数据库名
+- `exam_system`
+
+### 2. 本地开发连接
+- Host：`127.0.0.1`
+- Port：`3306`
+- Username：`root`
+- Password：本地开发密码，不得作为生产默认值提交
+
+### 3. 初始化脚本
+- 完整初始化脚本：`sql/mysql/init.sql`
+- 运行时脚本：`backend/src/main/resources/schema.sql`、`backend/src/main/resources/data.sql`
+- 基线脚本：`sql/schema-baseline.sql`
+
+### 4. 数据库回归验收标准
+必须以“从空数据库开始可完整重建”为准，而不是以“当前本地已有数据可用”为准。
+
+## 八、测试账号
 - `admin / admin123`
+- `orgadmin / orgadmin123`
 - `teacher / teacher123`
 - `grader / grader123`
+- `proctor / proctor123`
 - `student / student123`
 
-## Validation Snapshot
-- Backend compile: passed
-- Backend package: passed
-- Backend test context: passed
-- Frontend build: passed
-- HTTP smoke: student login, candidate exams, candidate workspace, save answers, grader tasks, teacher analytics all passed
-- MySQL initialization: passed against local `exam_system`
+## 九、当前缺口清单
+### 已完成且已验证
+- 核心考试闭环一期主链路
+- 数据库初始化与关键 API 烟雾验证
+- Git 远端推送
 
-## Delivery Status
-- Git repository: initialized locally
-- Remote: `https://github.com/qinghe-zy/exam_system.git`
-- Default branch push: completed on `main`
+### 已实现但不完整
+- 数据隔离仍是基础版
+- 防作弊仍是基础版
+- 通知协同仍是基础版
+- 自动化测试覆盖仍不足
+
+### 缺失实现或仍需增强
+- 更严格的数据权限过滤
+- 更细的系统配置中心
+- 更完整的通知投递渠道
+- 浏览器级 E2E 与权限矩阵自动化
+
+## 十、已执行验证
+- 后端 `compile`
+- 后端 `test`
+- 后端 `package`
+- 前端 `build`
+- MySQL 空库重建并导入 `sql/mysql/init.sql`
+- 登录、组织查询、用户查询、题库导出、待考列表、分析接口 smoke
+
+## 十一、已知限制
+- 前端生产构建仍存在 chunk size 警告
+- 审计、监考、通知模块尚未发展为完整运营中心
+- 部分考试发布规则仍为基础实现，不是完整考试规则引擎
+
+## 十二、后续建议
+- 补浏览器级 E2E
+- 补更严格的数据权限隔离
+- 补配置中心与通知外发通道
+- 持续完善运维、部署、故障处理文档

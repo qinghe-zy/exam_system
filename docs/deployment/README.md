@@ -1,7 +1,7 @@
-# Deployment Docs
+# 部署文档说明
 
-Store deployment-facing materials here, including:
-- environment prerequisites
-- build and release procedure
-- remote repository delivery notes
-- post-deployment verification
+## 一、文档目的
+本目录用于说明发布前检查项、部署准备事项和交付检查口径。
+
+## 二、当前部署策略
+当前以本地或验收环境单体部署为主，后续可根据需要扩展为更完整的生产部署方案。

@@ -1,7 +1,7 @@
-# Architecture Docs
+# 架构补充说明
 
-Store architecture details here, including:
-- logical architecture
-- package and module boundaries
-- runtime and integration flow diagrams
-- technical tradeoffs and constraints
+## 一、用途
+本目录用于在根目录架构文档基础上，继续补充更细的模块图、部署图、数据流说明。
+
+## 二、当前状态
+当前详细架构以根目录 `ARCHITECTURE.md` 为主，本目录为后续扩展入口。

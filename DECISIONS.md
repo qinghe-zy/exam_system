@@ -1,28 +1,47 @@
-# DECISIONS
+# 决策记录
 
-## ADR-0001
-Single monolith first. Accepted.
+## ADR-0001：采用单体优先的架构策略
+- 状态：Accepted
+- 决策：当前阶段保持单体架构
+- 原因：优先形成完整考试闭环，降低复杂度
+- 影响：通过明确包边界保留未来拆分空间
 
-## ADR-0002
-Prioritize the real exam chain before advanced extensions. Accepted.
+## ADR-0002：主链路优先于高级扩展
+- 状态：Accepted
+- 决策：优先实现题库、试卷、考试、作答、阅卷、成绩主链路
+- 原因：避免过早被 AI、复杂监考、编程题等高复杂度能力拖慢
 
-## ADR-0003
-Use repository documents as persistent project memory. Accepted.
+## ADR-0003：使用仓库文档作为长期项目记忆
+- 状态：Accepted
+- 决策：将计划、记录、决策、交接、评测写入仓库
+- 原因：保证长期自治开发可追溯、可交接
 
-## ADR-0004
-Implement baseline anti-cheat telemetry now and reserve advanced monitoring for later. Accepted.
+## ADR-0004：防作弊采用基础实现 + 高阶预留
+- 状态：Accepted
+- 决策：先实现事件留痕与查询，再逐步增强
+- 原因：当前阶段优先保证核心考试链路稳定
 
-## ADR-0005
-Center the data model around question -> paper -> exam plan -> answer sheet -> grading -> score. Accepted.
+## ADR-0005：试卷题目组合采用关系表实现
+- 状态：Accepted
+- 决策：使用 `biz_paper_question` 存放试卷题目关系
+- 原因：关系表更利于审计、分析、阅卷与后续扩展
 
-## ADR-0006
-Use H2 file mode for fast local boot verification while keeping MySQL as the delivery database. Accepted.
-Reason: this preserves quick developer feedback without weakening MySQL delivery expectations.
+## ADR-0006：保留 H2 作为快速启动验证模式
+- 状态：Accepted
+- 决策：正式数据库为 MySQL，H2 仅用于本地快速验证
+- 原因：兼顾交付口径与开发效率
 
-## ADR-0007
-Keep paper composition relational through `biz_paper_question` instead of storing hidden JSON-only composition. Accepted.
-Reason: relational composition is easier to audit, grade, and analyze.
+## ADR-0007：菜单可见性由后端控制
+- 状态：Accepted
+- 决策：根据角色在后端过滤菜单
+- 原因：安全边界应尽量收敛在服务端
 
-## ADR-0008
-Expose role-filtered menus in the backend rather than hardcoding route visibility in the frontend store. Accepted.
-Reason: menu visibility belongs to the security boundary and keeps role separation explainable.
+## ADR-0008：考试规则先落基础校验
+- 状态：Accepted
+- 决策：先实现迟到限制、参考次数、提前交卷等基础规则校验
+- 原因：满足业务真实性，再逐步增强复杂规则引擎
+
+## ADR-0009：全部正式文档统一整改为中文主文档
+- 状态：Accepted
+- 决策：根文档和 docs 正式文档全部以中文为主进行编写
+- 原因：甲方明确要求，直接影响验收与交付质量

@@ -1,50 +1,79 @@
-# HANDOFF
+# 交接说明
 
-## Current Phase
-Delivery complete.
+## 一、当前阶段
+当前已完成二期高优先级补齐的一轮主要工作，并完成数据库空库重建回归与正式文档中文化整改。仓库处于可继续验收、可继续增强的状态。
 
-## What Was Delivered
-- JWT login with seeded role separation
-- Question bank with metadata and scoring fields
-- Paper studio with explicit paper-question composition
-- Exam plan release with candidate assignment
-- Candidate exam workspace with save and submit
-- Grading center for subjective scoring
-- Score center and analytics overview
-- Proctor event list from candidate telemetry
-- AI environment placeholder via `app.ai.*`
+## 二、本轮做了什么
+- 补齐组织管理基础版
+- 补齐用户新增/编辑与考生批量导入基础版
+- 补齐题库 JSON 导入导出
+- 补齐随机组卷与基础策略组卷
+- 补齐考生端答题卡、自动保存、考试口令进入
+- 补齐考试规则基础校验：迟到、参考次数、提前交卷
+- 补齐审计日志查询页
+- 增强成绩分析：排名、分数段、知识点、题目得分率
+- 将全部正式交付文档改为中文主文档，并建立逐份整改清单
+- 完成 MySQL 空库重建与关键接口回归验证
 
-## Which Modules Are Runnable
-- Backend API on Spring Boot
-- Frontend admin and candidate routes after Vite launch
-- Local H2 quick-start runtime
-- Local MySQL initialization via `sql/mysql/init.sql`
+## 三、哪些需求已完全实现
+- 登录与角色边界基础版
+- 组织管理基础版
+- 用户管理基础版
+- 考生批量导入基础版
+- 题库管理基础版
+- 题库导入导出基础版
+- 手工组卷、随机组卷、基础策略组卷
+- 考试计划发布基础版
+- 考生端基础作答闭环
+- 客观题自动判分
+- 主观题人工评分基础版
+- 成绩中心与基础分析增强版
+- 反作弊事件查询基础版
+- 审计日志查询基础版
+- 中文正式文档体系基础版
 
-## Which Modules Are Baseline Only
-- Anti-cheat is event capture only
-- Analytics is exam-level summary only
-- No browser E2E suite yet
-- No advanced AI workflow beyond configuration placeholder
+## 四、哪些需求是基础版实现
+- 数据隔离
+- 防作弊与监考
+- 通知与协同
+- 考试规则引擎
+- 系统配置中心
+- 自动化测试体系
 
-## Validation Performed
-- Backend compile, package, and test context
-- Frontend build
-- HTTP smoke with real login tokens and exam endpoints
-- Local MySQL full import and key-count verification
+## 五、哪些能力属于扩展预留
+- AI 智能出题、推荐、评分
+- 摄像头/人脸/麦克风监考
+- 编程题与沙箱
+- 多租户 SaaS
+- 外部通知渠道
+- 更复杂运维监控体系
 
-## Database Work
-- Replaced the shallow schema with the exam lifecycle schema
-- Synced runtime schema/data to `sql/mysql/init.sql`
-- Recreated local database `exam_system` and imported the script successfully
+## 六、数据库做了什么
+- 重新核对了 MySQL 配置方式
+- 删除并重建 `exam_system`
+- 从 `sql/mysql/init.sql` 完整导入
+- 验证核心表、种子数据与 MySQL 模式关键接口读取
+- 修正了考试计划种子数据的迟到窗口值，使其适合长期 smoke 回归
 
-## Git And Remote Status
-- Local Git repository initialized
-- Remote configured as `origin -> https://github.com/qinghe-zy/exam_system.git`
-- `main` pushed successfully
+## 七、验证跑了什么
+- 后端 compile/test/package
+- 前端 build
+- MySQL 空库重建与导入
+- MySQL 模式关键接口 smoke
 
-## Remaining Issues
-- Frontend build emits a chunk-size warning
-- Anti-cheat remains baseline only
+## 八、Git 与远端状态
+- 当前分支：`main`
+- 远端：`origin -> https://github.com/qinghe-zy/exam_system.git`
+- 当前要求：将本轮新增成果提交并推送，保持工作区干净
 
-## First Step If Someone Continues
-- Start with `docs/runbooks/local-startup.md`, then inspect `docs/testing/smoke-test.md` before changing flows.
+## 九、剩余问题
+- 更严格的数据隔离尚未完成
+- 通知外发与配置中心尚未完成
+- 浏览器 E2E 与权限矩阵自动化尚未完成
+- 前端仍有构建体积告警
+
+## 十、下一步接手建议
+1. 优先继续做数据权限隔离与通知协同
+2. 补浏览器 E2E、权限矩阵测试
+3. 做前端拆包优化
+4. 每轮变更后继续更新 `docs/ops/文档整改清单.md`
