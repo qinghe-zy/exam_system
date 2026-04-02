@@ -35,28 +35,28 @@ onMounted(() => {
 
 <template>
   <AppShellSection
-    eyebrow="Analytics"
-    title="Track score spread, participation, and pass rate"
-    description="The analytics view turns raw score records into operational signals. It helps teaching teams see participation, grading completion, and exam quality without leaving the core monolith."
+    eyebrow="成绩分析"
+    title="查看成绩分布、参与情况与及格率"
+    description="分析页将原始成绩记录转化为教学与运营可读的统计结果，帮助教师查看参与情况、阅卷完成度和考试质量。"
   >
     <div class="metrics-grid">
-      <MetricCard label="Exam Plans" :value="overview.totalExamPlans" description="Configured release units" />
-      <MetricCard label="Answer Sheets" :value="overview.totalAnswerSheets" description="Tracked candidate attempts" />
-      <MetricCard label="Average Score" :value="overview.averageScore" description="Overall final-score mean" />
-      <MetricCard label="Pass Rate" :value="overview.passRate" description="Percentage of passing records" />
+      <MetricCard label="考试计划数" :value="overview.totalExamPlans" description="当前纳入统计的考试计划数量" />
+      <MetricCard label="答卷数" :value="overview.totalAnswerSheets" description="当前统计范围内的答卷数量" />
+      <MetricCard label="平均分" :value="overview.averageScore" description="所有成绩记录的平均总分" />
+      <MetricCard label="及格率" :value="overview.passRate" description="已达到及格线的成绩占比" />
     </div>
 
     <section class="panel-card section-card">
       <h3>考试表现概览</h3>
       <el-table :data="overview.examPerformances">
-        <el-table-column prop="examName" label="Exam" min-width="220" />
-        <el-table-column prop="candidateCount" label="Candidates" min-width="100" />
-        <el-table-column prop="submittedCount" label="Submitted" min-width="100" />
-        <el-table-column prop="gradedCount" label="Published" min-width="100" />
-        <el-table-column prop="averageScore" label="Average" min-width="100" />
-        <el-table-column prop="highestScore" label="Highest" min-width="100" />
-        <el-table-column prop="lowestScore" label="Lowest" min-width="100" />
-        <el-table-column prop="passRate" label="Pass Rate" min-width="100" />
+        <el-table-column prop="examName" label="考试" min-width="220" />
+        <el-table-column prop="candidateCount" label="考生数" min-width="100" />
+        <el-table-column prop="submittedCount" label="已提交" min-width="100" />
+        <el-table-column prop="gradedCount" label="已发布" min-width="100" />
+        <el-table-column prop="averageScore" label="平均分" min-width="100" />
+        <el-table-column prop="highestScore" label="最高分" min-width="100" />
+        <el-table-column prop="lowestScore" label="最低分" min-width="100" />
+        <el-table-column prop="passRate" label="及格率" min-width="100" />
       </el-table>
     </section>
 

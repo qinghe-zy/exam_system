@@ -5,6 +5,7 @@ import { ElMessage } from 'element-plus'
 import AppShellSection from '../../components/AppShellSection.vue'
 import { fetchCandidateWorkspace, fetchMyExams, reportCandidateEvent, saveCandidateAnswers, submitCandidateAnswers } from '../../api/exam'
 import type { CandidateAnswerItem, CandidateExam, CandidateExamWorkspace } from '../../types/exam'
+import { labelAnswerSheetStatus, labelQuestionType } from '../../utils/labels'
 
 const loading = ref(false)
 const saving = ref(false)
@@ -80,7 +81,7 @@ async function saveCurrent() {
   try {
     workspace.value = await saveCandidateAnswers(workspace.value.examPlanId, collectAnswers())
     hydrateAnswers(workspace.value.items)
-    ElMessage.success('Answers saved')
+    ElMessage.success('答案已保存')
   } finally {
     saving.value = false
   }
@@ -92,7 +93,7 @@ async function submitCurrent() {
   try {
     workspace.value = await submitCandidateAnswers(workspace.value.examPlanId, collectAnswers())
     hydrateAnswers(workspace.value.items)
-    ElMessage.success('Exam submitted')
+    ElMessage.success('试卷已提交')
     await loadExams()
   } finally {
     submitting.value = false
@@ -161,19 +162,19 @@ function stopAutoSave() {
 async function handleVisibilityChange() {
   if (!workspaceVisible.value || !workspace.value) return
   if (document.hidden) {
-    await reportEvent('TAB_SWITCH', 'MEDIUM', 'Candidate switched away from the exam tab')
+    await reportEvent('TAB_SWITCH', 'MEDIUM', '考生在考试过程中切换了页面标签')
   }
 }
 
 async function handleWindowBlur() {
   if (!workspaceVisible.value || !workspace.value) return
-  await reportEvent('WINDOW_BLUR', 'LOW', 'Candidate window lost focus')
+  await reportEvent('WINDOW_BLUR', 'LOW', '考生当前窗口失去焦点')
 }
 
 async function handleFullscreenChange() {
   if (!workspaceVisible.value || !workspace.value) return
   if (!document.fullscreenElement) {
-    await reportEvent('FULLSCREEN_EXIT', 'HIGH', 'Candidate exited fullscreen during the exam')
+    await reportEvent('FULLSCREEN_EXIT', 'HIGH', '考生在考试过程中退出了全屏模式')
   }
 }
 
@@ -218,20 +219,20 @@ onBeforeUnmount(() => {
 
 <template>
   <AppShellSection
-    eyebrow="Candidate Center"
-    title="Take assigned exams with timed save-and-submit flow"
-    description="Candidates can review assigned exams, open the active workspace, save progress, and submit papers. Visibility and fullscreen exits are recorded as baseline anti-cheat telemetry."
+    eyebrow="考生中心"
+    title="待考列表、作答、保存与交卷"
+    description="考生可以查看已分配考试，输入考试口令进入工作区，进行作答、自动保存、手动保存和交卷；切屏、失焦、退出全屏等行为会作为基础监考事件记录。"
   >
     <section class="panel-card section-card">
       <el-table :data="exams" v-loading="loading">
-        <el-table-column prop="examName" label="Exam" min-width="220" />
-        <el-table-column prop="paperName" label="Paper" min-width="220" />
-        <el-table-column prop="startTime" label="Start" min-width="180" />
-        <el-table-column prop="endTime" label="End" min-width="180" />
-        <el-table-column prop="answerSheetStatus" label="Sheet Status" min-width="140" />
-        <el-table-column label="Action" min-width="120" fixed="right">
+        <el-table-column prop="examName" label="考试名称" min-width="220" />
+        <el-table-column prop="paperName" label="试卷" min-width="220" />
+        <el-table-column prop="startTime" label="开始时间" min-width="180" />
+        <el-table-column prop="endTime" label="结束时间" min-width="180" />
+        <el-table-column label="答卷状态" min-width="140"><template #default="{ row }">{{ labelAnswerSheetStatus(row.answerSheetStatus) }}</template></el-table-column>
+        <el-table-column label="操作" min-width="120" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" plain @click="openWorkspace(row.examPlanId)">Enter</el-button>
+            <el-button type="primary" plain @click="openWorkspace(row.examPlanId)">进入考试</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -251,15 +252,15 @@ onBeforeUnmount(() => {
         <section class="exam-shell">
           <header class="panel-card workspace-hero">
             <div>
-              <p class="eyebrow">Live Exam Workspace</p>
+              <p class="eyebrow">考试工作区</p>
               <h2>{{ workspace.examName }}</h2>
               <p class="muted">{{ workspace.instructionText }}</p>
             </div>
             <div class="workspace-meta">
               <span class="countdown">{{ countdownText }}</span>
-              <el-button @click="enterFullscreen">Enter Fullscreen</el-button>
-              <el-button :loading="saving" @click="saveCurrent">Save</el-button>
-              <el-button type="primary" :loading="submitting" @click="submitCurrent">Submit</el-button>
+              <el-button @click="enterFullscreen">进入全屏</el-button>
+              <el-button :loading="saving" @click="saveCurrent">保存</el-button>
+              <el-button type="primary" :loading="submitting" @click="submitCurrent">提交试卷</el-button>
             </div>
           </header>
 
@@ -285,8 +286,8 @@ onBeforeUnmount(() => {
 
             <article v-for="item in workspace.items" :id="`question-${item.questionId}`" :key="item.questionId" class="panel-card question-card">
               <div class="question-header">
-                <span class="eyebrow">{{ item.questionCode }} · {{ item.questionType }}</span>
-                <strong>{{ item.maxScore }} pts</strong>
+                <span class="eyebrow">{{ item.questionCode }} · {{ labelQuestionType(item.questionType) }}</span>
+                <strong>{{ item.maxScore }} 分</strong>
               </div>
               <p class="question-stem">{{ item.stem }}</p>
 
@@ -303,7 +304,7 @@ onBeforeUnmount(() => {
               </template>
 
               <template v-else>
-                <el-input v-model="answers[item.questionId]" type="textarea" :rows="4" placeholder="Write your answer here" />
+                <el-input v-model="answers[item.questionId]" type="textarea" :rows="4" placeholder="请在此输入答案" />
               </template>
             </article>
           </section>

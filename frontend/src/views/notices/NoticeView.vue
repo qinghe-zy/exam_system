@@ -39,10 +39,10 @@ const form = reactive<NoticePayload>({
 })
 
 const rules: FormRules<typeof form> = {
-  title: [{ required: true, message: 'Please enter the title', trigger: 'blur' }],
-  category: [{ required: true, message: 'Please enter the category', trigger: 'blur' }],
-  status: [{ required: true, message: 'Please select the status', trigger: 'change' }],
-  content: [{ required: true, message: 'Please enter the content', trigger: 'blur' }]
+  title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
+  category: [{ required: true, message: '请输入分类', trigger: 'blur' }],
+  status: [{ required: true, message: '请选择状态', trigger: 'change' }],
+  content: [{ required: true, message: '请输入公告内容', trigger: 'blur' }]
 }
 
 async function loadPage() {
@@ -87,10 +87,10 @@ async function submitForm() {
     if (!valid) return
     if (dialogMode.value === 'create') {
       await createNotice(form)
-      ElMessage.success('Notice created')
+      ElMessage.success('公告已创建')
     } else if (currentId.value) {
       await updateNotice(currentId.value, form)
-      ElMessage.success('Notice updated')
+      ElMessage.success('公告已更新')
     }
     dialogVisible.value = false
     await loadPage()
@@ -98,9 +98,9 @@ async function submitForm() {
 }
 
 async function handleDelete(id: number) {
-  await ElMessageBox.confirm('Delete this notice record?', 'Confirm', { type: 'warning' })
+  await ElMessageBox.confirm('确认删除该公告？', '提示', { type: 'warning' })
   await deleteNotice(id)
-  ElMessage.success('Notice deleted')
+  ElMessage.success('公告已删除')
   await loadPage()
 }
 
@@ -126,41 +126,41 @@ onMounted(loadPage)
 
 <template>
   <AppShellSection
-    eyebrow="Representative CRUD"
-    title="Notice management baseline"
-    description="This is the current example CRUD module. Future templates can swap the business meaning while preserving the same search-table-dialog rhythm and backend response shape."
+    eyebrow="公告管理"
+    title="考试通知与成绩说明公告"
+    description="公告页用于维护考试发布通知、阅卷安排说明、成绩发布说明等站内公告，是通知与流程协同的基础能力之一。"
   >
     <section class="panel-card filter-card">
       <div class="filter-grid">
-        <el-input v-model="filters.title" placeholder="Search by title" clearable />
-        <el-select v-model="filters.status" placeholder="Status" clearable>
-          <el-option :value="1" label="Published" />
-          <el-option :value="0" label="Draft" />
+        <el-input v-model="filters.title" placeholder="按标题搜索" clearable />
+        <el-select v-model="filters.status" placeholder="状态" clearable>
+          <el-option :value="1" label="已发布" />
+          <el-option :value="0" label="草稿" />
         </el-select>
         <div class="filter-actions">
-          <el-button type="primary" @click="handleSearch">Search</el-button>
-          <el-button @click="handleReset">Reset</el-button>
-          <el-button type="success" @click="openCreateDialog">New Notice</el-button>
+          <el-button type="primary" @click="handleSearch">查询</el-button>
+          <el-button @click="handleReset">重置</el-button>
+          <el-button type="success" @click="openCreateDialog">新建公告</el-button>
         </div>
       </div>
     </section>
 
     <section class="panel-card table-card">
       <el-table :data="pageState.records" v-loading="loading">
-        <el-table-column prop="title" label="Title" min-width="220" />
-        <el-table-column prop="category" label="Category" min-width="140" />
-        <el-table-column label="Status" min-width="120">
+        <el-table-column prop="title" label="标题" min-width="220" />
+        <el-table-column prop="category" label="分类" min-width="140" />
+        <el-table-column label="状态" min-width="120">
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'info'">
-              {{ row.status === 1 ? 'Published' : 'Draft' }}
+              {{ row.status === 1 ? '已发布' : '草稿' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="updateTime" label="Updated At" min-width="180" />
-        <el-table-column label="Actions" min-width="180" fixed="right">
+        <el-table-column prop="updateTime" label="更新时间" min-width="180" />
+        <el-table-column label="操作" min-width="180" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openEditDialog(row.id)">Edit</el-button>
-            <el-button link type="danger" @click="handleDelete(row.id)">Delete</el-button>
+            <el-button link type="primary" @click="openEditDialog(row.id)">编辑</el-button>
+            <el-button link type="danger" @click="handleDelete(row.id)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -179,31 +179,31 @@ onMounted(loadPage)
 
     <el-dialog
       v-model="dialogVisible"
-      :title="dialogMode === 'create' ? 'Create Notice' : 'Edit Notice'"
+      :title="dialogMode === 'create' ? '新建公告' : '编辑公告'"
       width="min(680px, 92vw)"
       destroy-on-close
       @closed="resetForm"
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
-        <el-form-item label="Title" prop="title">
+        <el-form-item label="标题" prop="title">
           <el-input v-model="form.title" />
         </el-form-item>
-        <el-form-item label="Category" prop="category">
+        <el-form-item label="分类" prop="category">
           <el-input v-model="form.category" />
         </el-form-item>
-        <el-form-item label="Status" prop="status">
+        <el-form-item label="状态" prop="status">
           <el-select v-model="form.status">
-            <el-option :value="1" label="Published" />
-            <el-option :value="0" label="Draft" />
+            <el-option :value="1" label="已发布" />
+            <el-option :value="0" label="草稿" />
           </el-select>
         </el-form-item>
-        <el-form-item label="Content" prop="content">
+        <el-form-item label="内容" prop="content">
           <el-input v-model="form.content" type="textarea" :rows="6" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">Cancel</el-button>
-        <el-button type="primary" @click="submitForm">Save</el-button>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitForm">保存</el-button>
       </template>
     </el-dialog>
   </AppShellSection>

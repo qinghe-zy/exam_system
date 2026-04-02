@@ -6,6 +6,7 @@ import AppShellSection from '../../components/AppShellSection.vue'
 import { DIFFICULTY_OPTIONS, QUESTION_TYPE_OPTIONS, REVIEW_STATUS_OPTIONS } from '../../constants/exam'
 import { createQuestion, deleteQuestion, exportQuestions, fetchQuestions, importQuestions, updateQuestion } from '../../api/exam'
 import type { QuestionBank } from '../../types/exam'
+import { labelDifficulty, labelQuestionType, labelReviewStatus } from '../../utils/labels'
 
 const loading = ref(false)
 const questions = ref<QuestionBank[]>([])
@@ -36,16 +37,16 @@ const form = reactive<Omit<QuestionBank, 'id'>>({
 })
 
 const rules: FormRules<typeof form> = {
-  questionCode: [{ required: true, message: 'Please enter the question code', trigger: 'blur' }],
-  subject: [{ required: true, message: 'Please enter the subject', trigger: 'blur' }],
-  stem: [{ required: true, message: 'Please enter the question stem', trigger: 'blur' }],
-  answerKey: [{ required: true, message: 'Please enter the answer key', trigger: 'blur' }]
+  questionCode: [{ required: true, message: '请输入题目编码', trigger: 'blur' }],
+  subject: [{ required: true, message: '请输入学科名称', trigger: 'blur' }],
+  stem: [{ required: true, message: '请输入题干内容', trigger: 'blur' }],
+  answerKey: [{ required: true, message: '请输入答案', trigger: 'blur' }]
 }
 
 const objectiveHint = computed(() => {
-  if (form.questionType === 'MULTIPLE_CHOICE') return 'Use "|" to separate answers, for example A|C|D'
-  if (form.questionType === 'TRUE_FALSE') return 'Use True or False'
-  return 'Use the exact expected answer text'
+  if (form.questionType === 'MULTIPLE_CHOICE') return '多选题请使用“|”分隔多个答案'
+  if (form.questionType === 'TRUE_FALSE') return '判断题请填写 True 或 False'
+  return '请填写标准答案'
 })
 
 async function loadData() {
@@ -101,16 +102,16 @@ async function submit() {
     } else if (editingId.value) {
       await updateQuestion(editingId.value, form)
     }
-    ElMessage.success(dialogMode.value === 'create' ? 'Question created' : 'Question updated')
+    ElMessage.success(dialogMode.value === 'create' ? '题目已创建' : '题目已更新')
     dialogVisible.value = false
     await loadData()
   })
 }
 
 async function removeItem(id: number) {
-  await ElMessageBox.confirm('Delete this question?', 'Confirm', { type: 'warning' })
+  await ElMessageBox.confirm('确认删除该题目？', '提示', { type: 'warning' })
   await deleteQuestion(id)
-  ElMessage.success('Question deleted')
+  ElMessage.success('题目已删除')
   await loadData()
 }
 
@@ -134,61 +135,61 @@ onMounted(loadData)
 
 <template>
   <AppShellSection
-    eyebrow="Item Bank"
-    title="Question bank with review, scoring, and knowledge metadata"
-    description="This page now tracks more than stems and answers. It carries scoring defaults, review status, option payloads, source metadata, and question codes so downstream paper assembly and grading remain explainable."
+    eyebrow="题库管理"
+    title="题目、解析、知识点与审核状态管理"
+    description="当前题库页面支持题目基础信息、选项、答案、解析、知识点、标签、默认分值、审核状态和版本号维护，用于支撑后续组卷、考试发布和阅卷分析。"
   >
     <template #actions>
       <div class="hero-actions">
         <el-button @click="handleExport">导出 JSON</el-button>
         <el-button @click="importDialogVisible = true">导入 JSON</el-button>
-        <el-button type="primary" @click="openCreate">New Question</el-button>
+        <el-button type="primary" @click="openCreate">新建题目</el-button>
       </div>
     </template>
 
     <section class="panel-card section-card">
       <el-table :data="questions" v-loading="loading">
-        <el-table-column prop="questionCode" label="Code" min-width="140" />
-        <el-table-column prop="subject" label="Subject" min-width="120" />
-        <el-table-column prop="questionType" label="Type" min-width="140" />
-        <el-table-column prop="difficultyLevel" label="Difficulty" min-width="120" />
-        <el-table-column prop="knowledgePoint" label="Knowledge" min-width="150" show-overflow-tooltip />
-        <el-table-column prop="defaultScore" label="Score" min-width="90" />
-        <el-table-column prop="reviewerStatus" label="Review" min-width="120" />
-        <el-table-column prop="stem" label="Stem" min-width="280" show-overflow-tooltip />
-        <el-table-column label="Actions" min-width="170" fixed="right">
+        <el-table-column prop="questionCode" label="题目编码" min-width="140" />
+        <el-table-column prop="subject" label="学科" min-width="120" />
+        <el-table-column label="题型" min-width="140"><template #default="{ row }">{{ labelQuestionType(row.questionType) }}</template></el-table-column>
+        <el-table-column label="难度" min-width="120"><template #default="{ row }">{{ labelDifficulty(row.difficultyLevel) }}</template></el-table-column>
+        <el-table-column prop="knowledgePoint" label="知识点" min-width="150" show-overflow-tooltip />
+        <el-table-column prop="defaultScore" label="默认分值" min-width="90" />
+        <el-table-column label="审核状态" min-width="120"><template #default="{ row }">{{ labelReviewStatus(row.reviewerStatus) }}</template></el-table-column>
+        <el-table-column prop="stem" label="题干" min-width="280" show-overflow-tooltip />
+        <el-table-column label="操作" min-width="170" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openEdit(row)">Edit</el-button>
-            <el-button link type="danger" @click="removeItem(row.id)">Delete</el-button>
+            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
+            <el-button link type="danger" @click="removeItem(row.id)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
     </section>
 
-    <el-dialog v-model="dialogVisible" :title="dialogMode === 'create' ? 'Create Question' : 'Edit Question'" width="min(960px, 96vw)" @closed="resetForm">
+    <el-dialog v-model="dialogVisible" :title="dialogMode === 'create' ? '新建题目' : '编辑题目'" width="min(960px, 96vw)" @closed="resetForm">
       <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
         <div class="grid-three">
-          <el-form-item label="Question Code" prop="questionCode"><el-input v-model="form.questionCode" /></el-form-item>
-          <el-form-item label="Subject" prop="subject"><el-input v-model="form.subject" /></el-form-item>
-          <el-form-item label="Question Type"><el-select v-model="form.questionType"><el-option v-for="item in QUESTION_TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item>
-          <el-form-item label="Difficulty"><el-select v-model="form.difficultyLevel"><el-option v-for="item in DIFFICULTY_OPTIONS" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item>
-          <el-form-item label="Default Score"><el-input-number v-model="form.defaultScore" :min="1" :max="100" /></el-form-item>
-          <el-form-item label="Review Status"><el-select v-model="form.reviewerStatus"><el-option v-for="item in REVIEW_STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item>
-          <el-form-item label="Knowledge Point"><el-input v-model="form.knowledgePoint" /></el-form-item>
-          <el-form-item label="Chapter"><el-input v-model="form.chapterName" /></el-form-item>
-          <el-form-item label="Source"><el-input v-model="form.sourceName" /></el-form-item>
+          <el-form-item label="题目编码" prop="questionCode"><el-input v-model="form.questionCode" /></el-form-item>
+          <el-form-item label="学科" prop="subject"><el-input v-model="form.subject" /></el-form-item>
+          <el-form-item label="题型"><el-select v-model="form.questionType"><el-option v-for="item in QUESTION_TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item>
+          <el-form-item label="难度"><el-select v-model="form.difficultyLevel"><el-option v-for="item in DIFFICULTY_OPTIONS" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item>
+          <el-form-item label="默认分值"><el-input-number v-model="form.defaultScore" :min="1" :max="100" /></el-form-item>
+          <el-form-item label="审核状态"><el-select v-model="form.reviewerStatus"><el-option v-for="item in REVIEW_STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item>
+          <el-form-item label="知识点"><el-input v-model="form.knowledgePoint" /></el-form-item>
+          <el-form-item label="章节"><el-input v-model="form.chapterName" /></el-form-item>
+          <el-form-item label="来源"><el-input v-model="form.sourceName" /></el-form-item>
         </div>
-        <el-form-item label="Tags"><el-input v-model="form.tags" placeholder="architecture,module-boundary" /></el-form-item>
-        <el-form-item label="Question Stem" prop="stem"><el-input v-model="form.stem" type="textarea" :rows="4" /></el-form-item>
-        <el-form-item label="Options JSON">
+        <el-form-item label="标签"><el-input v-model="form.tags" placeholder="例如：函数、文学常识、细胞结构" /></el-form-item>
+        <el-form-item label="题干" prop="stem"><el-input v-model="form.stem" type="textarea" :rows="4" /></el-form-item>
+        <el-form-item label="选项 JSON">
           <el-input v-model="form.optionsJson" type="textarea" :rows="3" placeholder='["Option A","Option B"]' />
         </el-form-item>
-        <el-form-item :label="`Answer Key · ${objectiveHint}`" prop="answerKey"><el-input v-model="form.answerKey" type="textarea" :rows="3" /></el-form-item>
-        <el-form-item label="Analysis"><el-input v-model="form.analysisText" type="textarea" :rows="3" /></el-form-item>
+        <el-form-item :label="`答案说明：${objectiveHint}`" prop="answerKey"><el-input v-model="form.answerKey" type="textarea" :rows="3" /></el-form-item>
+        <el-form-item label="解析"><el-input v-model="form.analysisText" type="textarea" :rows="3" /></el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">Cancel</el-button>
-        <el-button type="primary" @click="submit">Save</el-button>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submit">保存</el-button>
       </template>
     </el-dialog>
 

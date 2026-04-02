@@ -28,14 +28,14 @@ class ApiSmokeIntegrationTests {
 
     @Test
     void shouldLoadCoreExamChainApis() throws Exception {
-        String adminToken = login("admin", "admin123");
-        String studentToken = login("student", "student123");
+        String adminToken = login("900001", "123456");
+        String studentToken = login("20260001", "123456");
 
         mockMvc.perform(get("/api/system/organizations")
                         .header("Authorization", bearer(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
-                .andExpect(jsonPath("$.data[0].orgName").value("Qinghe University"));
+                .andExpect(jsonPath("$.data[0].orgName").value("清河大学"));
 
         mockMvc.perform(get("/api/system/config-center/configs")
                         .header("Authorization", bearer(adminToken)))
@@ -61,11 +61,11 @@ class ApiSmokeIntegrationTests {
                 .andExpect(jsonPath("$.data.length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)));
 
         mockMvc.perform(get("/api/exam/candidate/exams/1")
-                        .queryParam("examPassword", "MIDTERM2026")
+                        .queryParam("examPassword", "YW2026")
                         .header("Authorization", bearer(studentToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
-                .andExpect(jsonPath("$.data.items.length()").value(4));
+                .andExpect(jsonPath("$.data.items.length()").value(20));
 
         mockMvc.perform(get("/api/exam/analytics/overview")
                         .header("Authorization", bearer(adminToken)))

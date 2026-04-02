@@ -38,11 +38,11 @@ const form = reactive<Omit<ExamPlan, 'id' | 'candidateCount' | 'submittedCount' 
 })
 
 const rules: FormRules<typeof form> = {
-  examCode: [{ required: true, message: 'Please enter the exam code', trigger: 'blur' }],
-  examName: [{ required: true, message: 'Please enter the exam name', trigger: 'blur' }],
-  paperId: [{ required: true, message: 'Please select a paper', trigger: 'change' }],
-  startTime: [{ required: true, message: 'Please select the start time', trigger: 'change' }],
-  endTime: [{ required: true, message: 'Please select the end time', trigger: 'change' }]
+  examCode: [{ required: true, message: '请输入考试编码', trigger: 'blur' }],
+  examName: [{ required: true, message: '请输入考试名称', trigger: 'blur' }],
+  paperId: [{ required: true, message: '请选择试卷', trigger: 'change' }],
+  startTime: [{ required: true, message: '请选择开始时间', trigger: 'change' }],
+  endTime: [{ required: true, message: '请选择结束时间', trigger: 'change' }]
 }
 
 async function loadData() {
@@ -122,16 +122,16 @@ async function submit() {
     } else if (editingId.value) {
       await updateExamPlan(editingId.value, form)
     }
-    ElMessage.success(dialogMode.value === 'create' ? 'Exam plan created' : 'Exam plan updated')
+    ElMessage.success(dialogMode.value === 'create' ? '考试计划已创建' : '考试计划已更新')
     dialogVisible.value = false
     await loadData()
   })
 }
 
 async function removeItem(id: number) {
-  await ElMessageBox.confirm('Delete this exam plan?', 'Confirm', { type: 'warning' })
+  await ElMessageBox.confirm('确认删除该考试计划？', '提示', { type: 'warning' })
   await deleteExamPlan(id)
-  ElMessage.success('Exam plan deleted')
+  ElMessage.success('考试计划已删除')
   await loadData()
 }
 
@@ -140,65 +140,65 @@ onMounted(loadData)
 
 <template>
   <AppShellSection
-    eyebrow="Exam Release"
-    title="Publish time windows, papers, and candidate rosters"
-    description="Exam plans bind a published paper, time window, anti-cheat posture, and candidate roster into one operational release unit. This is the control point before students can enter the assessment flow."
+    eyebrow="考试发布"
+    title="考试计划、时间窗口与考生分配"
+    description="考试计划将试卷、考试时间、防作弊等级和考生名单组合成一条可执行发布记录，是考生进入考试前的统一控制入口。"
   >
     <template #actions>
       <div class="hero-actions">
-        <el-button type="primary" @click="openCreate">New Exam Plan</el-button>
+        <el-button type="primary" @click="openCreate">新建考试计划</el-button>
       </div>
     </template>
 
     <section class="panel-card section-card">
       <el-table :data="plans" v-loading="loading">
-        <el-table-column prop="examCode" label="Code" min-width="130" />
-        <el-table-column prop="examName" label="Exam Name" min-width="220" />
-        <el-table-column prop="paperName" label="Paper" min-width="220" />
-        <el-table-column prop="startTime" label="Start" min-width="180" />
-        <el-table-column prop="endTime" label="End" min-width="180" />
-        <el-table-column prop="candidateCount" label="Candidates" min-width="100" />
-        <el-table-column prop="submittedCount" label="Submitted" min-width="100" />
-        <el-table-column label="Status" min-width="120">
+        <el-table-column prop="examCode" label="考试编码" min-width="130" />
+        <el-table-column prop="examName" label="考试名称" min-width="220" />
+        <el-table-column prop="paperName" label="试卷" min-width="220" />
+        <el-table-column prop="startTime" label="开始时间" min-width="180" />
+        <el-table-column prop="endTime" label="结束时间" min-width="180" />
+        <el-table-column prop="candidateCount" label="考生数" min-width="100" />
+        <el-table-column prop="submittedCount" label="已提交" min-width="100" />
+        <el-table-column label="发布状态" min-width="120">
           <template #default="{ row }">
-            <el-tag :type="row.publishStatus === 1 ? 'success' : 'info'">{{ row.publishStatus === 1 ? 'Published' : 'Draft' }}</el-tag>
+            <el-tag :type="row.publishStatus === 1 ? 'success' : 'info'">{{ row.publishStatus === 1 ? '已发布' : '草稿' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="Actions" min-width="160" fixed="right">
+        <el-table-column label="操作" min-width="160" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openEdit(row)">Edit</el-button>
-            <el-button link type="danger" @click="removeItem(row.id)">Delete</el-button>
+            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
+            <el-button link type="danger" @click="removeItem(row.id)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
     </section>
 
-    <el-dialog v-model="dialogVisible" :title="dialogMode === 'create' ? 'Create Exam Plan' : 'Edit Exam Plan'" width="min(920px, 96vw)" @closed="resetForm">
+    <el-dialog v-model="dialogVisible" :title="dialogMode === 'create' ? '新建考试计划' : '编辑考试计划'" width="min(920px, 96vw)" @closed="resetForm">
       <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
         <div class="grid-three">
-          <el-form-item label="Exam Code" prop="examCode"><el-input v-model="form.examCode" /></el-form-item>
-          <el-form-item label="Exam Name" prop="examName"><el-input v-model="form.examName" /></el-form-item>
-          <el-form-item label="Paper" prop="paperId"><el-select v-model="form.paperId"><el-option v-for="paper in papers" :key="paper.id" :label="paper.paperName" :value="paper.id" /></el-select></el-form-item>
-          <el-form-item label="Start Time" prop="startTime"><el-date-picker v-model="form.startTime" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" /></el-form-item>
-          <el-form-item label="End Time" prop="endTime"><el-date-picker v-model="form.endTime" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" /></el-form-item>
-          <el-form-item label="Duration Minutes"><el-input-number v-model="form.durationMinutes" :min="1" /></el-form-item>
-          <el-form-item label="Pass Score"><el-input-number v-model="form.passScore" :min="1" :max="100" /></el-form-item>
-          <el-form-item label="Attempt Limit"><el-input-number v-model="form.attemptLimit" :min="1" :max="5" /></el-form-item>
-          <el-form-item label="Exam Password"><el-input v-model="form.examPassword" placeholder="Optional" /></el-form-item>
-          <el-form-item label="Anti-Cheat Level"><el-select v-model="form.antiCheatLevel"><el-option label="Basic" value="BASIC" /><el-option label="Strict" value="STRICT" /></el-select></el-form-item>
-          <el-form-item label="Late Entry Minutes"><el-input-number v-model="form.lateEntryMinutes" :min="0" :max="120" /></el-form-item>
-          <el-form-item label="Publish Status"><el-select v-model="form.publishStatus"><el-option :value="0" label="Draft" /><el-option :value="1" label="Published" /></el-select></el-form-item>
+          <el-form-item label="考试编码" prop="examCode"><el-input v-model="form.examCode" /></el-form-item>
+          <el-form-item label="考试名称" prop="examName"><el-input v-model="form.examName" /></el-form-item>
+          <el-form-item label="试卷" prop="paperId"><el-select v-model="form.paperId"><el-option v-for="paper in papers" :key="paper.id" :label="paper.paperName" :value="paper.id" /></el-select></el-form-item>
+          <el-form-item label="开始时间" prop="startTime"><el-date-picker v-model="form.startTime" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" /></el-form-item>
+          <el-form-item label="结束时间" prop="endTime"><el-date-picker v-model="form.endTime" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" /></el-form-item>
+          <el-form-item label="考试时长（分钟）"><el-input-number v-model="form.durationMinutes" :min="1" /></el-form-item>
+          <el-form-item label="及格线"><el-input-number v-model="form.passScore" :min="1" :max="100" /></el-form-item>
+          <el-form-item label="参考次数"><el-input-number v-model="form.attemptLimit" :min="1" :max="5" /></el-form-item>
+          <el-form-item label="考试口令"><el-input v-model="form.examPassword" placeholder="可选" /></el-form-item>
+          <el-form-item label="防作弊等级"><el-select v-model="form.antiCheatLevel"><el-option label="基础" value="BASIC" /><el-option label="严格" value="STRICT" /></el-select></el-form-item>
+          <el-form-item label="允许迟到分钟"><el-input-number v-model="form.lateEntryMinutes" :min="0" :max="120" /></el-form-item>
+          <el-form-item label="发布状态"><el-select v-model="form.publishStatus"><el-option :value="0" label="草稿" /><el-option :value="1" label="已发布" /></el-select></el-form-item>
         </div>
-        <el-form-item label="Instructions"><el-input v-model="form.instructionText" type="textarea" :rows="3" /></el-form-item>
-        <el-form-item label="Candidate Roster">
+        <el-form-item label="考试说明"><el-input v-model="form.instructionText" type="textarea" :rows="3" /></el-form-item>
+        <el-form-item label="考生名单">
           <el-select v-model="form.candidateUserIds" multiple filterable collapse-tags>
             <el-option v-for="user in users" :key="user.id" :label="user.fullName || user.nickname" :value="user.id" />
           </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">Cancel</el-button>
-        <el-button type="primary" @click="submit">Save</el-button>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submit">保存</el-button>
       </template>
     </el-dialog>
   </AppShellSection>

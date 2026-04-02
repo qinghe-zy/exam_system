@@ -29,7 +29,7 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: LoginView,
-      meta: { title: 'Login' }
+      meta: { title: '登录' }
     },
     {
       path: '/',
@@ -44,103 +44,103 @@ const router = createRouter({
           path: 'dashboard',
           name: 'dashboard',
           component: DashboardView,
-          meta: { title: 'Dashboard' }
+          meta: { title: '首页看板' }
         },
         {
           path: 'system/organizations',
           name: 'system-organizations',
           component: OrganizationView,
-          meta: { title: 'Organizations' }
+          meta: { title: '组织管理' }
         },
         {
           path: 'system/users',
           name: 'system-users',
           component: UserView,
-          meta: { title: 'Users' }
+          meta: { title: '用户管理' }
         },
         {
           path: 'system/roles',
           name: 'system-roles',
           component: RoleView,
-          meta: { title: 'Roles' }
+          meta: { title: '角色管理' }
         },
         {
           path: 'system/menus',
           name: 'system-menus',
           component: MenuView,
-          meta: { title: 'Menus' }
+          meta: { title: '菜单管理' }
         },
         {
           path: 'system/audit-logs',
           name: 'system-audit-logs',
           component: AuditLogView,
-          meta: { title: 'Audit Logs' }
+          meta: { title: '审计日志' }
         },
         {
           path: 'system/config-center',
           name: 'system-config-center',
           component: ConfigCenterView,
-          meta: { title: 'Config Center' }
+          meta: { title: '配置中心' }
         },
         {
           path: 'notices',
           name: 'notices',
           component: NoticeView,
-          meta: { title: 'Notices' }
+          meta: { title: '公告管理' }
         },
         {
           path: 'messages',
           name: 'messages',
           component: MessageCenterView,
-          meta: { title: 'Message Center' }
+          meta: { title: '消息中心' }
         },
         {
           path: 'exam/questions',
           name: 'exam-questions',
           component: QuestionBankView,
-          meta: { title: 'Question Bank' }
+          meta: { title: '题库管理' }
         },
         {
           path: 'exam/papers',
           name: 'exam-papers',
           component: ExamPaperView,
-          meta: { title: 'Exam Papers' }
+          meta: { title: '试卷管理' }
         },
         {
           path: 'exam/plans',
           name: 'exam-plans',
           component: ExamPlanView,
-          meta: { title: 'Exam Plans' }
+          meta: { title: '考试发布' }
         },
         {
           path: 'exam/grading',
           name: 'exam-grading',
           component: GradingView,
-          meta: { title: 'Grading Center' }
+          meta: { title: '阅卷中心' }
         },
         {
           path: 'exam/records',
           name: 'exam-records',
           component: ExamRecordView,
-          meta: { title: 'Score Center' }
+          meta: { title: '成绩中心' }
         },
         {
           path: 'exam/analytics',
           name: 'exam-analytics',
           component: AnalysisView,
-          meta: { title: 'Analytics' }
+          meta: { title: '成绩分析' }
         },
         {
           path: 'candidate/exams',
           name: 'candidate-exams',
           component: CandidateExamView,
-          meta: { title: 'My Exams' }
+          meta: { title: '我的考试' }
         },
         {
           path: 'exam/proctor',
           name: 'exam-proctor',
           component: ProctorView,
-          meta: { title: 'Proctor Events' }
+          meta: { title: '监考事件' }
         }
       ]
     }
@@ -162,7 +162,7 @@ router.beforeEach(async (to) => {
   }
 
   if (typeof to.meta.title === 'string') {
-    document.title = `${to.meta.title} | Projectexample Exam System`
+    document.title = `${to.meta.title} | 在线考试系统`
   }
 })
 

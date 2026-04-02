@@ -10,6 +10,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.nio.charset.StandardCharsets;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -27,20 +29,20 @@ class PermissionMatrixIntegrationTests {
 
     @Test
     void shouldEnforceRoleBasedAccessBoundaries() throws Exception {
-        String admin = login("admin", "admin123");
-        String orgAdmin = login("orgadmin", "orgadmin123");
-        String teacher = login("teacher", "teacher123");
-        String grader = login("grader", "grader123");
-        String student = login("student", "student123");
+        String admin = login("900001", "123456");
+        String orgAdmin = login("900002", "123456");
+        String teacher = login("800001", "123456");
+        String grader = login("810001", "123456");
+        String student = login("20260001", "123456");
 
         mockMvc.perform(get("/api/system/organizations").header("Authorization", bearer(admin)))
                 .andExpect(status().isOk());
         MvcResult orgScoped = mockMvc.perform(get("/api/system/organizations").header("Authorization", bearer(orgAdmin)))
                 .andExpect(status().isOk())
                 .andReturn();
-        JsonNode orgScopedPayload = objectMapper.readTree(orgScoped.getResponse().getContentAsString());
+        JsonNode orgScopedPayload = objectMapper.readTree(orgScoped.getResponse().getContentAsString(StandardCharsets.UTF_8));
         assertThat(orgScopedPayload.path("data")).hasSize(1);
-        assertThat(orgScopedPayload.path("data").get(0).path("orgName").asText()).isEqualTo("School of Computer Science");
+        assertThat(orgScopedPayload.path("data").get(0).path("orgName").asText()).isEqualTo("清河大学");
         mockMvc.perform(get("/api/system/users").header("Authorization", bearer(teacher)))
                 .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/exam/grading/tasks").header("Authorization", bearer(grader)))

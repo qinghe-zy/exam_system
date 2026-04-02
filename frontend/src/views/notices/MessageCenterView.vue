@@ -4,6 +4,7 @@ import { ElMessage } from 'element-plus'
 
 import AppShellSection from '../../components/AppShellSection.vue'
 import { fetchMyMessages, markMessageRead, type InAppMessage } from '../../api/message'
+import { labelMessageType } from '../../utils/labels'
 
 const loading = ref(false)
 const messages = ref<InAppMessage[]>([])
@@ -36,7 +37,7 @@ onMounted(loadData)
       <el-table :data="messages" v-loading="loading">
         <el-table-column prop="createTime" label="时间" min-width="180" />
         <el-table-column prop="title" label="标题" min-width="180" />
-        <el-table-column prop="messageType" label="类型" min-width="140" />
+        <el-table-column label="类型" min-width="140"><template #default="{ row }">{{ labelMessageType(row.messageType) }}</template></el-table-column>
         <el-table-column prop="content" label="内容" min-width="320" show-overflow-tooltip />
         <el-table-column label="状态" min-width="100">
           <template #default="{ row }">

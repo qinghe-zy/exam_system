@@ -21,15 +21,15 @@ onMounted(loadRoles)
 
 <template>
   <AppShellSection
-    eyebrow="System Module"
-    title="Role module skeleton"
-    description="Roles are seeded to support the current JWT + RBAC baseline. Future templates can extend this into richer permission, department, or data-scope models without rebuilding the starter."
+    eyebrow="系统管理"
+    title="角色与职责边界"
+    description="角色页用于展示当前系统内置角色及其职责边界，帮助验收人员和管理员快速确认权限体系的基础划分。"
   >
     <section class="panel-card table-card">
       <el-table :data="roles" v-loading="loading">
-        <el-table-column prop="roleCode" label="Role Code" min-width="180" />
-        <el-table-column prop="roleName" label="Role Name" min-width="180" />
-        <el-table-column prop="remark" label="Remark" min-width="220" />
+        <el-table-column prop="roleCode" label="角色编码" min-width="180" />
+        <el-table-column prop="roleName" label="角色名称" min-width="180" />
+        <el-table-column prop="remark" label="说明" min-width="220" />
       </el-table>
     </section>
   </AppShellSection>

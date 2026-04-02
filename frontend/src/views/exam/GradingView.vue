@@ -5,6 +5,7 @@ import { ElMessage } from 'element-plus'
 import AppShellSection from '../../components/AppShellSection.vue'
 import { fetchGradingTasks, fetchGradingWorkspace, submitGrading } from '../../api/exam'
 import type { GradingTask, GradingWorkspace } from '../../types/exam'
+import { labelAnswerSheetStatus, labelQuestionType } from '../../utils/labels'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -50,7 +51,7 @@ async function submitCurrent() {
           reviewComment: gradeForm[item.answerItemId || item.questionId]?.reviewComment || ''
         }))
     )
-    ElMessage.success('Grading updated')
+    ElMessage.success('阅卷结果已更新')
     await loadData()
   } finally {
     submitting.value = false
@@ -62,21 +63,21 @@ onMounted(loadData)
 
 <template>
   <AppShellSection
-    eyebrow="Grading Center"
-    title="Review subjective answers and finalize scores"
-    description="The grading center works from submitted answer sheets, preserving objective auto-score results while letting graders evaluate subjective responses and publish the final score record."
+    eyebrow="阅卷中心"
+    title="主观题评分与成绩确认"
+    description="阅卷中心面向已提交答卷，保留客观题自动评分结果，并支持阅卷老师完成主观题评分与成绩确认。"
   >
     <section class="panel-card section-card">
       <el-table :data="tasks" v-loading="loading">
-        <el-table-column prop="examName" label="Exam" min-width="220" />
-        <el-table-column prop="candidateName" label="Candidate" min-width="140" />
-        <el-table-column prop="submittedAt" label="Submitted At" min-width="180" />
-        <el-table-column prop="objectiveScore" label="Objective" min-width="100" />
-        <el-table-column prop="pendingQuestionCount" label="Pending Subjective" min-width="140" />
-        <el-table-column prop="status" label="Status" min-width="140" />
-        <el-table-column label="Action" min-width="120" fixed="right">
+        <el-table-column prop="examName" label="考试" min-width="220" />
+        <el-table-column prop="candidateName" label="考生" min-width="140" />
+        <el-table-column prop="submittedAt" label="提交时间" min-width="180" />
+        <el-table-column prop="objectiveScore" label="客观分" min-width="100" />
+        <el-table-column prop="pendingQuestionCount" label="待阅主观题" min-width="140" />
+        <el-table-column label="状态" min-width="140"><template #default="{ row }">{{ labelAnswerSheetStatus(row.status) }}</template></el-table-column>
+        <el-table-column label="操作" min-width="120" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" plain @click="openWorkspace(row.answerSheetId)">Open</el-button>
+            <el-button type="primary" plain @click="openWorkspace(row.answerSheetId)">打开</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -88,21 +89,22 @@ onMounted(loadData)
           <header class="panel-card workspace-hero">
             <div>
               <p class="eyebrow">Grading Workspace</p>
+              <p class="eyebrow">阅卷工作区</p>
               <h2>{{ workspace.examName }} · {{ workspace.candidateName }}</h2>
-              <p class="muted">Objective Score: {{ workspace.objectiveScore }} · Current Final: {{ workspace.finalScore }}</p>
+              <p class="muted">客观分：{{ workspace.objectiveScore }} · 当前总分：{{ workspace.finalScore }}</p>
             </div>
-            <el-button type="primary" :loading="submitting" @click="submitCurrent">Submit Grades</el-button>
+            <el-button type="primary" :loading="submitting" @click="submitCurrent">提交评分</el-button>
           </header>
 
           <article v-for="item in workspace.items" :key="item.answerItemId || item.questionId" class="panel-card answer-card">
             <div class="answer-header">
-              <span class="eyebrow">{{ item.questionCode }} · {{ item.questionType }}</span>
+              <span class="eyebrow">{{ item.questionCode }} · {{ labelQuestionType(item.questionType) }}</span>
               <strong>{{ item.maxScore }} pts</strong>
             </div>
             <p class="question-stem">{{ item.stem }}</p>
             <div class="answer-block">
-              <span class="muted">Candidate Answer</span>
-              <p>{{ item.answerContent || 'No answer submitted' }}</p>
+              <span class="muted">考生作答</span>
+              <p>{{ item.answerContent || '未作答' }}</p>
             </div>
 
             <template v-if="['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE'].includes(item.questionType)">
@@ -114,7 +116,7 @@ onMounted(loadData)
             <template v-else>
               <div class="grading-form">
                 <el-input-number v-model="gradeForm[item.answerItemId || item.questionId].scoreAwarded" :min="0" :max="item.maxScore" />
-                <el-input v-model="gradeForm[item.answerItemId || item.questionId].reviewComment" type="textarea" :rows="3" placeholder="Feedback or marking comment" />
+                <el-input v-model="gradeForm[item.answerItemId || item.questionId].reviewComment" type="textarea" :rows="3" placeholder="请输入评分说明" />
               </div>
             </template>
           </article>

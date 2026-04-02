@@ -12,13 +12,13 @@ const formRef = ref<FormInstance>()
 const loading = ref(false)
 
 const form = reactive({
-  username: 'admin',
-  password: 'admin123'
+  username: '900001',
+  password: '123456'
 })
 
 const rules: FormRules<typeof form> = {
-  username: [{ required: true, message: 'Please enter the username', trigger: 'blur' }],
-  password: [{ required: true, message: 'Please enter the password', trigger: 'blur' }]
+  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
 }
 
 async function submit() {
@@ -28,7 +28,7 @@ async function submit() {
     loading.value = true
     try {
       await authStore.login(form.username, form.password)
-      ElMessage.success('Signed in to the exam-system workspace')
+      ElMessage.success('登录成功，正在进入系统')
       const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/dashboard'
       await router.push(redirect)
     } finally {
@@ -41,34 +41,34 @@ async function submit() {
 <template>
   <main class="login-shell">
     <section class="intro-strip">
-      <span class="eyebrow">Academic Template Factory</span>
-      <h1 class="display-title">A reusable exam-system starter for question, paper, and result workflows.</h1>
+      <span class="eyebrow">在线考试平台</span>
+      <h1 class="display-title">面向联调、演示与验收的在线考试系统</h1>
       <p class="muted intro-copy">
-        This derived starter keeps the shared authentication and system baseline, then adds the first exam-focused business flows that often recur in graduation-project systems.
+        当前系统已支持题库、组卷、考试发布、考生答题、阅卷评分、成绩分析与基础监考留痕，可直接用于系统联调、项目演示和验收回归。
       </p>
       <ul class="signal-list">
-        <li>Question bank</li>
-        <li>Paper management</li>
-        <li>Exam result tracking</li>
+        <li>题库管理</li>
+        <li>试卷组装</li>
+        <li>成绩跟踪</li>
       </ul>
     </section>
 
     <section class="panel-card login-card">
       <div>
-        <span class="eyebrow">Current Access</span>
-        <h2>Sign in to the exam-system example</h2>
-        <p class="muted">Default starter account: <strong>admin / admin123</strong></p>
+        <span class="eyebrow">登录入口</span>
+        <h2>登录在线考试系统</h2>
+        <p class="muted">当前测试账号统一密码：<strong>123456</strong></p>
       </div>
 
       <el-form ref="formRef" :model="form" :rules="rules" label-position="top" @submit.prevent="submit">
-        <el-form-item label="Username" prop="username">
-          <el-input v-model="form.username" placeholder="admin" />
+        <el-form-item label="用户名" prop="username">
+          <el-input v-model="form.username" placeholder="请输入用户名" />
         </el-form-item>
-        <el-form-item label="Password" prop="password">
-          <el-input v-model="form.password" type="password" show-password placeholder="admin123" />
+        <el-form-item label="密码" prop="password">
+          <el-input v-model="form.password" type="password" show-password placeholder="请输入密码" />
         </el-form-item>
         <el-button class="submit-button" type="primary" :loading="loading" @click="submit">
-          Enter workspace
+          进入系统
         </el-button>
       </el-form>
     </section>
