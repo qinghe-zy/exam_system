@@ -9,6 +9,7 @@ import com.projectexample.examsystem.entity.AuditLog;
 import com.projectexample.examsystem.entity.ExamPlan;
 import com.projectexample.examsystem.entity.ExamRecord;
 import com.projectexample.examsystem.entity.GradingRecord;
+import com.projectexample.examsystem.entity.InAppMessage;
 import com.projectexample.examsystem.entity.QuestionBank;
 import com.projectexample.examsystem.entity.SysUser;
 import com.projectexample.examsystem.exception.BusinessException;
@@ -18,8 +19,10 @@ import com.projectexample.examsystem.mapper.AuditLogMapper;
 import com.projectexample.examsystem.mapper.ExamPlanMapper;
 import com.projectexample.examsystem.mapper.ExamRecordMapper;
 import com.projectexample.examsystem.mapper.GradingRecordMapper;
+import com.projectexample.examsystem.mapper.InAppMessageMapper;
 import com.projectexample.examsystem.mapper.QuestionBankMapper;
 import com.projectexample.examsystem.mapper.SysUserMapper;
+import com.projectexample.examsystem.security.AccessScopeService;
 import com.projectexample.examsystem.service.GradingService;
 import com.projectexample.examsystem.vo.CandidateAnswerItemVO;
 import com.projectexample.examsystem.vo.GradingTaskVO;
@@ -45,10 +48,19 @@ public class GradingServiceImpl implements GradingService {
     private final ExamRecordMapper examRecordMapper;
     private final SysUserMapper sysUserMapper;
     private final AuditLogMapper auditLogMapper;
+    private final InAppMessageMapper inAppMessageMapper;
+    private final AccessScopeService accessScopeService;
 
     @Override
     public List<GradingTaskVO> listTasks() {
+        List<Long> accessibleOrgIds = accessScopeService.accessibleOrganizationIds();
+        List<Long> planIds = accessScopeService.isAdmin()
+                ? examPlanMapper.selectList(null).stream().map(ExamPlan::getId).toList()
+                : examPlanMapper.selectList(Wrappers.lambdaQuery(ExamPlan.class).in(ExamPlan::getOrganizationId, accessibleOrgIds))
+                .stream().map(ExamPlan::getId).toList();
+
         return answerSheetMapper.selectList(Wrappers.lambdaQuery(AnswerSheet.class)
+                        .in(!accessScopeService.isAdmin(), AnswerSheet::getExamPlanId, planIds.isEmpty() ? List.of(-1L) : planIds)
                         .in(AnswerSheet::getStatus, List.of("SUBMITTED", "PARTIALLY_GRADED"))
                         .orderByDesc(AnswerSheet::getSubmittedAt, AnswerSheet::getId))
                 .stream()
@@ -76,6 +88,9 @@ public class GradingServiceImpl implements GradingService {
     public GradingWorkspaceVO getWorkspace(Long answerSheetId) {
         AnswerSheet sheet = requireSheet(answerSheetId);
         ExamPlan plan = examPlanMapper.selectById(sheet.getExamPlanId());
+        if (plan != null && !accessScopeService.isAdmin()) {
+            accessScopeService.assertOrganizationAccessible(plan.getOrganizationId());
+        }
         return buildWorkspace(sheet, plan);
     }
 
@@ -83,6 +98,9 @@ public class GradingServiceImpl implements GradingService {
     public GradingWorkspaceVO submitGrading(Long answerSheetId, GradingSubmitRequest request, String username) {
         AnswerSheet sheet = requireSheet(answerSheetId);
         ExamPlan plan = examPlanMapper.selectById(sheet.getExamPlanId());
+        if (plan != null && !accessScopeService.isAdmin()) {
+            accessScopeService.assertOrganizationAccessible(plan.getOrganizationId());
+        }
         SysUser grader = requireUser(username);
 
         Map<Long, GradeAnswerItemRequest> gradingMap = request.getGradeItems().stream()
@@ -141,6 +159,17 @@ public class GradingServiceImpl implements GradingService {
             record.setPublishedFlag(pending ? 0 : 1);
             record.setStatus(pending ? "PARTIALLY_GRADED" : "PUBLISHED");
             examRecordMapper.updateById(record);
+            if (!pending) {
+                InAppMessage message = new InAppMessage();
+                message.setRecipientUserId(record.getUserId());
+                message.setTitle("成绩发布提醒");
+                message.setMessageType("SCORE_PUBLISH");
+                message.setContent("考试《" + record.getExamName() + "》成绩已发布，请及时查看。");
+                message.setRelatedType("SCORE_RECORD");
+                message.setRelatedId(record.getId());
+                message.setReadFlag(0);
+                inAppMessageMapper.insert(message);
+            }
         }
 
         AuditLog log = new AuditLog();

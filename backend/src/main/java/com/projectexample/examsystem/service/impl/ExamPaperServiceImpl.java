@@ -10,6 +10,7 @@ import com.projectexample.examsystem.exception.BusinessException;
 import com.projectexample.examsystem.mapper.ExamPaperMapper;
 import com.projectexample.examsystem.mapper.PaperQuestionMapper;
 import com.projectexample.examsystem.mapper.QuestionBankMapper;
+import com.projectexample.examsystem.security.AccessScopeService;
 import com.projectexample.examsystem.service.ExamPaperService;
 import com.projectexample.examsystem.vo.ExamPaperVO;
 import com.projectexample.examsystem.vo.PaperQuestionItemVO;
@@ -29,10 +30,14 @@ public class ExamPaperServiceImpl implements ExamPaperService {
     private final ExamPaperMapper examPaperMapper;
     private final PaperQuestionMapper paperQuestionMapper;
     private final QuestionBankMapper questionBankMapper;
+    private final AccessScopeService accessScopeService;
 
     @Override
     public List<ExamPaperVO> listPapers() {
-        return examPaperMapper.selectList(Wrappers.lambdaQuery(ExamPaper.class).orderByDesc(ExamPaper::getUpdateTime))
+        List<Long> accessibleIds = accessScopeService.accessibleOrganizationIds();
+        return examPaperMapper.selectList(Wrappers.lambdaQuery(ExamPaper.class)
+                        .in(!accessScopeService.isAdmin(), ExamPaper::getOrganizationId, accessibleIds)
+                        .orderByDesc(ExamPaper::getUpdateTime))
                 .stream()
                 .map(this::toVO)
                 .toList();
@@ -73,10 +78,14 @@ public class ExamPaperServiceImpl implements ExamPaperService {
         if (entity == null) {
             throw new BusinessException(4040, "Exam paper not found");
         }
+        if (!accessScopeService.isAdmin()) {
+            accessScopeService.assertOrganizationAccessible(entity.getOrganizationId());
+        }
         return entity;
     }
 
     private void applyPaper(ExamPaper entity, ExamPaperSaveRequest request) {
+        entity.setOrganizationId(accessScopeService.currentUser().getOrganizationId());
         entity.setPaperCode(request.getPaperCode());
         entity.setPaperName(request.getPaperName());
         entity.setSubject(request.getSubject());
@@ -95,6 +104,7 @@ public class ExamPaperServiceImpl implements ExamPaperService {
             if (questionBankMapper.selectById(item.getQuestionId()) == null) {
                 throw new BusinessException(4041, "Question " + item.getQuestionId() + " does not exist");
             }
+            requireQuestionAccessible(item.getQuestionId());
             PaperQuestion entity = new PaperQuestion();
             entity.setPaperId(paperId);
             entity.setQuestionId(item.getQuestionId());
@@ -144,5 +154,15 @@ public class ExamPaperServiceImpl implements ExamPaperService {
                 .publishStatus(entity.getPublishStatus())
                 .questionItems(items)
                 .build();
+    }
+
+    private void requireQuestionAccessible(Long questionId) {
+        QuestionBank question = questionBankMapper.selectById(questionId);
+        if (question == null) {
+            throw new BusinessException(4041, "Question " + questionId + " does not exist");
+        }
+        if (!accessScopeService.isAdmin()) {
+            accessScopeService.assertOrganizationAccessible(question.getOrganizationId());
+        }
     }
 }

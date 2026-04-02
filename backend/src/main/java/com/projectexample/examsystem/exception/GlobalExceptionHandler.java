@@ -1,6 +1,10 @@
 package com.projectexample.examsystem.exception;
 
 import com.projectexample.examsystem.common.ApiResponse;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -27,6 +31,12 @@ public class GlobalExceptionHandler {
         FieldError fieldError = exception.getBindingResult().getFieldError();
         String message = fieldError == null ? "Request binding failed" : fieldError.getDefaultMessage();
         return ApiResponse.failure(4000, message);
+    }
+
+    @ExceptionHandler({AccessDeniedException.class, AuthorizationDeniedException.class})
+    public ResponseEntity<ApiResponse<Void>> handleAccessDenied(Exception exception) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.failure(4030, "Access Denied"));
     }
 
     @ExceptionHandler(Exception.class)

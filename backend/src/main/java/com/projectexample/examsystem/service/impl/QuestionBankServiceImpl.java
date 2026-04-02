@@ -6,6 +6,7 @@ import com.projectexample.examsystem.dto.QuestionBankSaveRequest;
 import com.projectexample.examsystem.entity.QuestionBank;
 import com.projectexample.examsystem.exception.BusinessException;
 import com.projectexample.examsystem.mapper.QuestionBankMapper;
+import com.projectexample.examsystem.security.AccessScopeService;
 import com.projectexample.examsystem.service.QuestionBankService;
 import com.projectexample.examsystem.vo.QuestionBankVO;
 import lombok.RequiredArgsConstructor;
@@ -18,10 +19,14 @@ import java.util.List;
 public class QuestionBankServiceImpl implements QuestionBankService {
 
     private final QuestionBankMapper questionBankMapper;
+    private final AccessScopeService accessScopeService;
 
     @Override
     public List<QuestionBankVO> listQuestions() {
-        return questionBankMapper.selectList(Wrappers.lambdaQuery(QuestionBank.class).orderByDesc(QuestionBank::getUpdateTime))
+        List<Long> accessibleIds = accessScopeService.accessibleOrganizationIds();
+        return questionBankMapper.selectList(Wrappers.lambdaQuery(QuestionBank.class)
+                        .in(!accessScopeService.isAdmin(), QuestionBank::getOrganizationId, accessibleIds)
+                        .orderByDesc(QuestionBank::getUpdateTime))
                 .stream()
                 .map(this::toVO)
                 .toList();
@@ -66,10 +71,14 @@ public class QuestionBankServiceImpl implements QuestionBankService {
         if (entity == null) {
             throw new BusinessException(4040, "Question record not found");
         }
+        if (!accessScopeService.isAdmin()) {
+            accessScopeService.assertOrganizationAccessible(entity.getOrganizationId());
+        }
         return entity;
     }
 
     private void apply(QuestionBank entity, QuestionBankSaveRequest request) {
+        entity.setOrganizationId(accessScopeService.currentUser().getOrganizationId());
         entity.setQuestionCode(request.getQuestionCode());
         entity.setSubject(request.getSubject());
         entity.setQuestionType(request.getQuestionType());

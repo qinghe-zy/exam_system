@@ -2,22 +2,25 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import { useAuthStore } from '../stores/auth'
 import AdminLayout from '../layouts/AdminLayout.vue'
-import DashboardView from '../views/dashboard/DashboardView.vue'
-import AnalysisView from '../views/exam/AnalysisView.vue'
-import CandidateExamView from '../views/exam/CandidateExamView.vue'
-import ExamPaperView from '../views/exam/ExamPaperView.vue'
-import ExamPlanView from '../views/exam/ExamPlanView.vue'
-import ExamRecordView from '../views/exam/ExamRecordView.vue'
-import GradingView from '../views/exam/GradingView.vue'
-import ProctorView from '../views/exam/ProctorView.vue'
-import LoginView from '../views/login/LoginView.vue'
-import NoticeView from '../views/notices/NoticeView.vue'
-import QuestionBankView from '../views/exam/QuestionBankView.vue'
-import MenuView from '../views/system/MenuView.vue'
-import AuditLogView from '../views/system/AuditLogView.vue'
-import OrganizationView from '../views/system/OrganizationView.vue'
-import RoleView from '../views/system/RoleView.vue'
-import UserView from '../views/system/UserView.vue'
+
+const DashboardView = () => import('../views/dashboard/DashboardView.vue')
+const AnalysisView = () => import('../views/exam/AnalysisView.vue')
+const CandidateExamView = () => import('../views/exam/CandidateExamView.vue')
+const ExamPaperView = () => import('../views/exam/ExamPaperView.vue')
+const ExamPlanView = () => import('../views/exam/ExamPlanView.vue')
+const ExamRecordView = () => import('../views/exam/ExamRecordView.vue')
+const GradingView = () => import('../views/exam/GradingView.vue')
+const ProctorView = () => import('../views/exam/ProctorView.vue')
+const LoginView = () => import('../views/login/LoginView.vue')
+const MessageCenterView = () => import('../views/notices/MessageCenterView.vue')
+const NoticeView = () => import('../views/notices/NoticeView.vue')
+const QuestionBankView = () => import('../views/exam/QuestionBankView.vue')
+const MenuView = () => import('../views/system/MenuView.vue')
+const AuditLogView = () => import('../views/system/AuditLogView.vue')
+const ConfigCenterView = () => import('../views/system/ConfigCenterView.vue')
+const OrganizationView = () => import('../views/system/OrganizationView.vue')
+const RoleView = () => import('../views/system/RoleView.vue')
+const UserView = () => import('../views/system/UserView.vue')
 
 const router = createRouter({
   history: createWebHistory(),
@@ -74,10 +77,22 @@ const router = createRouter({
           meta: { title: 'Audit Logs' }
         },
         {
+          path: 'system/config-center',
+          name: 'system-config-center',
+          component: ConfigCenterView,
+          meta: { title: 'Config Center' }
+        },
+        {
           path: 'notices',
           name: 'notices',
           component: NoticeView,
           meta: { title: 'Notices' }
+        },
+        {
+          path: 'messages',
+          name: 'messages',
+          component: MessageCenterView,
+          meta: { title: 'Message Center' }
         },
         {
           path: 'exam/questions',

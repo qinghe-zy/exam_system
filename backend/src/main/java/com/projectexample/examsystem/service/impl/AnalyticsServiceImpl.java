@@ -11,6 +11,7 @@ import com.projectexample.examsystem.mapper.AnswerSheetMapper;
 import com.projectexample.examsystem.mapper.ExamPlanMapper;
 import com.projectexample.examsystem.mapper.ExamRecordMapper;
 import com.projectexample.examsystem.mapper.QuestionBankMapper;
+import com.projectexample.examsystem.security.AccessScopeService;
 import com.projectexample.examsystem.service.AnalyticsService;
 import com.projectexample.examsystem.vo.AnalysisOverviewVO;
 import com.projectexample.examsystem.vo.ExamPerformanceVO;
@@ -36,12 +37,22 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     private final ExamRecordMapper examRecordMapper;
     private final AnswerItemMapper answerItemMapper;
     private final QuestionBankMapper questionBankMapper;
+    private final AccessScopeService accessScopeService;
 
     @Override
     public AnalysisOverviewVO getOverview() {
-        List<ExamPlan> plans = examPlanMapper.selectList(Wrappers.lambdaQuery(ExamPlan.class).orderByDesc(ExamPlan::getStartTime, ExamPlan::getId));
-        List<ExamRecord> records = examRecordMapper.selectList(null);
-        List<AnswerItem> answerItems = answerItemMapper.selectList(null);
+        List<Long> accessibleOrgIds = accessScopeService.accessibleOrganizationIds();
+        List<ExamPlan> plans = examPlanMapper.selectList(Wrappers.lambdaQuery(ExamPlan.class)
+                .in(!accessScopeService.isAdmin(), ExamPlan::getOrganizationId, accessibleOrgIds)
+                .orderByDesc(ExamPlan::getStartTime, ExamPlan::getId));
+        List<Long> planIds = plans.stream().map(ExamPlan::getId).toList();
+        List<ExamRecord> records = examRecordMapper.selectList(Wrappers.lambdaQuery(ExamRecord.class)
+                .in(!accessScopeService.isAdmin(), ExamRecord::getExamPlanId, planIds.isEmpty() ? List.of(-1L) : planIds));
+        List<Long> answerSheetIds = answerSheetMapper.selectList(Wrappers.lambdaQuery(AnswerSheet.class)
+                .in(!accessScopeService.isAdmin(), AnswerSheet::getExamPlanId, planIds.isEmpty() ? List.of(-1L) : planIds))
+                .stream().map(AnswerSheet::getId).toList();
+        List<AnswerItem> answerItems = answerItemMapper.selectList(Wrappers.lambdaQuery(AnswerItem.class)
+                .in(!accessScopeService.isAdmin(), AnswerItem::getAnswerSheetId, answerSheetIds.isEmpty() ? List.of(-1L) : answerSheetIds));
         Map<Long, QuestionBank> questionMap = questionBankMapper.selectBatchIds(answerItems.stream().map(AnswerItem::getQuestionId).distinct().toList())
                 .stream()
                 .collect(Collectors.toMap(QuestionBank::getId, Function.identity()));

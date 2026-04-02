@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   BellFilled,
   Calendar,
+  ChatDotRound,
   Collection,
   DataLine,
   Document,
@@ -16,6 +17,7 @@ import {
   Reading,
   Setting,
   Tickets,
+  Tools,
   User,
   Warning
 } from '@element-plus/icons-vue'
@@ -33,6 +35,7 @@ const iconMap: Record<string, Component> = {
   User,
   Collection,
   Calendar,
+  ChatDotRound,
   EditPen,
   DataLine,
   OfficeBuilding,
@@ -42,6 +45,7 @@ const iconMap: Record<string, Component> = {
   Document,
   Histogram,
   Tickets,
+  Tools,
   Warning
 }
 

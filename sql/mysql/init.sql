@@ -1,4 +1,7 @@
 DROP TABLE IF EXISTS biz_audit_log;
+DROP TABLE IF EXISTS biz_in_app_message;
+DROP TABLE IF EXISTS sys_dictionary_item;
+DROP TABLE IF EXISTS sys_config_item;
 DROP TABLE IF EXISTS biz_anti_cheat_event;
 DROP TABLE IF EXISTS biz_grading_record;
 DROP TABLE IF EXISTS biz_answer_item;
@@ -79,6 +82,32 @@ CREATE TABLE biz_notice (
     status INT NOT NULL DEFAULT 1,
     content TEXT NOT NULL,
     publish_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE sys_config_item (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    config_key VARCHAR(128) NOT NULL,
+    config_name VARCHAR(128) NOT NULL,
+    config_group VARCHAR(64) NOT NULL,
+    config_value VARCHAR(500) NOT NULL,
+    description_text VARCHAR(500),
+    status INT NOT NULL DEFAULT 1,
+    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE sys_dictionary_item (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    dict_type VARCHAR(64) NOT NULL,
+    item_code VARCHAR(128) NOT NULL,
+    item_label VARCHAR(128) NOT NULL,
+    item_value VARCHAR(255),
+    sort_no INT NOT NULL DEFAULT 0,
+    status INT NOT NULL DEFAULT 1,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted INT NOT NULL DEFAULT 0
@@ -280,6 +309,20 @@ CREATE TABLE biz_audit_log (
     update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted INT NOT NULL DEFAULT 0
 );
+
+CREATE TABLE biz_in_app_message (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    recipient_user_id BIGINT NOT NULL,
+    title VARCHAR(128) NOT NULL,
+    message_type VARCHAR(64) NOT NULL,
+    content TEXT NOT NULL,
+    related_type VARCHAR(64),
+    related_id BIGINT,
+    read_flag INT NOT NULL DEFAULT 0,
+    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted INT NOT NULL DEFAULT 0
+);
 INSERT INTO biz_organization (id, org_code, org_name, org_type, parent_id, status, deleted) VALUES
     (1, 'QHU', 'Qinghe University', 'SCHOOL', 0, 1, 0),
     (2, 'QHU-CS', 'School of Computer Science', 'COLLEGE', 1, 1, 0),
@@ -310,21 +353,38 @@ INSERT INTO sys_menu (id, name, path, component, icon, permission_code, visible_
     (5, 'Roles', '/system/roles', 'system/RoleView', 'Collection', 'sys:role:view', 'ADMIN', 2, 3, 'PAGE', 0),
     (6, 'Menus', '/system/menus', 'system/MenuView', 'Menu', 'sys:menu:view', 'ADMIN', 2, 4, 'PAGE', 0),
     (7, 'Audit Logs', '/system/audit-logs', 'system/AuditLogView', 'Document', 'sys:audit:view', 'ADMIN,ORG_ADMIN', 2, 5, 'PAGE', 0),
-    (8, 'Exam Notices', '/notices', 'notices/NoticeView', 'Bell', 'biz:notice:view', 'ADMIN,ORG_ADMIN,TEACHER,GRADER,PROCTOR,STUDENT', 0, 3, 'MENU', 0),
-    (9, 'Exam Operations', '/exam', '', 'Reading', 'exam:view', 'ADMIN,ORG_ADMIN,TEACHER,GRADER,PROCTOR', 0, 4, 'MENU', 0),
-    (10, 'Question Bank', '/exam/questions', 'exam/QuestionBankView', 'Document', 'exam:question:view', 'ADMIN,ORG_ADMIN,TEACHER', 9, 1, 'PAGE', 0),
-    (11, 'Paper Studio', '/exam/papers', 'exam/ExamPaperView', 'Collection', 'exam:paper:view', 'ADMIN,ORG_ADMIN,TEACHER', 9, 2, 'PAGE', 0),
-    (12, 'Exam Plans', '/exam/plans', 'exam/ExamPlanView', 'Calendar', 'exam:plan:view', 'ADMIN,ORG_ADMIN,TEACHER', 9, 3, 'PAGE', 0),
-    (13, 'Grading Center', '/exam/grading', 'exam/GradingView', 'EditPen', 'exam:grading:view', 'ADMIN,ORG_ADMIN,GRADER,TEACHER', 9, 4, 'PAGE', 0),
-    (14, 'Score Center', '/exam/records', 'exam/ExamRecordView', 'Histogram', 'exam:record:view', 'ADMIN,ORG_ADMIN,TEACHER,GRADER', 9, 5, 'PAGE', 0),
-    (15, 'Analytics', '/exam/analytics', 'exam/AnalysisView', 'DataLine', 'exam:analytics:view', 'ADMIN,ORG_ADMIN,TEACHER', 9, 6, 'PAGE', 0),
-    (16, 'Candidate Center', '/candidate', '', 'Tickets', 'candidate:view', 'STUDENT', 0, 5, 'MENU', 0),
-    (17, 'My Exams', '/candidate/exams', 'exam/CandidateExamView', 'Tickets', 'candidate:exam:view', 'STUDENT', 16, 1, 'PAGE', 0),
-    (18, 'Proctor Events', '/exam/proctor', 'exam/ProctorView', 'Warning', 'exam:proctor:view', 'ADMIN,ORG_ADMIN,PROCTOR', 9, 7, 'PAGE', 0);
+    (8, 'Config Center', '/system/config-center', 'system/ConfigCenterView', 'Tools', 'sys:config:view', 'ADMIN,ORG_ADMIN', 2, 6, 'PAGE', 0),
+    (9, 'Exam Notices', '/notices', 'notices/NoticeView', 'Bell', 'biz:notice:view', 'ADMIN,ORG_ADMIN,TEACHER,GRADER,PROCTOR,STUDENT', 0, 3, 'MENU', 0),
+    (10, 'Message Center', '/messages', 'notices/MessageCenterView', 'ChatDotRound', 'biz:message:view', 'ADMIN,ORG_ADMIN,TEACHER,GRADER,PROCTOR,STUDENT', 0, 4, 'PAGE', 0),
+    (11, 'Exam Operations', '/exam', '', 'Reading', 'exam:view', 'ADMIN,ORG_ADMIN,TEACHER,GRADER,PROCTOR', 0, 5, 'MENU', 0),
+    (12, 'Question Bank', '/exam/questions', 'exam/QuestionBankView', 'Document', 'exam:question:view', 'ADMIN,ORG_ADMIN,TEACHER', 11, 1, 'PAGE', 0),
+    (13, 'Paper Studio', '/exam/papers', 'exam/ExamPaperView', 'Collection', 'exam:paper:view', 'ADMIN,ORG_ADMIN,TEACHER', 11, 2, 'PAGE', 0),
+    (14, 'Exam Plans', '/exam/plans', 'exam/ExamPlanView', 'Calendar', 'exam:plan:view', 'ADMIN,ORG_ADMIN,TEACHER', 11, 3, 'PAGE', 0),
+    (15, 'Grading Center', '/exam/grading', 'exam/GradingView', 'EditPen', 'exam:grading:view', 'ADMIN,ORG_ADMIN,GRADER,TEACHER', 11, 4, 'PAGE', 0),
+    (16, 'Score Center', '/exam/records', 'exam/ExamRecordView', 'Histogram', 'exam:record:view', 'ADMIN,ORG_ADMIN,TEACHER,GRADER', 11, 5, 'PAGE', 0),
+    (17, 'Analytics', '/exam/analytics', 'exam/AnalysisView', 'DataLine', 'exam:analytics:view', 'ADMIN,ORG_ADMIN,TEACHER', 11, 6, 'PAGE', 0),
+    (18, 'Candidate Center', '/candidate', '', 'Tickets', 'candidate:view', 'STUDENT', 0, 6, 'MENU', 0),
+    (19, 'My Exams', '/candidate/exams', 'exam/CandidateExamView', 'Tickets', 'candidate:exam:view', 'STUDENT', 18, 1, 'PAGE', 0),
+    (20, 'Proctor Events', '/exam/proctor', 'exam/ProctorView', 'Warning', 'exam:proctor:view', 'ADMIN,ORG_ADMIN,PROCTOR', 11, 7, 'PAGE', 0);
 
 INSERT INTO biz_notice (id, title, category, status, content, deleted) VALUES
     (1, 'Midterm window published', 'exam', 1, 'The Spring term midterm examination window has been published for Software Engineering Class 2401.', 0),
     (2, 'Grading handoff ready', 'grading', 1, 'Subjective grading tasks are assigned to the grading team after objective scoring completes.', 0);
+
+INSERT INTO sys_config_item (id, config_key, config_name, config_group, config_value, description_text, status, deleted) VALUES
+    (1, 'exam.auto.save.interval.seconds', '考试自动保存间隔', 'exam', '20', '前端自动保存答题内容的秒数间隔', 1, 0),
+    (2, 'exam.max.attempt.limit', '单场考试最大参考次数', 'exam', '3', '默认允许的最大参考次数上限', 1, 0),
+    (3, 'notice.message.enabled', '站内消息开关', 'notice', 'true', '是否启用站内消息中心', 1, 0);
+
+INSERT INTO sys_dictionary_item (id, dict_type, item_code, item_label, item_value, sort_no, status, deleted) VALUES
+    (1, 'question_type', 'SINGLE_CHOICE', '单选题', 'SINGLE_CHOICE', 1, 1, 0),
+    (2, 'question_type', 'MULTIPLE_CHOICE', '多选题', 'MULTIPLE_CHOICE', 2, 1, 0),
+    (3, 'question_type', 'TRUE_FALSE', '判断题', 'TRUE_FALSE', 3, 1, 0),
+    (4, 'question_type', 'SHORT_ANSWER', '简答题', 'SHORT_ANSWER', 4, 1, 0),
+    (5, 'question_tag', 'architecture', '架构设计', 'architecture', 1, 1, 0),
+    (6, 'question_tag', 'testing', '测试质量', 'testing', 2, 1, 0),
+    (7, 'notice_category', 'exam_publish', '考试发布提醒', 'exam_publish', 1, 1, 0),
+    (8, 'notice_category', 'score_publish', '成绩发布提醒', 'score_publish', 2, 1, 0);
 
 INSERT INTO biz_question_bank (id, question_code, organization_id, subject, question_type, difficulty_level, stem, options_json, answer_key, analysis_text, knowledge_point, chapter_name, source_name, tags, default_score, reviewer_status, version_no, status, deleted) VALUES
     (1, 'Q-JAVA-001', 2, 'Java Web', 'SINGLE_CHOICE', 'MEDIUM', 'Which annotation marks a Spring MVC controller class?', '[""@Controller"", ""@Service"", ""@Component"", ""@Mapper""]', '@Controller', 'Spring MVC request entry is typically a controller class annotated with @Controller or @RestController.', 'Spring MVC', 'Web Layer', 'Internal Bank', 'spring,mvc,controller', 20, 'APPROVED', 1, 1, 0),
@@ -373,3 +433,7 @@ INSERT INTO biz_anti_cheat_event (id, exam_plan_id, answer_sheet_id, user_id, ev
 INSERT INTO biz_audit_log (id, operator_id, operator_name, module_name, action_name, target_type, target_id, detail_text, deleted) VALUES
     (1, 3, 'Liu Teacher', 'QUESTION_BANK', 'CREATE', 'QUESTION', 4, 'Added architecture short-answer question to the spring midterm pool.', 0),
     (2, 3, 'Liu Teacher', 'EXAM_PLAN', 'PUBLISH', 'EXAM_PLAN', 1, 'Published Spring Midterm Live Exam for Software Engineering Class 2401.', 0);
+
+INSERT INTO biz_in_app_message (id, recipient_user_id, title, message_type, content, related_type, related_id, read_flag, deleted) VALUES
+    (1, 6, '考试发布提醒', 'EXAM_PUBLISH', '你已被分配到 Spring Midterm Live Exam，请按时参加考试。', 'EXAM_PLAN', 1, 0, 0),
+    (2, 7, '成绩发布提醒', 'SCORE_PUBLISH', '你的 Spring Midterm Live Exam 成绩已发布，请及时查看。', 'SCORE_RECORD', 1, 0, 0);

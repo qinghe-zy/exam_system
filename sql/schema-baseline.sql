@@ -1,4 +1,7 @@
 DROP TABLE IF EXISTS biz_audit_log;
+DROP TABLE IF EXISTS biz_in_app_message;
+DROP TABLE IF EXISTS sys_dictionary_item;
+DROP TABLE IF EXISTS sys_config_item;
 DROP TABLE IF EXISTS biz_anti_cheat_event;
 DROP TABLE IF EXISTS biz_grading_record;
 DROP TABLE IF EXISTS biz_answer_item;
@@ -79,6 +82,32 @@ CREATE TABLE biz_notice (
     status INT NOT NULL DEFAULT 1,
     content TEXT NOT NULL,
     publish_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE sys_config_item (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    config_key VARCHAR(128) NOT NULL,
+    config_name VARCHAR(128) NOT NULL,
+    config_group VARCHAR(64) NOT NULL,
+    config_value VARCHAR(500) NOT NULL,
+    description_text VARCHAR(500),
+    status INT NOT NULL DEFAULT 1,
+    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE sys_dictionary_item (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    dict_type VARCHAR(64) NOT NULL,
+    item_code VARCHAR(128) NOT NULL,
+    item_label VARCHAR(128) NOT NULL,
+    item_value VARCHAR(255),
+    sort_no INT NOT NULL DEFAULT 0,
+    status INT NOT NULL DEFAULT 1,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted INT NOT NULL DEFAULT 0
@@ -276,6 +305,20 @@ CREATE TABLE biz_audit_log (
     target_type VARCHAR(64) NOT NULL,
     target_id BIGINT,
     detail_text VARCHAR(1000),
+    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE biz_in_app_message (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    recipient_user_id BIGINT NOT NULL,
+    title VARCHAR(128) NOT NULL,
+    message_type VARCHAR(64) NOT NULL,
+    content TEXT NOT NULL,
+    related_type VARCHAR(64),
+    related_id BIGINT,
+    read_flag INT NOT NULL DEFAULT 0,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted INT NOT NULL DEFAULT 0

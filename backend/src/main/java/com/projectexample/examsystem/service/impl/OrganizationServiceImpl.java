@@ -5,6 +5,7 @@ import com.projectexample.examsystem.dto.OrganizationSaveRequest;
 import com.projectexample.examsystem.entity.Organization;
 import com.projectexample.examsystem.exception.BusinessException;
 import com.projectexample.examsystem.mapper.OrganizationMapper;
+import com.projectexample.examsystem.security.AccessScopeService;
 import com.projectexample.examsystem.service.OrganizationService;
 import com.projectexample.examsystem.vo.OrganizationVO;
 import lombok.RequiredArgsConstructor;
@@ -20,15 +21,22 @@ import java.util.stream.Collectors;
 public class OrganizationServiceImpl implements OrganizationService {
 
     private final OrganizationMapper organizationMapper;
+    private final AccessScopeService accessScopeService;
 
     @Override
     public List<OrganizationVO> listOrganizations() {
-        return buildTree(organizationMapper.selectList(Wrappers.lambdaQuery(Organization.class)
-                .orderByAsc(Organization::getParentId, Organization::getId)));
+        List<Long> accessibleIds = accessScopeService.accessibleOrganizationIds();
+        List<Organization> scoped = organizationMapper.selectList(Wrappers.lambdaQuery(Organization.class)
+                .in(!accessScopeService.isAdmin(), Organization::getId, accessibleIds)
+                .orderByAsc(Organization::getParentId, Organization::getId));
+        return accessScopeService.isAdmin()
+                ? buildTree(scoped)
+                : buildScopedTree(scoped, accessScopeService.currentOrganizationId());
     }
 
     @Override
     public OrganizationVO createOrganization(OrganizationSaveRequest request) {
+        accessScopeService.assertOrganizationAccessible(request.getParentId());
         Organization entity = new Organization();
         apply(entity, request);
         organizationMapper.insert(entity);
@@ -38,6 +46,8 @@ public class OrganizationServiceImpl implements OrganizationService {
     @Override
     public OrganizationVO updateOrganization(Long id, OrganizationSaveRequest request) {
         Organization entity = requireEntity(id);
+        accessScopeService.assertOrganizationAccessible(entity.getId());
+        accessScopeService.assertOrganizationAccessible(request.getParentId());
         apply(entity, request);
         organizationMapper.updateById(entity);
         return toVO(requireEntity(id));
@@ -46,6 +56,7 @@ public class OrganizationServiceImpl implements OrganizationService {
     @Override
     public void deleteOrganization(Long id) {
         requireEntity(id);
+        accessScopeService.assertOrganizationAccessible(id);
         long children = organizationMapper.selectCount(Wrappers.lambdaQuery(Organization.class).eq(Organization::getParentId, id));
         if (children > 0) {
             throw new BusinessException(4008, "Please delete child organizations first");
@@ -75,6 +86,19 @@ public class OrganizationServiceImpl implements OrganizationService {
                 .sorted(Comparator.comparing(OrganizationVO::getId))
                 .collect(Collectors.groupingBy(item -> item.getParentId() == null ? 0L : item.getParentId()));
         List<OrganizationVO> roots = grouped.getOrDefault(0L, List.of());
+        roots.forEach(root -> attach(root, grouped));
+        return roots;
+    }
+
+    private List<OrganizationVO> buildScopedTree(List<Organization> organizations, Long rootId) {
+        Map<Long, List<OrganizationVO>> grouped = organizations.stream()
+                .map(this::toVO)
+                .sorted(Comparator.comparing(OrganizationVO::getId))
+                .collect(Collectors.groupingBy(item -> item.getParentId() == null ? 0L : item.getParentId()));
+        List<OrganizationVO> roots = organizations.stream()
+                .filter(item -> item.getId().equals(rootId))
+                .map(this::toVO)
+                .toList();
         roots.forEach(root -> attach(root, grouped));
         return roots;
     }

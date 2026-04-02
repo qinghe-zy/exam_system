@@ -9,6 +9,7 @@ import com.projectexample.examsystem.entity.SysUser;
 import com.projectexample.examsystem.exception.BusinessException;
 import com.projectexample.examsystem.mapper.OrganizationMapper;
 import com.projectexample.examsystem.mapper.SysUserMapper;
+import com.projectexample.examsystem.security.AccessScopeService;
 import com.projectexample.examsystem.service.SysUserService;
 import com.projectexample.examsystem.vo.CandidateImportResultVO;
 import com.projectexample.examsystem.vo.SysUserVO;
@@ -27,6 +28,7 @@ public class SysUserServiceImpl implements SysUserService {
     private final SysUserMapper sysUserMapper;
     private final OrganizationMapper organizationMapper;
     private final PasswordEncoder passwordEncoder;
+    private final AccessScopeService accessScopeService;
 
     @Override
     public SysUser findByUsername(String username) {
@@ -37,7 +39,9 @@ public class SysUserServiceImpl implements SysUserService {
 
     @Override
     public List<SysUserVO> listUsers() {
+        List<Long> accessibleIds = accessScopeService.accessibleOrganizationIds();
         return sysUserMapper.selectList(Wrappers.lambdaQuery(SysUser.class)
+                        .in(!accessScopeService.isAdmin(), SysUser::getOrganizationId, accessibleIds)
                         .orderByAsc(SysUser::getId))
                 .stream()
                 .map(this::toVO)
@@ -49,6 +53,7 @@ public class SysUserServiceImpl implements SysUserService {
         if (findByUsername(request.getUsername()) != null) {
             throw new BusinessException(4009, "Username already exists");
         }
+        accessScopeService.assertOrganizationAccessible(request.getOrganizationId());
         SysUser entity = new SysUser();
         apply(entity, request, true);
         sysUserMapper.insert(entity);
@@ -58,10 +63,12 @@ public class SysUserServiceImpl implements SysUserService {
     @Override
     public SysUserVO updateUser(Long id, SysUserSaveRequest request) {
         SysUser entity = requireEntity(id);
+        accessScopeService.assertOrganizationAccessible(entity.getOrganizationId());
         SysUser duplicate = findByUsername(request.getUsername());
         if (duplicate != null && !duplicate.getId().equals(id)) {
             throw new BusinessException(4009, "Username already exists");
         }
+        accessScopeService.assertOrganizationAccessible(request.getOrganizationId());
         apply(entity, request, false);
         sysUserMapper.updateById(entity);
         return toVO(requireEntity(id));
@@ -75,6 +82,7 @@ public class SysUserServiceImpl implements SysUserService {
             if (existing != null) {
                 throw new BusinessException(4011, "Duplicate username in import: " + item.getUsername());
             }
+            accessScopeService.assertOrganizationAccessible(item.getOrganizationId());
             Organization organization = requireOrganization(item.getOrganizationId());
             SysUser entity = new SysUser();
             entity.setUsername(item.getUsername());
@@ -102,6 +110,9 @@ public class SysUserServiceImpl implements SysUserService {
         SysUser entity = sysUserMapper.selectById(id);
         if (entity == null) {
             throw new BusinessException(4040, "User not found");
+        }
+        if (!accessScopeService.isAdmin()) {
+            accessScopeService.assertOrganizationAccessible(entity.getOrganizationId());
         }
         return entity;
     }

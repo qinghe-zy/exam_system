@@ -1,37 +1,49 @@
 # 核心接口流程说明
 
-## 一、登录与权限
-### 登录
-- 路径：`POST /api/auth/login`
-- 用途：获取 JWT，供后续接口调用
-- 返回：`token` 与当前用户信息
+## 一、认证与权限
+- `POST /api/auth/login`：登录获取 JWT
+- `GET /api/auth/me`：获取当前用户
+- `POST /api/auth/logout`：退出登录
 
-### 当前用户
-- 路径：`GET /api/auth/me`
-- 用途：获取当前登录用户身份信息
-
-## 二、系统管理接口
+## 二、系统管理
 ### 组织管理
-- `GET /api/system/organizations`：查询组织树
-- `POST /api/system/organizations`：新增组织
-- `PUT /api/system/organizations/{id}`：更新组织
-- `DELETE /api/system/organizations/{id}`：删除组织
+- `GET /api/system/organizations`
+- `POST /api/system/organizations`
+- `PUT /api/system/organizations/{id}`
+- `DELETE /api/system/organizations/{id}`
 
 ### 用户管理
-- `GET /api/system/users`：查询用户列表
-- `POST /api/system/users`：新增用户
-- `PUT /api/system/users/{id}`：更新用户
-- `POST /api/system/users/import-candidates`：批量导入考生
+- `GET /api/system/users`
+- `POST /api/system/users`
+- `PUT /api/system/users/{id}`
+- `POST /api/system/users/import-candidates`
 
-### 角色与菜单
+### 角色、菜单与审计
 - `GET /api/system/roles`
 - `GET /api/system/menus`
 - `GET /api/system/menus/current`
-
-### 审计日志
 - `GET /api/system/audit-logs`
 
-## 三、题库接口
+### 配置中心
+- `GET /api/system/config-center/configs`
+- `POST /api/system/config-center/configs`
+- `PUT /api/system/config-center/configs/{id}`
+- `DELETE /api/system/config-center/configs/{id}`
+- `GET /api/system/config-center/dictionaries`
+- `POST /api/system/config-center/dictionaries`
+- `PUT /api/system/config-center/dictionaries/{id}`
+- `DELETE /api/system/config-center/dictionaries/{id}`
+
+## 三、通知与消息
+- `GET /api/notices`
+- `GET /api/notices/{id}`
+- `POST /api/notices`
+- `PUT /api/notices/{id}`
+- `DELETE /api/notices/{id}`
+- `GET /api/messages/my`
+- `POST /api/messages/{id}/read`
+
+## 四、题库
 - `GET /api/exam/questions`
 - `GET /api/exam/questions/export`
 - `POST /api/exam/questions/import`
@@ -39,27 +51,25 @@
 - `PUT /api/exam/questions/{id}`
 - `DELETE /api/exam/questions/{id}`
 
-## 四、试卷接口
+## 五、试卷与考试
 - `GET /api/exam/papers`
 - `GET /api/exam/papers/{id}`
 - `POST /api/exam/papers`
 - `PUT /api/exam/papers/{id}`
 - `DELETE /api/exam/papers/{id}`
-
-## 五、考试发布接口
 - `GET /api/exam/plans`
 - `POST /api/exam/plans`
 - `PUT /api/exam/plans/{id}`
 - `DELETE /api/exam/plans/{id}`
 
-## 六、考生端接口
+## 六、考生端
 - `GET /api/exam/candidate/my-exams`
-- `GET /api/exam/candidate/exams/{examPlanId}`
+- `GET /api/exam/candidate/exams/{examPlanId}?examPassword=...`
 - `POST /api/exam/candidate/exams/{examPlanId}/save`
 - `POST /api/exam/candidate/exams/{examPlanId}/submit`
 - `POST /api/exam/candidate/exams/{examPlanId}/events`
 
-## 七、阅卷与分析接口
+## 七、阅卷、成绩与监考
 - `GET /api/exam/grading/tasks`
 - `GET /api/exam/grading/{answerSheetId}`
 - `POST /api/exam/grading/{answerSheetId}/submit`
@@ -67,12 +77,5 @@
 - `GET /api/exam/analytics/overview`
 - `GET /api/exam/proctor/events`
 
-## 八、通知接口
-- `GET /api/notices`
-- `GET /api/notices/{id}`
-- `POST /api/notices`
-- `PUT /api/notices/{id}`
-- `DELETE /api/notices/{id}`
-
-## 九、与实现一致性说明
-本文档中的接口路径已与当前 `controller` 层代码核对，当前版本可作为关键流程联调说明使用。
+## 八、一致性说明
+本文档已按当前 `controller` 层实际路径重新核对，能够对应到当前仓库中的真实接口实现。

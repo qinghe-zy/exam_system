@@ -1,0 +1,60 @@
+<script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import { ElMessage } from 'element-plus'
+
+import AppShellSection from '../../components/AppShellSection.vue'
+import { fetchMyMessages, markMessageRead, type InAppMessage } from '../../api/message'
+
+const loading = ref(false)
+const messages = ref<InAppMessage[]>([])
+
+async function loadData() {
+  loading.value = true
+  try {
+    messages.value = await fetchMyMessages()
+  } finally {
+    loading.value = false
+  }
+}
+
+async function markRead(id: number) {
+  await markMessageRead(id)
+  ElMessage.success('消息已标记为已读')
+  await loadData()
+}
+
+onMounted(loadData)
+</script>
+
+<template>
+  <AppShellSection
+    eyebrow="消息中心"
+    title="站内消息与流程提醒"
+    description="该页面展示考试发布提醒、成绩发布提醒等站内消息。当前版本先实现站内消息链路，邮件、短信、企业微信等外部通道仍为扩展位。"
+  >
+    <section class="panel-card section-card">
+      <el-table :data="messages" v-loading="loading">
+        <el-table-column prop="createTime" label="时间" min-width="180" />
+        <el-table-column prop="title" label="标题" min-width="180" />
+        <el-table-column prop="messageType" label="类型" min-width="140" />
+        <el-table-column prop="content" label="内容" min-width="320" show-overflow-tooltip />
+        <el-table-column label="状态" min-width="100">
+          <template #default="{ row }">
+            <el-tag :type="row.readFlag === 1 ? 'success' : 'warning'">{{ row.readFlag === 1 ? '已读' : '未读' }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" min-width="120" fixed="right">
+          <template #default="{ row }">
+            <el-button v-if="row.readFlag !== 1" link type="primary" @click="markRead(row.id)">标记已读</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </section>
+  </AppShellSection>
+</template>
+
+<style scoped>
+.section-card {
+  padding: 1rem;
+}
+</style>

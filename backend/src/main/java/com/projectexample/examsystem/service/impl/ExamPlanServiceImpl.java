@@ -6,13 +6,16 @@ import com.projectexample.examsystem.entity.AnswerSheet;
 import com.projectexample.examsystem.entity.ExamCandidate;
 import com.projectexample.examsystem.entity.ExamPlan;
 import com.projectexample.examsystem.entity.ExamPaper;
+import com.projectexample.examsystem.entity.InAppMessage;
 import com.projectexample.examsystem.entity.SysUser;
 import com.projectexample.examsystem.exception.BusinessException;
 import com.projectexample.examsystem.mapper.AnswerSheetMapper;
 import com.projectexample.examsystem.mapper.ExamCandidateMapper;
 import com.projectexample.examsystem.mapper.ExamPlanMapper;
 import com.projectexample.examsystem.mapper.ExamPaperMapper;
+import com.projectexample.examsystem.mapper.InAppMessageMapper;
 import com.projectexample.examsystem.mapper.SysUserMapper;
+import com.projectexample.examsystem.security.AccessScopeService;
 import com.projectexample.examsystem.service.ExamPlanService;
 import com.projectexample.examsystem.vo.ExamPlanVO;
 import lombok.RequiredArgsConstructor;
@@ -29,10 +32,15 @@ public class ExamPlanServiceImpl implements ExamPlanService {
     private final SysUserMapper sysUserMapper;
     private final ExamCandidateMapper examCandidateMapper;
     private final AnswerSheetMapper answerSheetMapper;
+    private final AccessScopeService accessScopeService;
+    private final InAppMessageMapper inAppMessageMapper;
 
     @Override
     public List<ExamPlanVO> listPlans() {
-        return examPlanMapper.selectList(Wrappers.lambdaQuery(ExamPlan.class).orderByDesc(ExamPlan::getStartTime, ExamPlan::getId))
+        List<Long> accessibleIds = accessScopeService.accessibleOrganizationIds();
+        return examPlanMapper.selectList(Wrappers.lambdaQuery(ExamPlan.class)
+                        .in(!accessScopeService.isAdmin(), ExamPlan::getOrganizationId, accessibleIds)
+                        .orderByDesc(ExamPlan::getStartTime, ExamPlan::getId))
                 .stream()
                 .map(this::toVO)
                 .toList();
@@ -45,6 +53,7 @@ public class ExamPlanServiceImpl implements ExamPlanService {
         apply(entity, request, paper);
         examPlanMapper.insert(entity);
         replaceCandidates(entity.getId(), request.getCandidateUserIds());
+        publishMessagesIfNeeded(entity.getId(), entity.getExamName(), request.getPublishStatus());
         return toVO(requirePlan(entity.getId()));
     }
 
@@ -55,6 +64,7 @@ public class ExamPlanServiceImpl implements ExamPlanService {
         apply(entity, request, paper);
         examPlanMapper.updateById(entity);
         replaceCandidates(id, request.getCandidateUserIds());
+        publishMessagesIfNeeded(id, entity.getExamName(), request.getPublishStatus());
         return toVO(requirePlan(id));
     }
 
@@ -70,6 +80,9 @@ public class ExamPlanServiceImpl implements ExamPlanService {
         if (plan == null) {
             throw new BusinessException(4040, "Exam plan not found");
         }
+        if (!accessScopeService.isAdmin()) {
+            accessScopeService.assertOrganizationAccessible(plan.getOrganizationId());
+        }
         return plan;
     }
 
@@ -82,6 +95,7 @@ public class ExamPlanServiceImpl implements ExamPlanService {
     }
 
     private void apply(ExamPlan entity, ExamPlanSaveRequest request, ExamPaper paper) {
+        entity.setOrganizationId(paper.getOrganizationId() == null ? accessScopeService.currentUser().getOrganizationId() : paper.getOrganizationId());
         entity.setExamCode(request.getExamCode());
         entity.setExamName(request.getExamName());
         entity.setPaperId(paper.getId());
@@ -109,6 +123,9 @@ public class ExamPlanServiceImpl implements ExamPlanService {
             SysUser user = sysUserMapper.selectById(userId);
             if (user == null) {
                 throw new BusinessException(4042, "Candidate user not found: " + userId);
+            }
+            if (!accessScopeService.isAdmin()) {
+                accessScopeService.assertOrganizationAccessible(user.getOrganizationId());
             }
             ExamCandidate candidate = new ExamCandidate();
             candidate.setExamPlanId(examPlanId);
@@ -153,5 +170,24 @@ public class ExamPlanServiceImpl implements ExamPlanService {
                 .submittedCount((int) submittedCount)
                 .candidateUserIds(candidates.stream().map(ExamCandidate::getUserId).toList())
                 .build();
+    }
+
+    private void publishMessagesIfNeeded(Long examPlanId, String examName, Integer publishStatus) {
+        if (publishStatus == null || publishStatus != 1) {
+            return;
+        }
+        List<ExamCandidate> candidates = examCandidateMapper.selectList(Wrappers.lambdaQuery(ExamCandidate.class)
+                .eq(ExamCandidate::getExamPlanId, examPlanId));
+        for (ExamCandidate candidate : candidates) {
+            InAppMessage message = new InAppMessage();
+            message.setRecipientUserId(candidate.getUserId());
+            message.setTitle("考试发布提醒");
+            message.setMessageType("EXAM_PUBLISH");
+            message.setContent("你已被分配到考试《" + examName + "》，请按考试计划准时参加。");
+            message.setRelatedType("EXAM_PLAN");
+            message.setRelatedId(examPlanId);
+            message.setReadFlag(0);
+            inAppMessageMapper.insert(message);
+        }
     }
 }

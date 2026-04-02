@@ -31,6 +31,26 @@ export interface AuditLogRecord {
   createTime: string
 }
 
+export interface ConfigItemRecord {
+  id: number
+  configKey: string
+  configName: string
+  configGroup: string
+  configValue: string
+  descriptionText?: string
+  status: number
+}
+
+export interface DictionaryItemRecord {
+  id: number
+  dictType: string
+  itemCode: string
+  itemLabel: string
+  itemValue?: string
+  sortNo: number
+  status: number
+}
+
 export interface OrganizationNode {
   id: number
   orgCode: string
@@ -146,4 +166,36 @@ export function fetchCurrentMenus() {
 
 export function fetchAuditLogs() {
   return http.get<never, AuditLogRecord[]>('/api/system/audit-logs')
+}
+
+export function fetchConfigItems() {
+  return http.get<never, ConfigItemRecord[]>('/api/system/config-center/configs')
+}
+
+export function createConfigItem(payload: Omit<ConfigItemRecord, 'id'>) {
+  return http.post<never, ConfigItemRecord>('/api/system/config-center/configs', payload)
+}
+
+export function updateConfigItem(id: number, payload: Omit<ConfigItemRecord, 'id'>) {
+  return http.put<never, ConfigItemRecord>(`/api/system/config-center/configs/${id}`, payload)
+}
+
+export function deleteConfigItem(id: number) {
+  return http.delete(`/api/system/config-center/configs/${id}`)
+}
+
+export function fetchDictionaryItems() {
+  return http.get<never, DictionaryItemRecord[]>('/api/system/config-center/dictionaries')
+}
+
+export function createDictionaryItem(payload: Omit<DictionaryItemRecord, 'id'>) {
+  return http.post<never, DictionaryItemRecord>('/api/system/config-center/dictionaries', payload)
+}
+
+export function updateDictionaryItem(id: number, payload: Omit<DictionaryItemRecord, 'id'>) {
+  return http.put<never, DictionaryItemRecord>(`/api/system/config-center/dictionaries/${id}`, payload)
+}
+
+export function deleteDictionaryItem(id: number) {
+  return http.delete(`/api/system/config-center/dictionaries/${id}`)
 }

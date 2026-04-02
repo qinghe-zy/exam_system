@@ -43,6 +43,7 @@ frontend/.env.*.local
 # Test outputs
 coverage/
 playwright-report/
+test-results/
 
 # Database dumps
 *.sql.bak
