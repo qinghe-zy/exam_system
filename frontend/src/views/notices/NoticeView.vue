@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 
 import {
@@ -12,6 +12,9 @@ import {
   type NoticePayload
 } from '../../api/notice'
 import AppShellSection from '../../components/AppShellSection.vue'
+import { useAuthStore } from '../../stores/auth'
+
+const authStore = useAuthStore()
 
 const loading = ref(false)
 const dialogVisible = ref(false)
@@ -37,6 +40,8 @@ const form = reactive<NoticePayload>({
   status: 1,
   content: ''
 })
+
+const canManageNotice = computed(() => ['ADMIN', 'ORG_ADMIN', 'TEACHER'].includes(authStore.currentUser?.roleCode || ''))
 
 const rules: FormRules<typeof form> = {
   title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
@@ -140,7 +145,7 @@ onMounted(loadPage)
         <div class="filter-actions">
           <el-button type="primary" @click="handleSearch">查询</el-button>
           <el-button @click="handleReset">重置</el-button>
-          <el-button type="success" @click="openCreateDialog">新建公告</el-button>
+          <el-button v-if="canManageNotice" type="success" @click="openCreateDialog">新建公告</el-button>
         </div>
       </div>
     </section>
@@ -159,8 +164,11 @@ onMounted(loadPage)
         <el-table-column prop="updateTime" label="更新时间" min-width="180" />
         <el-table-column label="操作" min-width="180" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openEditDialog(row.id)">编辑</el-button>
-            <el-button link type="danger" @click="handleDelete(row.id)">删除</el-button>
+            <template v-if="canManageNotice">
+              <el-button link type="primary" @click="openEditDialog(row.id)">编辑</el-button>
+              <el-button link type="danger" @click="handleDelete(row.id)">删除</el-button>
+            </template>
+            <span v-else class="muted">仅查看</span>
           </template>
         </el-table-column>
       </el-table>

@@ -5,6 +5,7 @@ import com.projectexample.examsystem.security.UserPrincipal;
 import com.projectexample.examsystem.service.SysMenuService;
 import com.projectexample.examsystem.vo.SysMenuVO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,6 +21,7 @@ public class SysMenuController {
     private final SysMenuService sysMenuService;
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','ORG_ADMIN')")
     public ApiResponse<List<SysMenuVO>> list() {
         return ApiResponse.success(sysMenuService.listMenus());
     }

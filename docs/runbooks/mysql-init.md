@@ -14,6 +14,7 @@
 - 全量初始化脚本：`sql/mysql/init.sql`
 - 当前无独立增量修复脚本
 - 若后续新增增量脚本，必须单独补充执行顺序与适用条件说明
+- 当前已提供临时库回归脚本：`scripts/verify-mysql-init.ps1`
 
 ## 四、回归步骤
 1. 删除旧库
@@ -22,13 +23,14 @@
 4. 检查组织、用户、角色、菜单、题库、考试、消息、配置、字典、反作弊事件等核心数据
 5. 使用 MySQL 模式启动后端
 6. 执行关键接口 smoke
+7. 如需自动化回归，可执行：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-mysql-init.ps1`
 
 ## 五、当前验证结果
 - 学科字典：8
 - 组织：12
 - 用户：74
 - 角色：6
-- 菜单：20
+- 菜单：21
 - 题目：320
 - 试卷：8
 - 考试计划：6

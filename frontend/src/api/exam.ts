@@ -7,6 +7,7 @@ import type {
   AiQuestionPolishResult,
   AntiCheatEvent,
   CandidateExam,
+  CandidateScoreDetail,
   CandidateExamWorkspace,
   ExamPaper,
   ExamPlan,
@@ -123,6 +124,14 @@ export function submitGrading(answerSheetId: number, gradeItems: { answerItemId:
 
 export function fetchExamRecords() {
   return http.get<never, ExamRecord[]>('/api/exam/records')
+}
+
+export function fetchMyExamRecords() {
+  return http.get<never, ExamRecord[]>('/api/exam/records/my')
+}
+
+export function fetchMyExamRecordDetail(id: number) {
+  return http.get<never, CandidateScoreDetail>(`/api/exam/records/my/${id}`)
 }
 
 export function fetchAnalysisOverview() {

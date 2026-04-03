@@ -4,7 +4,9 @@
 - 后端 compile/test/package 通过
 - 前端 build 通过
 - MySQL 空库重建导入通过
+- `scripts/verify-mysql-init.ps1` 通过
 - 关键 API smoke 通过
+- 浏览器级 E2E 通过
 - 文档已同步
 - `.gitignore` 与敏感配置检查通过
 

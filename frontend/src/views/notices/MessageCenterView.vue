@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useRouter } from 'vue-router'
 
 import AppShellSection from '../../components/AppShellSection.vue'
 import { fetchMyMessages, markMessageRead, type InAppMessage } from '../../api/message'
 import { labelMessageType } from '../../utils/labels'
 
+const router = useRouter()
 const loading = ref(false)
 const messages = ref<InAppMessage[]>([])
 
@@ -22,6 +24,21 @@ async function markRead(id: number) {
   await markMessageRead(id)
   ElMessage.success('消息已标记为已读')
   await loadData()
+}
+
+async function openRelated(message: InAppMessage) {
+  if (message.readFlag !== 1) {
+    await markRead(message.id)
+  }
+  if (message.relatedType === 'SCORE_RECORD' && message.relatedId) {
+    await router.push({ path: '/candidate/scores', query: { recordId: String(message.relatedId) } })
+    return
+  }
+  if (message.relatedType === 'EXAM_PLAN') {
+    await router.push('/candidate/exams')
+    return
+  }
+  ElMessage.info('当前消息没有可跳转的详情页面')
 }
 
 onMounted(loadData)
@@ -47,6 +64,7 @@ onMounted(loadData)
         <el-table-column label="操作" min-width="120" fixed="right">
           <template #default="{ row }">
             <el-button v-if="row.readFlag !== 1" link type="primary" @click="markRead(row.id)">标记已读</el-button>
+            <el-button link type="success" @click="openRelated(row)">查看详情</el-button>
           </template>
         </el-table-column>
       </el-table>

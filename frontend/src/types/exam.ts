@@ -202,6 +202,8 @@ export interface GradingWorkspace {
 
 export interface ExamRecord {
   id: number
+  examPlanId: number
+  answerSheetId: number
   candidateName: string
   examName: string
   paperName: string
@@ -212,6 +214,39 @@ export interface ExamRecord {
   passedFlag: number
   publishedFlag: number
   status: string
+}
+
+export interface CandidateScoreItem {
+  questionId: number
+  questionOrder: number
+  questionCode?: string
+  questionType: string
+  stem?: string
+  optionsJson?: string
+  answerContent?: string
+  referenceAnswer?: string
+  analysisText?: string
+  maxScore?: number
+  scoreAwarded?: number
+  status: string
+  reviewComment?: string
+}
+
+export interface CandidateScoreDetail {
+  id: number
+  examPlanId: number
+  answerSheetId: number
+  examName: string
+  paperName: string
+  candidateName: string
+  submittedAt: string
+  objectiveScore: number
+  subjectiveScore: number
+  finalScore: number
+  passedFlag: number
+  publishedFlag: number
+  status: string
+  items: CandidateScoreItem[]
 }
 
 export interface ExamPerformance {

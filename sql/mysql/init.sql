@@ -449,7 +449,8 @@ INSERT INTO sys_menu (id, name, path, component, icon, permission_code, visible_
     (17, '成绩分析', '/exam/analytics', 'exam/AnalysisView', 'DataLine', 'exam:analytics:view', 'ADMIN,ORG_ADMIN,TEACHER', 11, 6, 'PAGE', 0),
     (18, '考生中心', '/candidate', '', 'Tickets', 'candidate:view', 'STUDENT', 0, 6, 'MENU', 0),
     (19, '我的考试', '/candidate/exams', 'exam/CandidateExamView', 'Tickets', 'candidate:exam:view', 'STUDENT', 18, 1, 'PAGE', 0),
-    (20, '监考事件', '/exam/proctor', 'exam/ProctorView', 'Warning', 'exam:proctor:view', 'ADMIN,ORG_ADMIN,PROCTOR', 11, 7, 'PAGE', 0);
+    (20, '监考事件', '/exam/proctor', 'exam/ProctorView', 'Warning', 'exam:proctor:view', 'ADMIN,ORG_ADMIN,PROCTOR', 11, 7, 'PAGE', 0),
+    (21, '我的成绩', '/candidate/scores', 'exam/CandidateScoreView', 'Histogram', 'candidate:score:view', 'STUDENT', 18, 2, 'PAGE', 0);
 
 INSERT INTO biz_notice (id, title, category, status, content, deleted) VALUES
     (1, '期中考试发布通知', 'exam_publish', 1, '本学期期中考试安排已发布，请相关教师完成监考准备，学生按时查看考试计划。', 0),
@@ -1053,7 +1054,7 @@ INSERT INTO biz_exam_candidate (id, exam_plan_id, user_id, candidate_name, organ
     (60, 6, 74, '罗彤远', '历史地理综合一班', 'SUBMITTED', 'A0060', 1, 0);
 
 INSERT INTO biz_answer_sheet (id, exam_plan_id, paper_id, paper_name, user_id, candidate_name, started_at, submitted_at, status, objective_score, subjective_score, final_score, auto_submit_flag, save_version, deleted) VALUES
-    (1, 1, 1, '语文期中模拟卷', 15, '张晨琪', TIMESTAMP '2026-04-02 09:00:00', TIMESTAMP '2026-04-02 10:30:00', 'SUBMITTED', 20, 0, 20, 0, 3, 0),
+    (1, 1, 1, '语文期中模拟卷', 15, '张晨琪', TIMESTAMP '2026-04-02 09:00:00', TIMESTAMP '2026-04-02 10:30:00', 'GRADED', 20, 12, 32, 0, 3, 0),
     (2, 1, 1, '语文期中模拟卷', 21, '杨轩昊', TIMESTAMP '2026-04-03 09:00:00', TIMESTAMP '2026-04-03 10:30:00', 'SUBMITTED', 20, 0, 20, 0, 3, 0),
     (3, 2, 2, '数学期中模拟卷', 16, '王浩琳', TIMESTAMP '2026-04-04 09:00:00', TIMESTAMP '2026-04-04 10:30:00', 'SUBMITTED', 20, 0, 20, 0, 3, 0),
     (4, 2, 2, '数学期中模拟卷', 22, '黄杰祺', TIMESTAMP '2026-04-05 09:00:00', TIMESTAMP '2026-04-05 10:30:00', 'SUBMITTED', 20, 0, 20, 0, 3, 0),
@@ -1070,7 +1071,7 @@ INSERT INTO biz_answer_item (id, answer_sheet_id, question_id, question_type, qu
     (1, 1, 1, 'SINGLE_CHOICE', 1, '选项一：符合教材结论', 5, 5, 1, 1, '系统自动判分', 'AUTO_SCORED', 0),
     (2, 1, 2, 'MULTIPLE_CHOICE', 2, '说法一：符合教材结论|说法三：符合题意要求', 10, 10, 1, 1, '系统自动判分', 'AUTO_SCORED', 0),
     (3, 1, 3, 'TRUE_FALSE', 3, '正确', 5, 5, 1, 1, '系统自动判分', 'AUTO_SCORED', 0),
-    (4, 1, 4, 'SHORT_ANSWER', 4, '请围绕知识点概念、条件和应用进行概述。', 15, 0, 0, 0, NULL, 'PENDING_GRADING', 0),
+    (4, 1, 4, 'SHORT_ANSWER', 4, '请围绕知识点概念、条件和应用进行概述。', 15, 12, 0, 1, '主观题观点完整，表达较清晰。', 'GRADED', 0),
     (5, 2, 1, 'SINGLE_CHOICE', 1, '选项一：符合教材结论', 5, 5, 1, 1, '系统自动判分', 'AUTO_SCORED', 0),
     (6, 2, 2, 'MULTIPLE_CHOICE', 2, '说法一：符合教材结论|说法三：符合题意要求', 10, 10, 1, 1, '系统自动判分', 'AUTO_SCORED', 0),
     (7, 2, 3, 'TRUE_FALSE', 3, '正确', 5, 5, 1, 1, '系统自动判分', 'AUTO_SCORED', 0),
@@ -1117,7 +1118,7 @@ INSERT INTO biz_answer_item (id, answer_sheet_id, question_id, question_type, qu
     (48, 12, 244, 'SHORT_ANSWER', 4, '请围绕知识点概念、条件和应用进行概述。', 15, 0, 0, 0, NULL, 'PENDING_GRADING', 0);
 
 INSERT INTO biz_score_record (id, exam_plan_id, answer_sheet_id, user_id, candidate_name, exam_name, paper_name, submitted_at, objective_score, subjective_score, final_score, passed_flag, published_flag, status, deleted) VALUES
-    (1, 1, 1, 15, '张晨琪', '2026级语文阶段测验', '语文期中模拟卷', TIMESTAMP '2026-04-02 10:30:00', 20, 0, 20, 0, 0, 'PENDING_GRADING', 0),
+    (1, 1, 1, 15, '张晨琪', '2026级语文阶段测验', '语文期中模拟卷', TIMESTAMP '2026-04-02 10:30:00', 20, 12, 32, 0, 1, 'PUBLISHED', 0),
     (2, 1, 2, 21, '杨轩昊', '2026级语文阶段测验', '语文期中模拟卷', TIMESTAMP '2026-04-03 10:30:00', 20, 0, 20, 0, 0, 'PENDING_GRADING', 0),
     (3, 2, 3, 16, '王浩琳', '2026级数学阶段测验', '数学期中模拟卷', TIMESTAMP '2026-04-04 10:30:00', 20, 0, 20, 0, 0, 'PENDING_GRADING', 0),
     (4, 2, 4, 22, '黄杰祺', '2026级数学阶段测验', '数学期中模拟卷', TIMESTAMP '2026-04-05 10:30:00', 20, 0, 20, 0, 0, 'PENDING_GRADING', 0),

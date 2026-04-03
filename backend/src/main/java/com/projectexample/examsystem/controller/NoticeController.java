@@ -9,6 +9,7 @@ import com.projectexample.examsystem.service.NoticeService;
 import com.projectexample.examsystem.vo.NoticeVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -37,16 +38,19 @@ public class NoticeController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN','ORG_ADMIN','TEACHER')")
     public ApiResponse<NoticeVO> create(@Valid @RequestBody NoticeCreateRequest request) {
         return ApiResponse.success("notice created", noticeService.createNotice(request));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','ORG_ADMIN','TEACHER')")
     public ApiResponse<NoticeVO> update(@PathVariable Long id, @Valid @RequestBody NoticeUpdateRequest request) {
         return ApiResponse.success("notice updated", noticeService.updateNotice(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','ORG_ADMIN','TEACHER')")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         noticeService.deleteNotice(id);
         return ApiResponse.success("notice deleted", null);

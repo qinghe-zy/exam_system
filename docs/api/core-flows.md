@@ -23,6 +23,7 @@
 - `GET /api/system/menus`
 - `GET /api/system/menus/current`
 - `GET /api/system/audit-logs`
+- `GET /api/system/runtime/health`
 
 ### 配置中心
 - `GET /api/system/config-center/configs`
@@ -82,6 +83,8 @@
 - `GET /api/exam/grading/{answerSheetId}`
 - `POST /api/exam/grading/{answerSheetId}/submit`
 - `GET /api/exam/records`
+- `GET /api/exam/records/my`
+- `GET /api/exam/records/my/{id}`
 - `GET /api/exam/analytics/overview`
 - `GET /api/exam/proctor/events`
 

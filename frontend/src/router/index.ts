@@ -8,6 +8,7 @@ import type { SystemMenu } from '../api/system'
 const DashboardView = () => import('../views/dashboard/DashboardView.vue')
 const AnalysisView = () => import('../views/exam/AnalysisView.vue')
 const CandidateExamView = () => import('../views/exam/CandidateExamView.vue')
+const CandidateScoreView = () => import('../views/exam/CandidateScoreView.vue')
 const ExamPaperView = () => import('../views/exam/ExamPaperView.vue')
 const ExamPaperBuilderView = () => import('../views/exam/ExamPaperBuilderView.vue')
 const ExamPlanView = () => import('../views/exam/ExamPlanView.vue')
@@ -150,6 +151,12 @@ const router = createRouter({
           name: 'candidate-exams',
           component: CandidateExamView,
           meta: { title: '我的考试' }
+        },
+        {
+          path: 'candidate/scores',
+          name: 'candidate-scores',
+          component: CandidateScoreView,
+          meta: { title: '我的成绩' }
         },
         {
           path: 'exam/proctor',

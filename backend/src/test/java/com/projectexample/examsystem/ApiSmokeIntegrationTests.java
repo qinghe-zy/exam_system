@@ -43,6 +43,12 @@ class ApiSmokeIntegrationTests {
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)));
 
+        mockMvc.perform(get("/api/system/runtime/health")
+                        .header("Authorization", bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.dbReachable").value(1));
+
         mockMvc.perform(get("/api/exam/questions/export")
                         .header("Authorization", bearer(adminToken)))
                 .andExpect(status().isOk())
@@ -52,7 +58,22 @@ class ApiSmokeIntegrationTests {
         mockMvc.perform(get("/api/messages/my")
                         .header("Authorization", bearer(studentToken)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(0));
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)));
+
+        MvcResult myScores = mockMvc.perform(get("/api/exam/records/my")
+                        .header("Authorization", bearer(studentToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andReturn();
+        JsonNode myScoresPayload = objectMapper.readTree(myScores.getResponse().getContentAsString());
+        long publishedScoreId = myScoresPayload.path("data").get(0).path("id").asLong();
+
+        mockMvc.perform(get("/api/exam/records/my/" + publishedScoreId)
+                        .header("Authorization", bearer(studentToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.items.length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)));
 
         mockMvc.perform(get("/api/exam/candidate/my-exams")
                         .header("Authorization", bearer(studentToken)))

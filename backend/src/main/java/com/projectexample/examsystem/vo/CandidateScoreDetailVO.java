@@ -4,17 +4,18 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
-public class ExamRecordVO {
+public class CandidateScoreDetailVO {
 
     private Long id;
     private Long examPlanId;
     private Long answerSheetId;
-    private String candidateName;
     private String examName;
     private String paperName;
+    private String candidateName;
     private LocalDateTime submittedAt;
     private Double objectiveScore;
     private Double subjectiveScore;
@@ -22,4 +23,5 @@ public class ExamRecordVO {
     private Integer passedFlag;
     private Integer publishedFlag;
     private String status;
+    private List<CandidateScoreItemVO> items;
 }

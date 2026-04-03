@@ -23,10 +23,10 @@
 - 当前能力：考试发布、考生分配、考试密码、迟到限制、提前交卷限制、参考次数限制基础版
 
 ### 4. 考生端
-- 页面：`CandidateExamView`
-- 接口：`/api/exam/candidate/*`
-- 表：`biz_answer_sheet`、`biz_answer_item`
-- 当前能力：待考列表、进入考试、进入窗口说明、实际作答倒计时、固定答题卡、自动保存、手动保存、提交确认、全屏切换
+- 页面：`CandidateExamView`、`CandidateScoreView`
+- 接口：`/api/exam/candidate/*`、`/api/exam/records/my*`
+- 表：`biz_answer_sheet`、`biz_answer_item`、`biz_score_record`
+- 当前能力：待考列表、进入考试、进入窗口说明、实际作答倒计时、固定答题卡、自动保存、手动保存、提交确认、全屏切换、已发布成绩查看、逐题详情查看
 
 ### 7. AI 题库辅助
 - 页面：`QuestionBankView`
@@ -34,10 +34,10 @@
 - 当前能力：生成题目草稿、优化题干/答案/解析（AI 辅助）
 
 ### 5. 阅卷与成绩
-- 页面：`GradingView`、`ExamRecordView`
-- 接口：`/api/exam/grading/*`、`/api/exam/records`
+- 页面：`GradingView`、`ExamRecordView`、`CandidateScoreView`
+- 接口：`/api/exam/grading/*`、`/api/exam/records`、`/api/exam/records/my/*`
 - 表：`biz_grading_record`、`biz_score_record`
-- 当前能力：客观题自动判分、主观题人工评分、成绩回写
+- 当前能力：客观题自动判分、主观题人工评分、成绩回写、学生已发布成绩查看与详情展示
 
 ### 6. 分析与监考
 - 页面：`AnalysisView`、`ProctorView`
@@ -50,7 +50,7 @@
 - 组织管理员：按组织范围查看
 - 教师：按组织范围查看考试业务数据
 - 阅卷老师：访问阅卷相关数据
-- 学生：只访问自己的考试与消息
+- 学生：只访问自己的考试、消息和已发布成绩
 
 ## 四、当前限制
 - 数据权限仍是基础版
