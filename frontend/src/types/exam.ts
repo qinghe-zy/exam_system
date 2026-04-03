@@ -18,6 +18,50 @@ export interface QuestionBank {
   status: number
 }
 
+export interface AiQuestionDraftRequest {
+  subject: string
+  questionType: string
+  difficultyLevel: string
+  knowledgePoint: string
+  chapterName?: string
+  extraRequirements?: string
+}
+
+export interface AiQuestionDraftResult {
+  subject: string
+  questionType: string
+  difficultyLevel: string
+  stem: string
+  optionsJson: string
+  answerKey: string
+  analysisText: string
+  knowledgePoint: string
+  chapterName?: string
+  tags?: string
+  defaultScore: number
+  aiHint: string
+}
+
+export interface AiQuestionPolishRequest {
+  subject: string
+  questionType: string
+  difficultyLevel: string
+  stem: string
+  optionsJson?: string
+  answerKey?: string
+  analysisText?: string
+  knowledgePoint?: string
+  chapterName?: string
+}
+
+export interface AiQuestionPolishResult {
+  improvedStem: string
+  improvedAnswerKey: string
+  improvedAnalysisText: string
+  suggestedOptionsJson: string
+  aiHint: string
+}
+
 export interface PaperRuleConfigItem {
   code: string
   label: string

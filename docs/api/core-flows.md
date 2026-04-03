@@ -50,6 +50,8 @@
 - `POST /api/exam/questions`
 - `PUT /api/exam/questions/{id}`
 - `DELETE /api/exam/questions/{id}`
+- `POST /api/exam/questions/ai/draft`
+- `POST /api/exam/questions/ai/polish`
 
 ## 五、试卷与考试
 - `GET /api/exam/papers`

@@ -4,8 +4,8 @@ import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'elem
 
 import AppShellSection from '../../components/AppShellSection.vue'
 import { DIFFICULTY_OPTIONS, QUESTION_TYPE_OPTIONS, REVIEW_STATUS_OPTIONS } from '../../constants/exam'
-import { createQuestion, deleteQuestion, exportQuestions, fetchQuestions, importQuestions, updateQuestion } from '../../api/exam'
-import type { QuestionBank } from '../../types/exam'
+import { createQuestion, deleteQuestion, exportQuestions, fetchQuestions, generateAiQuestionDraft, importQuestions, polishQuestionWithAi, updateQuestion } from '../../api/exam'
+import type { AiQuestionDraftRequest, QuestionBank } from '../../types/exam'
 import { labelDifficulty, labelQuestionType, labelReviewStatus } from '../../utils/labels'
 
 const loading = ref(false)
@@ -16,6 +16,17 @@ const editingId = ref<number | null>(null)
 const formRef = ref<FormInstance>()
 const importDialogVisible = ref(false)
 const importText = ref('')
+const aiDraftDialogVisible = ref(false)
+const aiLoading = ref(false)
+
+const aiDraftForm = reactive<AiQuestionDraftRequest>({
+  subject: '',
+  questionType: 'SINGLE_CHOICE',
+  difficultyLevel: 'MEDIUM',
+  knowledgePoint: '',
+  chapterName: '',
+  extraRequirements: ''
+})
 
 const form = reactive<Omit<QuestionBank, 'id'>>({
   questionCode: '',
@@ -86,6 +97,16 @@ function openCreate() {
   dialogVisible.value = true
 }
 
+function openAiDraft() {
+  aiDraftForm.subject = form.subject || questions.value[0]?.subject || ''
+  aiDraftForm.questionType = 'SINGLE_CHOICE'
+  aiDraftForm.difficultyLevel = 'MEDIUM'
+  aiDraftForm.knowledgePoint = ''
+  aiDraftForm.chapterName = ''
+  aiDraftForm.extraRequirements = ''
+  aiDraftDialogVisible.value = true
+}
+
 function openEdit(row: QuestionBank) {
   dialogMode.value = 'edit'
   editingId.value = row.id
@@ -130,6 +151,65 @@ async function handleImport() {
   await loadData()
 }
 
+async function handleAiGenerateDraft() {
+  aiLoading.value = true
+  try {
+    const result = await generateAiQuestionDraft(aiDraftForm)
+    dialogMode.value = 'create'
+    Object.assign(form, {
+      questionCode: '',
+      subject: result.subject,
+      questionType: result.questionType,
+      difficultyLevel: result.difficultyLevel,
+      stem: result.stem,
+      optionsJson: result.optionsJson,
+      answerKey: result.answerKey,
+      analysisText: result.analysisText,
+      knowledgePoint: result.knowledgePoint,
+      chapterName: result.chapterName || '',
+      sourceName: 'AI 辅助生成',
+      tags: result.tags || '',
+      defaultScore: result.defaultScore,
+      reviewerStatus: 'DRAFT',
+      versionNo: 1,
+      status: 1
+    })
+    aiDraftDialogVisible.value = false
+    dialogVisible.value = true
+    ElMessage.success(result.aiHint)
+  } finally {
+    aiLoading.value = false
+  }
+}
+
+async function handleAiPolishCurrentForm() {
+  if (!form.subject || !form.questionType || !form.difficultyLevel || !form.stem) {
+    ElMessage.warning('请至少填写学科、题型、难度和题干后再使用 AI 优化')
+    return
+  }
+  aiLoading.value = true
+  try {
+    const result = await polishQuestionWithAi({
+      subject: form.subject,
+      questionType: form.questionType,
+      difficultyLevel: form.difficultyLevel,
+      stem: form.stem,
+      optionsJson: form.optionsJson,
+      answerKey: form.answerKey,
+      analysisText: form.analysisText,
+      knowledgePoint: form.knowledgePoint,
+      chapterName: form.chapterName
+    })
+    form.stem = result.improvedStem || form.stem
+    form.answerKey = result.improvedAnswerKey || form.answerKey
+    form.analysisText = result.improvedAnalysisText || form.analysisText
+    form.optionsJson = result.suggestedOptionsJson || form.optionsJson
+    ElMessage.success(result.aiHint)
+  } finally {
+    aiLoading.value = false
+  }
+}
+
 onMounted(loadData)
 </script>
 
@@ -141,6 +221,7 @@ onMounted(loadData)
   >
     <template #actions>
       <div class="hero-actions">
+        <el-button @click="openAiDraft">AI 生成题目草稿</el-button>
         <el-button @click="handleExport">导出 JSON</el-button>
         <el-button @click="importDialogVisible = true">导入 JSON</el-button>
         <el-button type="primary" @click="openCreate">新建题目</el-button>
@@ -168,6 +249,10 @@ onMounted(loadData)
 
     <el-dialog v-model="dialogVisible" :title="dialogMode === 'create' ? '新建题目' : '编辑题目'" width="min(960px, 96vw)" @closed="resetForm">
       <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
+        <div class="ai-banner">
+          <span>AI 辅助只提供草稿和优化建议，最终内容仍需教师人工复核。</span>
+          <el-button size="small" :loading="aiLoading" @click="handleAiPolishCurrentForm">AI 优化当前题目</el-button>
+        </div>
         <div class="grid-three">
           <el-form-item label="题目编码" prop="questionCode"><el-input v-model="form.questionCode" /></el-form-item>
           <el-form-item label="学科" prop="subject"><el-input v-model="form.subject" /></el-form-item>
@@ -201,12 +286,39 @@ onMounted(loadData)
         <el-button type="primary" @click="handleImport">导入</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="aiDraftDialogVisible" title="AI 生成题目草稿" width="min(760px, 96vw)">
+      <p class="muted">系统会调用 DeepSeek 生成候选题目草稿，结果会回填到题目编辑表单中。请务必复核后再保存。</p>
+      <div class="grid-three">
+        <el-form-item label="学科"><el-input v-model="aiDraftForm.subject" /></el-form-item>
+        <el-form-item label="题型"><el-select v-model="aiDraftForm.questionType"><el-option v-for="item in QUESTION_TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item>
+        <el-form-item label="难度"><el-select v-model="aiDraftForm.difficultyLevel"><el-option v-for="item in DIFFICULTY_OPTIONS" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item>
+      </div>
+      <el-form-item label="知识点"><el-input v-model="aiDraftForm.knowledgePoint" /></el-form-item>
+      <el-form-item label="章节"><el-input v-model="aiDraftForm.chapterName" /></el-form-item>
+      <el-form-item label="补充要求"><el-input v-model="aiDraftForm.extraRequirements" type="textarea" :rows="4" placeholder="例如：偏重理解题、避免太偏太怪、题干简洁" /></el-form-item>
+      <template #footer>
+        <el-button @click="aiDraftDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="aiLoading" @click="handleAiGenerateDraft">生成草稿</el-button>
+      </template>
+    </el-dialog>
   </AppShellSection>
 </template>
 
 <style scoped>
 .hero-actions {
   margin-top: 1rem;
+}
+
+.ai-banner {
+  margin-bottom: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 16px;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: center;
+  background: color-mix(in oklch, var(--brand) 10%, white);
 }
 
 .section-card {
@@ -220,6 +332,13 @@ onMounted(loadData)
 }
 
 @media (max-width: 900px) {
+  .ai-banner,
+  .grid-three {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .grid-three {
     grid-template-columns: 1fr;
   }

@@ -43,6 +43,6 @@ app:
     expiration-minutes: 720
     issuer: projectexample-exam-system
   ai:
-    api-base-url: ${AI_API_BASE_URL:}
+    api-base-url: ${AI_API_BASE_URL:https://api.deepseek.com}
     api-key: ${AI_API_KEY:}
-    model: ${AI_MODEL:}
+    model: ${AI_MODEL:deepseek-chat}

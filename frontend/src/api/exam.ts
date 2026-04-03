@@ -1,6 +1,10 @@
 import http from './http'
 import type {
   AnalysisOverview,
+  AiQuestionDraftRequest,
+  AiQuestionDraftResult,
+  AiQuestionPolishRequest,
+  AiQuestionPolishResult,
   AntiCheatEvent,
   CandidateExam,
   CandidateExamWorkspace,
@@ -26,6 +30,14 @@ export function exportQuestions() {
 
 export function importQuestions(payload: { questions: Omit<QuestionBank, 'id'>[] }) {
   return http.post<never, QuestionBank[]>('/api/exam/questions/import', payload)
+}
+
+export function generateAiQuestionDraft(payload: AiQuestionDraftRequest) {
+  return http.post<never, AiQuestionDraftResult>('/api/exam/questions/ai/draft', payload)
+}
+
+export function polishQuestionWithAi(payload: AiQuestionPolishRequest) {
+  return http.post<never, AiQuestionPolishResult>('/api/exam/questions/ai/polish', payload)
 }
 
 export function updateQuestion(id: number, payload: Omit<QuestionBank, 'id'>) {

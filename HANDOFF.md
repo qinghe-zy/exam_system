@@ -1,86 +1,52 @@
 # 交接说明
 
 ## 一、当前真实状态
-当前仓库已完成：
-- 教师端试卷工作台重构
-- 教师端新建考试弹窗重构
-- 学生端考试工作区沉浸式改版
-- 倒计时语义修复
-- 基础防作弊检测、自动保存联动、事件落库、后台可查闭环
-- MySQL 结构同步、空库重建回归、浏览器级 E2E 回归
+当前仓库已新增：
+- 学生端考试态修复版
+- 列表页 + 独立建卷页
+- 题库 AI 辅助入口与后端接口
 
 ## 二、已完全实现
-- 新建试卷支持：
-  - 题库筛选
-  - 手工取题
-  - 随机组卷
-  - 按题型/难度策略组卷
-  - 分值、顺序、必答/选答设置
-  - 试卷版本、备注、乱序、卷面说明保存
-- 新建考试支持：
-  - 试卷摘要展示
-  - 开始/结束时间与入场窗口语义说明
-  - 考试时长、及格线、参考次数、口令、防作弊等级、自动交卷、考生名单设置
-- 学生端支持：
-  - 允许进入窗口展示
-  - 本场剩余作答时间倒计时
-  - 自动保存、手动保存、提交试卷
-  - 全屏入口、固定答题卡、当前题目聚焦
-- 防作弊基础版支持：
-  - 页面切换检测
-  - 窗口失焦检测
-  - 全屏退出检测
-  - 异常行为触发自动保存
-  - 事件写入 `biz_anti_cheat_event`
-  - 管理员/监考端查看事件
+- 桌面端答题卡固定，不跟随主内容一起上滑
+- 全屏按钮双态切换，主动退出全屏不记异常
+- 保存答案与提交确认流程有明确反馈
+- 考试态关键弹窗层级已修复
+- 试卷创建流程已从大弹窗拆为独立页面
+- 手工 / 随机 / 策略组卷均可通过新页面保存
+- 题库 AI 草稿生成 / 题目优化入口已接通前后端
 
-## 三、数据库做了什么
-- `biz_exam_paper` 新增：
-  - `paper_version`
-  - `remark_text`
-  - `shuffle_enabled`
-  - `question_type_config_json`
-  - `difficulty_config_json`
-- `biz_anti_cheat_event` 新增：
-  - `leave_count`
-  - `triggered_auto_save`
-  - `save_version`
-- 已重建 `exam_system` 并导入最新 `sql/mysql/init.sql`
+## 三、数据库与配置
+- 本轮未新增新表
+- AI 配置使用：
+  - `AI_API_BASE_URL`
+  - `AI_API_KEY`
+  - `AI_MODEL`
+- `.env.example` 与 `application.yml` 仅保留占位或默认示例，不包含真实密钥
 
-## 四、AI 模块核查结果
-- 当前结论：仅做接入预留，未接入真实 AI 能力
-- 代码位置：
-  - `.env.example`
-  - `backend/src/main/resources/application.yml`
-  - `backend/src/main/java/com/projectexample/examsystem/infra/ai/AiGatewayProperties.java`
-  - `backend/src/main/java/com/projectexample/examsystem/infra/ai/AiGatewayClient.java`
-- 当前未发现：
-  - AI 前端入口
-  - AI controller / service 业务实现
-  - 真实模型调用
+## 四、AI 当前状态
+- 当前只接入题库模块
+- 当前环境 blocker：`AI_API_KEY` 未配置
+- 已验证：
+  - UI 入口存在
+  - controller / service / gateway 存在
+  - 配置缺失时返回明确中文错误
+- 未验证：
+  - DeepSeek 实际成功生成题目草稿
+  - DeepSeek 实际优化题目文本
 
-## 五、验证跑了什么
-- 后端 `mvn -q test`
-- 后端 `mvn -q -DskipTests package`
-- 前端 `npm.cmd run build`
-- 前端 `npm.cmd run test:e2e`
-- MySQL 空库重建
-- MySQL 模式接口 smoke
-- 教师策略组卷保存试卷
-- 教师创建测试考试
-- 学生进入考试并显示正确倒计时
-- 防作弊事件落库与后台查询
+## 五、已跑验证
+- 后端测试
+- 前端构建
+- 全量 E2E（5 条）
+- 学生端答题卡固定 / 全屏切换 / 异常检测 / 保存 / 提交
+- 管理端手工 / 随机 / 策略组卷
+- AI 缺配置错误反馈
 
 ## 六、当前剩余问题
-- `element-plus` vendor chunk 仍有体积告警
-- 基础防作弊仅覆盖浏览器级异常留痕，不包含设备锁定/摄像头/人脸识别
-- 数据权限仍是基础组织范围约束
+- AI 成功调用仍受本机私有密钥缺失限制
+- 防作弊仍是基础版浏览器行为检测
+- `element-plus` 仍有大包体积告警
 
 ## 七、特别说明
-- 本轮未覆盖用户已有改动：`frontend/tests/e2e/grading-flow.spec.ts`
-- 远端 `origin` 已正确指向 `https://github.com/qinghe-zy/exam_system.git`
-
-## 八、后续建议
-1. 补更严格的数据权限与监考权限矩阵。
-2. 补真实人工手测脚本，覆盖切屏、窗口最小化、全屏退出。
-3. 若进入下一阶段，再扩展 AI、通知、外部监考能力。
+- 当前工作区若存在用户自己的其他未提交修改，提交前需再次核对范围
+- 本轮需特别关注 `frontend/tests/e2e/grading-flow.spec.ts` 是否已有用户自定义调整

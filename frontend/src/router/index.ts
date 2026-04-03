@@ -7,6 +7,7 @@ const DashboardView = () => import('../views/dashboard/DashboardView.vue')
 const AnalysisView = () => import('../views/exam/AnalysisView.vue')
 const CandidateExamView = () => import('../views/exam/CandidateExamView.vue')
 const ExamPaperView = () => import('../views/exam/ExamPaperView.vue')
+const ExamPaperBuilderView = () => import('../views/exam/ExamPaperBuilderView.vue')
 const ExamPlanView = () => import('../views/exam/ExamPlanView.vue')
 const ExamRecordView = () => import('../views/exam/ExamRecordView.vue')
 const GradingView = () => import('../views/exam/GradingView.vue')
@@ -105,6 +106,18 @@ const router = createRouter({
           name: 'exam-papers',
           component: ExamPaperView,
           meta: { title: '试卷管理' }
+        },
+        {
+          path: 'exam/papers/create',
+          name: 'exam-paper-create',
+          component: ExamPaperBuilderView,
+          meta: { title: '新建试卷' }
+        },
+        {
+          path: 'exam/papers/:paperId/edit',
+          name: 'exam-paper-edit',
+          component: ExamPaperBuilderView,
+          meta: { title: '编辑试卷' }
         },
         {
           path: 'exam/plans',

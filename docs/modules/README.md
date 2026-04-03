@@ -5,6 +5,8 @@
 
 ## 二、当前模块
 - exam-core：考试核心模块说明
+- paper-builder：试卷创建与组卷工作台说明
+- ai-question-assistant：题库 AI 辅助能力说明
 
 ## 三、维护要求
 - 模块文档必须与页面、接口、表结构一致

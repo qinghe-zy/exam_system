@@ -11,10 +11,10 @@
 - 当前能力：题目维护、题目导入导出、知识点/标签/解析等元数据
 
 ### 2. 试卷与组卷
-- 页面：`ExamPaperView`
+- 页面：`ExamPaperView`、`ExamPaperBuilderView`
 - 接口：`/api/exam/papers*`
 - 表：`biz_exam_paper`、`biz_paper_question`
-- 当前能力：手工组卷、随机组卷、按题型/难度的基础策略组卷、试卷版本/备注/乱序配置
+- 当前能力：手工组卷、随机组卷、按题型/难度的基础策略组卷、试卷版本/备注/乱序配置、独立建卷页
 
 ### 3. 考试发布
 - 页面：`ExamPlanView`
@@ -26,7 +26,12 @@
 - 页面：`CandidateExamView`
 - 接口：`/api/exam/candidate/*`
 - 表：`biz_answer_sheet`、`biz_answer_item`
-- 当前能力：待考列表、进入考试、进入窗口说明、实际作答倒计时、答题卡、自动保存、手动保存、交卷
+- 当前能力：待考列表、进入考试、进入窗口说明、实际作答倒计时、固定答题卡、自动保存、手动保存、提交确认、全屏切换
+
+### 7. AI 题库辅助
+- 页面：`QuestionBankView`
+- 接口：`/api/exam/questions/ai/*`
+- 当前能力：生成题目草稿、优化题干/答案/解析（AI 辅助）
 
 ### 5. 阅卷与成绩
 - 页面：`GradingView`、`ExamRecordView`

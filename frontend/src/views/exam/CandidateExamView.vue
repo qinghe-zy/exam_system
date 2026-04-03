@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 
 import AppShellSection from '../../components/AppShellSection.vue'
 import { fetchCandidateWorkspace, fetchMyExams, reportCandidateEvent, saveCandidateAnswers, submitCandidateAnswers } from '../../api/exam'
@@ -17,11 +17,14 @@ const workspace = ref<CandidateExamWorkspace | null>(null)
 const answers = ref<Record<number, string | string[]>>({})
 const countdownText = ref('--:--:--')
 const passwordDialogVisible = ref(false)
+const submitConfirmVisible = ref(false)
 const pendingExamPlanId = ref<number | null>(null)
 const examPassword = ref('')
 const currentQuestionId = ref<number | null>(null)
 const lastSavedText = ref('尚未保存')
 const questionObserver = ref<IntersectionObserver | null>(null)
+const isFullscreen = ref(false)
+const manualFullscreenExitPending = ref(false)
 const violationStats = reactive({
   tabSwitch: 0,
   blur: 0,
@@ -139,25 +142,25 @@ async function saveCurrent(showMessage = true, triggerSource: 'manual' | 'timer'
   }
 }
 
-async function submitCurrent(auto = false) {
+async function submitCurrent(mode: 'prompt' | 'manual' | 'auto' = 'prompt') {
   if (!workspace.value || submitting.value) return
-  if (!auto) {
-    try {
-      await ElMessageBox.confirm('确认提交试卷？提交后将无法继续作答。', '提交确认', { type: 'warning' })
-    } catch {
-      return
-    }
+  if (mode === 'prompt') {
+    submitConfirmVisible.value = true
+    return
   }
   submitting.value = true
   try {
     workspace.value = await submitCandidateAnswers(workspace.value.examPlanId, collectAnswers())
     hydrateAnswers(workspace.value.items)
-    ElMessage.success(auto ? '作答时间已到，系统已自动交卷' : '试卷已提交')
+    ElMessage.success(mode === 'auto' ? '作答时间已到，系统已自动交卷' : '试卷已提交')
     workspaceVisible.value = false
     await loadExams()
+  } catch {
+    ElMessage.error(mode === 'auto' ? '自动交卷失败，请立即联系监考老师' : '提交试卷失败，请稍后重试')
   } finally {
     submitting.value = false
     autoSubmitting.value = false
+    submitConfirmVisible.value = false
   }
 }
 
@@ -194,7 +197,7 @@ function updateCountdown() {
     countdownText.value = '00:00:00'
     if (!autoSubmitting.value && workspace.value.autoSubmitEnabled === 1 && workspace.value.answerSheetStatus !== 'SUBMITTED') {
       autoSubmitting.value = true
-      submitCurrent(true)
+      submitCurrent('auto')
     }
     return
   }
@@ -236,16 +239,30 @@ async function handleWindowBlur() {
 }
 
 async function handleFullscreenChange() {
+  isFullscreen.value = Boolean(document.fullscreenElement)
   if (!workspaceVisible.value || !workspace.value || document.fullscreenElement) return
+  if (manualFullscreenExitPending.value) {
+    manualFullscreenExitPending.value = false
+    return
+  }
   violationStats.fullscreenExit += 1
-  await reportSuspiciousEvent('FULLSCREEN_EXIT', 'HIGH', `考生第 ${violationStats.fullscreenExit} 次退出全屏考试态，建议监考端重点关注。`, violationStats.fullscreenExit)
+  await reportSuspiciousEvent('FULLSCREEN_EXIT', 'HIGH', `考生第 ${violationStats.fullscreenExit} 次异常退出全屏考试态，建议监考端重点关注。`, violationStats.fullscreenExit)
 }
 
-async function enterFullscreen() {
+async function toggleFullscreen() {
   try {
+    if (document.fullscreenElement) {
+      manualFullscreenExitPending.value = true
+      await document.exitFullscreen?.()
+      isFullscreen.value = false
+      return
+    }
+    manualFullscreenExitPending.value = false
     await document.documentElement.requestFullscreen?.()
+    isFullscreen.value = true
   } catch {
-    ElMessage.warning('当前浏览器未允许全屏，请手动切换到全屏模式')
+    manualFullscreenExitPending.value = false
+    ElMessage.warning('当前浏览器未允许全屏切换，请手动调整')
   }
 }
 
@@ -291,6 +308,9 @@ watch(
       stopAutoSave()
       questionObserver.value?.disconnect()
       workspace.value = null
+      submitConfirmVisible.value = false
+      isFullscreen.value = false
+      manualFullscreenExitPending.value = false
     }
   },
   { immediate: false }
@@ -309,6 +329,7 @@ function formatDateTime(value: string) {
 
 onMounted(async () => {
   await loadExams()
+  isFullscreen.value = Boolean(document.fullscreenElement)
   document.addEventListener('visibilitychange', handleVisibilityChange)
   window.addEventListener('blur', handleWindowBlur)
   document.addEventListener('fullscreenchange', handleFullscreenChange)
@@ -349,7 +370,7 @@ onBeforeUnmount(() => {
       </el-table>
     </section>
 
-    <el-dialog v-model="passwordDialogVisible" title="进入考试" width="min(460px, 92vw)">
+    <el-dialog v-model="passwordDialogVisible" title="进入考试" width="min(460px, 92vw)" append-to-body :z-index="2600">
       <p class="muted">如果考试配置了口令，请输入后进入。进入后会按照“考试时长”和“窗口剩余时间”共同计算本场实际倒计时。</p>
       <el-input v-model="examPassword" type="password" show-password placeholder="请输入考试口令（如有）" />
       <template #footer>
@@ -387,9 +408,9 @@ onBeforeUnmount(() => {
               <span>{{ lastSavedText }}</span>
             </div>
             <div class="toolbar-actions">
-              <el-button @click="enterFullscreen">进入全屏</el-button>
+              <el-button @click="toggleFullscreen">{{ isFullscreen ? '退出全屏' : '进入全屏' }}</el-button>
               <el-button :loading="saving" @click="saveCurrent(true, 'manual')">保存答案</el-button>
-              <el-button type="primary" :loading="submitting || autoSubmitting" @click="submitCurrent()">提交试卷</el-button>
+              <el-button type="primary" :loading="submitting || autoSubmitting" @click="submitCurrent('prompt')">提交试卷</el-button>
             </div>
           </div>
         </header>
@@ -477,6 +498,14 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </section>
+
+    <el-dialog v-model="submitConfirmVisible" title="提交确认" width="min(460px, 92vw)" append-to-body :z-index="2600">
+      <p class="muted">提交后将无法继续修改答案。请确认当前保存状态正常，并再次检查是否还有未作答题目。</p>
+      <template #footer>
+        <el-button @click="submitConfirmVisible = false">再检查一下</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitCurrent('manual')">确认提交</el-button>
+      </template>
+    </el-dialog>
   </AppShellSection>
 </template>
 
@@ -488,7 +517,7 @@ onBeforeUnmount(() => {
 .exam-overlay {
   position: fixed;
   inset: 0;
-  z-index: 2200;
+  z-index: 1500;
   background:
     radial-gradient(circle at top, rgba(207, 190, 162, 0.18), transparent 34%),
     linear-gradient(180deg, rgba(244, 241, 236, 0.98), rgba(237, 233, 224, 0.99));
@@ -603,16 +632,22 @@ onBeforeUnmount(() => {
 
 .question-column {
   flex: 1;
+  min-width: 0;
   display: grid;
   gap: 1rem;
+  padding-right: min(25rem, 33vw);
 }
 
 .aside-column {
   width: min(22rem, 30vw);
   display: grid;
   gap: 1rem;
-  position: sticky;
-  top: 12rem;
+  position: fixed;
+  right: 1.4rem;
+  top: 13.7rem;
+  bottom: 1.4rem;
+  overflow: auto;
+  padding-right: 0.1rem;
 }
 
 .exam-notice {
@@ -684,6 +719,14 @@ onBeforeUnmount(() => {
   .aside-column {
     width: 100%;
     position: static;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    overflow: visible;
+  }
+
+  .question-column {
+    padding-right: 0;
   }
 
   .answer-card-grid {
