@@ -4,11 +4,13 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 import AppShellSection from '../../components/AppShellSection.vue'
+import { usePermission } from '../../hooks/usePermission'
 import { deletePaper, fetchPapers } from '../../api/exam'
 import type { ExamPaper } from '../../types/exam'
 import { labelPaperMode } from '../../utils/labels'
 
 const router = useRouter()
+const { hasPermission } = usePermission()
 const loading = ref(false)
 const papers = ref<ExamPaper[]>([])
 
@@ -47,9 +49,9 @@ onMounted(loadData)
   >
     <template #actions>
       <div class="hero-actions">
-        <el-button @click="goCreate('RANDOM')">新建随机组卷</el-button>
-        <el-button @click="goCreate('STRATEGY')">新建策略组卷</el-button>
-        <el-button type="primary" @click="goCreate('MANUAL')">新建试卷</el-button>
+        <el-button v-if="hasPermission('exam:paper:create')" @click="goCreate('RANDOM')">新建随机组卷</el-button>
+        <el-button v-if="hasPermission('exam:paper:create')" @click="goCreate('STRATEGY')">新建策略组卷</el-button>
+        <el-button v-if="hasPermission('exam:paper:create')" type="primary" @click="goCreate('MANUAL')">新建试卷</el-button>
       </div>
     </template>
 
@@ -87,8 +89,9 @@ onMounted(loadData)
         </el-table-column>
         <el-table-column label="操作" min-width="210" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="goEdit(row.id)">进入编辑</el-button>
-            <el-button link type="danger" @click="removeItem(row.id)">删除</el-button>
+            <el-button v-if="hasPermission('exam:paper:update')" link type="primary" @click="goEdit(row.id)">进入编辑</el-button>
+            <el-button v-if="hasPermission('exam:paper:delete')" link type="danger" @click="removeItem(row.id)">删除</el-button>
+            <span v-if="!hasPermission('exam:paper:update') && !hasPermission('exam:paper:delete')" class="muted">仅查看</span>
           </template>
         </el-table-column>
       </el-table>

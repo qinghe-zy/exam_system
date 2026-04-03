@@ -2,7 +2,10 @@ export const QUESTION_TYPE_OPTIONS = [
   { label: '单选题', value: 'SINGLE_CHOICE' },
   { label: '多选题', value: 'MULTIPLE_CHOICE' },
   { label: '判断题', value: 'TRUE_FALSE' },
-  { label: '简答题', value: 'SHORT_ANSWER' }
+  { label: '简答题', value: 'SHORT_ANSWER' },
+  { label: '填空题', value: 'FILL_BLANK' },
+  { label: '论述题', value: 'ESSAY' },
+  { label: '材料题', value: 'MATERIAL' }
 ]
 
 export const DIFFICULTY_OPTIONS = [

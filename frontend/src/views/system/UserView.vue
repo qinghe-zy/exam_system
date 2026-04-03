@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 
 import AppShellSection from '../../components/AppShellSection.vue'
+import { usePermission } from '../../hooks/usePermission'
 import {
   createUser,
   fetchOrganizations,
@@ -16,6 +17,7 @@ import {
 } from '../../api/system'
 
 const users = ref<SystemUser[]>([])
+const { hasPermission } = usePermission()
 const organizations = ref<OrganizationNode[]>([])
 const roles = ref<SystemRole[]>([])
 const loading = ref(false)
@@ -160,8 +162,8 @@ onMounted(loadData)
   >
     <template #actions>
       <div class="hero-actions">
-        <el-button @click="importDialogVisible = true">批量导入考生</el-button>
-        <el-button type="primary" @click="openCreate">新建用户</el-button>
+        <el-button v-if="hasPermission('sys:user:import')" @click="importDialogVisible = true">批量导入考生</el-button>
+        <el-button v-if="hasPermission('sys:user:create')" type="primary" @click="openCreate">新建用户</el-button>
       </div>
     </template>
 
@@ -180,7 +182,8 @@ onMounted(loadData)
         </el-table-column>
         <el-table-column label="操作" min-width="120" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
+            <el-button v-if="hasPermission('sys:user:update')" link type="primary" @click="openEdit(row)">编辑</el-button>
+            <span v-else class="muted">仅查看</span>
           </template>
         </el-table-column>
       </el-table>

@@ -22,6 +22,12 @@ public class QuestionBankSaveRequest {
     @NotBlank(message = "Question stem is required")
     private String stem;
 
+    private String stemHtml;
+
+    private String materialContent;
+
+    private String attachmentJson;
+
     private String optionsJson;
 
     @NotBlank(message = "Answer key is required")

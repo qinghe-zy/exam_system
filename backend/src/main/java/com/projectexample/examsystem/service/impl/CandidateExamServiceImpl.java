@@ -193,6 +193,9 @@ public class CandidateExamServiceImpl implements CandidateExamService {
                     .questionCode(question == null ? null : question.getQuestionCode())
                     .questionType(question == null ? null : question.getQuestionType())
                     .stem(question == null ? null : question.getStem())
+                    .stemHtml(question == null ? null : question.getStemHtml())
+                    .materialContent(question == null ? null : question.getMaterialContent())
+                    .attachmentJson(question == null ? null : question.getAttachmentJson())
                     .optionsJson(question == null ? null : transformOptions(question.getOptionsJson(), paper, sheet, paperQuestion.getQuestionId()))
                     .maxScore(paperQuestion.getScore())
                     .answerContent(answerItem == null ? null : answerItem.getAnswerContent())
@@ -555,7 +558,7 @@ public class CandidateExamServiceImpl implements CandidateExamService {
     }
 
     private boolean isObjective(String questionType) {
-        return List.of("SINGLE_CHOICE", "MULTIPLE_CHOICE", "TRUE_FALSE", "JUDGE").contains(String.valueOf(questionType).toUpperCase(Locale.ROOT));
+        return List.of("SINGLE_CHOICE", "MULTIPLE_CHOICE", "TRUE_FALSE", "JUDGE", "FILL_BLANK").contains(String.valueOf(questionType).toUpperCase(Locale.ROOT));
     }
 
     private String normalizeAnswer(String answer, String questionType) {
@@ -567,6 +570,11 @@ public class CandidateExamServiceImpl implements CandidateExamService {
                     .map(String::trim)
                     .filter(item -> !item.isEmpty())
                     .sorted()
+                    .collect(Collectors.joining("|"));
+        }
+        if ("FILL_BLANK".equalsIgnoreCase(questionType)) {
+            return List.of(answer.split("\\|")).stream()
+                    .map(String::trim)
                     .collect(Collectors.joining("|"));
         }
         return answer.trim();

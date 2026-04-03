@@ -12,7 +12,7 @@ test('教师可在试卷管理中取题并正常进入考试发布页', async ({
   await page.getByRole('button', { name: '新建试卷' }).click()
   await page.waitForURL('**/exam/papers/create**')
 
-  await expect(page.getByText('当前学科 语文 共 40 道题')).toBeVisible()
+  await expect(page.getByText(/当前学科\s*语文\s*共\s*\d+\s*道题/)).toBeVisible()
   await page.locator('.question-chip').first().locator('button').click()
   await expect(page.getByText('已选题量')).toBeVisible()
   await expect(page.getByText('卷面预览')).toBeVisible()

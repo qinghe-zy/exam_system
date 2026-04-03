@@ -5,6 +5,9 @@ export interface QuestionBank {
   questionType: string
   difficultyLevel: string
   stem: string
+  stemHtml?: string
+  materialContent?: string
+  attachmentJson?: string
   optionsJson?: string
   answerKey: string
   analysisText?: string
@@ -16,6 +19,12 @@ export interface QuestionBank {
   reviewerStatus: string
   versionNo: number
   status: number
+  usageCount?: number
+}
+
+export interface KnowledgePointQuotaItem {
+  knowledgePoint: string
+  questionCount: number
 }
 
 export interface AiQuestionDraftRequest {
@@ -148,6 +157,9 @@ export interface CandidateAnswerItem {
   questionCode?: string
   questionType: string
   stem: string
+  stemHtml?: string
+  materialContent?: string
+  attachmentJson?: string
   optionsJson?: string
   maxScore: number
   answerContent?: string

@@ -13,6 +13,9 @@ public class CandidateAnswerItemVO {
     private String questionCode;
     private String questionType;
     private String stem;
+    private String stemHtml;
+    private String materialContent;
+    private String attachmentJson;
     private String optionsJson;
     private Double maxScore;
     private String answerContent;

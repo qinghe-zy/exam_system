@@ -16,6 +16,7 @@ DROP TABLE IF EXISTS biz_notice;
 DROP TABLE IF EXISTS sys_menu;
 DROP TABLE IF EXISTS sys_user;
 DROP TABLE IF EXISTS sys_role;
+DROP TABLE IF EXISTS sys_verification_code;
 DROP TABLE IF EXISTS biz_organization;
 
 CREATE TABLE biz_organization (
@@ -54,6 +55,23 @@ CREATE TABLE sys_user (
     phone VARCHAR(32),
     candidate_no VARCHAR(64),
     status INT NOT NULL DEFAULT 1,
+    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE sys_verification_code (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    purpose VARCHAR(32) NOT NULL,
+    channel VARCHAR(16) NOT NULL,
+    target_value VARCHAR(128) NOT NULL,
+    verify_code VARCHAR(16) NOT NULL,
+    username VARCHAR(64),
+    organization_id BIGINT,
+    delivery_trace VARCHAR(255),
+    expires_at TIMESTAMP NOT NULL,
+    verified_flag INT NOT NULL DEFAULT 0,
+    consumed_flag INT NOT NULL DEFAULT 0,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted INT NOT NULL DEFAULT 0
@@ -121,6 +139,9 @@ CREATE TABLE biz_question_bank (
     question_type VARCHAR(32) NOT NULL,
     difficulty_level VARCHAR(32) NOT NULL,
     stem TEXT NOT NULL,
+    stem_html TEXT,
+    material_content TEXT,
+    attachment_json TEXT,
     options_json TEXT,
     answer_key TEXT NOT NULL,
     analysis_text TEXT,

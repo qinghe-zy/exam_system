@@ -203,6 +203,9 @@ public class GradingServiceImpl implements GradingService {
                             .questionCode(question == null ? null : question.getQuestionCode())
                             .questionType(item.getQuestionType())
                             .stem(question == null ? null : question.getStem())
+                            .stemHtml(question == null ? null : question.getStemHtml())
+                            .materialContent(question == null ? null : question.getMaterialContent())
+                            .attachmentJson(question == null ? null : question.getAttachmentJson())
                             .optionsJson(question == null ? null : question.getOptionsJson())
                             .maxScore(item.getMaxScore())
                             .answerContent(item.getAnswerContent())
@@ -242,6 +245,6 @@ public class GradingServiceImpl implements GradingService {
     }
 
     private boolean isObjective(String questionType) {
-        return List.of("SINGLE_CHOICE", "MULTIPLE_CHOICE", "TRUE_FALSE", "JUDGE").contains(questionType);
+        return List.of("SINGLE_CHOICE", "MULTIPLE_CHOICE", "TRUE_FALSE", "JUDGE", "FILL_BLANK").contains(questionType);
     }
 }

@@ -2,7 +2,10 @@ const questionTypeMap: Record<string, string> = {
   SINGLE_CHOICE: '单选题',
   MULTIPLE_CHOICE: '多选题',
   TRUE_FALSE: '判断题',
-  SHORT_ANSWER: '简答题'
+  SHORT_ANSWER: '简答题',
+  FILL_BLANK: '填空题',
+  ESSAY: '论述题',
+  MATERIAL: '材料题'
 }
 
 const difficultyMap: Record<string, string> = {

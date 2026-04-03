@@ -16,6 +16,7 @@ DROP TABLE IF EXISTS biz_notice;
 DROP TABLE IF EXISTS sys_menu;
 DROP TABLE IF EXISTS sys_user;
 DROP TABLE IF EXISTS sys_role;
+DROP TABLE IF EXISTS sys_verification_code;
 DROP TABLE IF EXISTS biz_organization;
 
 CREATE TABLE biz_organization (
@@ -54,6 +55,23 @@ CREATE TABLE sys_user (
     phone VARCHAR(32),
     candidate_no VARCHAR(64),
     status INT NOT NULL DEFAULT 1,
+    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE sys_verification_code (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    purpose VARCHAR(32) NOT NULL,
+    channel VARCHAR(16) NOT NULL,
+    target_value VARCHAR(128) NOT NULL,
+    verify_code VARCHAR(16) NOT NULL,
+    username VARCHAR(64),
+    organization_id BIGINT,
+    delivery_trace VARCHAR(255),
+    expires_at TIMESTAMP NOT NULL,
+    verified_flag INT NOT NULL DEFAULT 0,
+    consumed_flag INT NOT NULL DEFAULT 0,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted INT NOT NULL DEFAULT 0
@@ -121,6 +139,9 @@ CREATE TABLE biz_question_bank (
     question_type VARCHAR(32) NOT NULL,
     difficulty_level VARCHAR(32) NOT NULL,
     stem TEXT NOT NULL,
+    stem_html TEXT,
+    material_content TEXT,
+    attachment_json TEXT,
     options_json TEXT,
     answer_key TEXT NOT NULL,
     analysis_text TEXT,
@@ -477,6 +498,9 @@ INSERT INTO sys_dictionary_item (id, dict_type, item_code, item_label, item_valu
     (10, 'question_type', 'MULTIPLE_CHOICE', '多选题', 'MULTIPLE_CHOICE', 10, 1, 0),
     (11, 'question_type', 'TRUE_FALSE', '判断题', 'TRUE_FALSE', 11, 1, 0),
     (12, 'question_type', 'SHORT_ANSWER', '简答题', 'SHORT_ANSWER', 12, 1, 0),
+    (24, 'question_type', 'FILL_BLANK', '填空题', 'FILL_BLANK', 24, 1, 0),
+    (25, 'question_type', 'ESSAY', '论述题', 'ESSAY', 25, 1, 0),
+    (26, 'question_type', 'MATERIAL', '材料题', 'MATERIAL', 26, 1, 0),
     (13, 'question_tag', 'tag_13', '重点知识', '重点知识', 13, 1, 0),
     (14, 'question_tag', 'tag_14', '课堂基础', '课堂基础', 14, 1, 0),
     (15, 'question_tag', 'tag_15', '综合应用', '综合应用', 15, 1, 0),

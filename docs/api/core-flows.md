@@ -2,6 +2,10 @@
 
 ## 一、认证与权限
 - `POST /api/auth/login`：登录获取 JWT
+- `GET /api/auth/register-options`：获取注册可选班级/部门
+- `POST /api/auth/verification-codes/send`：发送注册 / 找回密码验证码（当前为 mock 通道）
+- `POST /api/auth/register`：学生注册基础版
+- `POST /api/auth/password/reset`：找回密码基础版
 - `GET /api/auth/me`：获取当前用户
 - `POST /api/auth/logout`：退出登录
 
@@ -48,6 +52,7 @@
 - `GET /api/exam/questions`
 - `GET /api/exam/questions/export`
 - `POST /api/exam/questions/import`
+- `POST /api/exam/questions/auto-group/knowledge-points`
 - `POST /api/exam/questions`
 - `PUT /api/exam/questions/{id}`
 - `DELETE /api/exam/questions/{id}`

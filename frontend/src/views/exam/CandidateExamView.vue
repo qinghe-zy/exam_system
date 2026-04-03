@@ -51,7 +51,18 @@ const answeredCount = computed(() => {
 
 function parseOptions(item: CandidateAnswerItem) {
   try {
-    return item.optionsJson ? (JSON.parse(item.optionsJson) as string[]) : []
+    const parsed = item.optionsJson ? JSON.parse(item.optionsJson) : []
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+function parseAttachments(item: CandidateAnswerItem) {
+  try {
+    const parsed = item.attachmentJson ? JSON.parse(item.attachmentJson) : []
+    if (!Array.isArray(parsed)) return []
+    return parsed.map((entry) => typeof entry === 'string' ? { name: entry, url: entry } : entry).filter((entry) => entry.url)
   } catch {
     return []
   }
@@ -60,7 +71,7 @@ function parseOptions(item: CandidateAnswerItem) {
 function hydrateAnswers(items: CandidateAnswerItem[]) {
   const next: Record<number, string | string[]> = {}
   items.forEach((item) => {
-    if (item.questionType === 'MULTIPLE_CHOICE') {
+    if (item.questionType === 'MULTIPLE_CHOICE' || item.questionType === 'FILL_BLANK') {
       next[item.questionId] = item.answerContent ? item.answerContent.split('|').filter(Boolean) : []
     } else {
       next[item.questionId] = item.answerContent || ''
@@ -74,7 +85,7 @@ function collectAnswers() {
   return workspace.value.items.map((item) => ({
     questionId: item.questionId,
     answerContent:
-      item.questionType === 'MULTIPLE_CHOICE'
+      item.questionType === 'MULTIPLE_CHOICE' || item.questionType === 'FILL_BLANK'
         ? ((answers.value[item.questionId] as string[] | undefined) || []).join('|')
         : String(answers.value[item.questionId] || '')
   }))
@@ -272,6 +283,17 @@ async function jumpToQuestion(questionId: number) {
   document.getElementById(`question-${questionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
+function getBlankAnswers(questionId: number) {
+  const value = answers.value[questionId]
+  return Array.isArray(value) ? value : ['']
+}
+
+function setBlankAnswer(questionId: number, index: number, value: string) {
+  const next = [...getBlankAnswers(questionId)]
+  next[index] = value
+  answers.value[questionId] = next
+}
+
 function bindQuestionObserver() {
   questionObserver.value?.disconnect()
   if (!workspace.value) return
@@ -439,9 +461,17 @@ onBeforeUnmount(() => {
               <div class="question-head">
                 <div>
                   <p class="eyebrow">第 {{ item.questionOrder }} 题 · {{ item.questionCode }} · {{ labelQuestionType(item.questionType) }}</p>
-                  <h3>{{ item.stem }}</h3>
+                  <div v-if="item.materialContent" class="material-block" v-html="item.materialContent"></div>
+                  <h3 v-if="!item.stemHtml">{{ item.stem }}</h3>
+                  <div v-else class="stem-html" v-html="item.stemHtml"></div>
                 </div>
                 <el-tag type="warning">{{ item.maxScore }} 分</el-tag>
+              </div>
+
+              <div v-if="parseAttachments(item).length" class="attachment-list">
+                <a v-for="attachment in parseAttachments(item)" :key="attachment.url" :href="attachment.url" target="_blank" rel="noreferrer">
+                  {{ attachment.name || attachment.url }}
+                </a>
               </div>
 
               <template v-if="['SINGLE_CHOICE', 'TRUE_FALSE'].includes(item.questionType) && parseOptions(item).length">
@@ -454,6 +484,18 @@ onBeforeUnmount(() => {
                 <el-checkbox-group v-model="answers[item.questionId]" class="choice-group">
                   <el-checkbox v-for="option in parseOptions(item)" :key="option" :label="option">{{ option }}</el-checkbox>
                 </el-checkbox-group>
+              </template>
+
+              <template v-else-if="item.questionType === 'FILL_BLANK'">
+                <div class="blank-grid">
+                  <el-input
+                    v-for="(slot, index) in (parseOptions(item).length ? parseOptions(item) : ['第1空'])"
+                    :key="`${item.questionId}-${index}`"
+                    :model-value="getBlankAnswers(item.questionId)[index] || ''"
+                    :placeholder="String(slot)"
+                    @update:model-value="setBlankAnswer(item.questionId, index, String($event || ''))"
+                  />
+                </div>
               </template>
 
               <template v-else>
@@ -674,6 +716,29 @@ onBeforeUnmount(() => {
   gap: 0.8rem;
 }
 
+.material-block,
+.stem-html,
+.attachment-list {
+  margin-top: 0.7rem;
+}
+
+.material-block,
+.stem-html {
+  line-height: 1.75;
+}
+
+.attachment-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.blank-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .answer-card-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -731,6 +796,10 @@ onBeforeUnmount(() => {
 
   .answer-card-grid {
     grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .blank-grid {
+    grid-template-columns: 1fr;
   }
 }
 

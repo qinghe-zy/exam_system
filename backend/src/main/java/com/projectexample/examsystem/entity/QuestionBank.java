@@ -16,6 +16,9 @@ public class QuestionBank extends BaseEntity {
     private String questionType;
     private String difficultyLevel;
     private String stem;
+    private String stemHtml;
+    private String materialContent;
+    private String attachmentJson;
     private String optionsJson;
     private String answerKey;
     private String analysisText;

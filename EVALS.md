@@ -6,6 +6,13 @@
 
 ## 2. 已完成内容
 ### 2.1 功能补全
+- 学生注册与找回密码基础版
+- 邮箱 / 短信验证码 mock 通道
+- 按钮级权限基础版
+- 新题型（填空题、论述题、材料题）
+- 富文本 HTML、材料内容与附件 JSON 基础支持
+- 题目使用次数统计基础版
+- 按知识点自动组题基础版
 - 学生已发布成绩列表与成绩详情页
 - 消息中心跳转成绩详情
 - 管理端接口权限收紧
@@ -48,20 +55,28 @@
   - `biz_score_record`：12
 
 ### 4.3 后端运行态 HTTP smoke
+- 注册选项：通过
+- 注册验证码发送：通过
+- 注册：通过
+- 找回密码验证码发送：通过
+- 找回密码：通过
 - 管理员登录：通过
 - `GET /api/system/runtime/health`：通过
 - 学生登录：通过
+- 教师 `POST /api/exam/questions/auto-group/knowledge-points`：通过
 - `GET /api/exam/records/my`：通过
 - `GET /api/exam/records/my/{id}`：通过
 - 教师 `GET /api/exam/questions`：通过
 - 学生 `GET /api/exam/questions`：403，符合预期
 
 ### 4.4 Playwright 浏览器回归
+- `auth-account-flow.spec.ts`：通过
 - `teacher-paper-plan.spec.ts`：通过
 - `teacher-exam-workflow.spec.ts`：通过
 - `student-exam.spec.ts`：通过
 - `grading-flow.spec.ts`：通过
 - `question-ai.spec.ts`：通过
+- `question-type-enhancement.spec.ts`：通过
 - `permission-route-guard.spec.ts`：通过
 - `student-score-flow.spec.ts`：通过
 
@@ -72,6 +87,7 @@
 - 考试发布
 
 2. 学生
+- 注册、找回密码、新密码登录
 - 待考列表
 - 进入考试
 - 保存与提交
@@ -85,6 +101,7 @@
 4. 权限
 - 未授权路由拦截
 - 管理接口 403 收口
+- 关键按钮按权限目录显示
 
 ## 5. 剩余风险
 1. 浏览器矩阵仍以 Edge 为主

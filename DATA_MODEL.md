@@ -14,10 +14,11 @@
 - `biz_organization`：组织树，支持学校、学院、班级、部门等层级
 - `sys_role`：角色表
 - `sys_user`：用户表，含组织、部门、考生编号等字段
+- `sys_verification_code`：验证码表，用于注册和找回密码基础版
 - `sys_menu`：菜单与权限可见性表
 
 ### 2. 题库与试卷
-- `biz_question_bank`：题库表，包含题型、选项 JSON、答案、解析、知识点、章节、标签、默认分值、审核状态、版本号
+- `biz_question_bank`：题库表，包含题型、纯文本题干、富文本题干、材料内容、附件 JSON、选项 JSON、答案、解析、知识点、章节、标签、默认分值、审核状态、版本号
 - `biz_exam_paper`：试卷表，除试卷基础信息外，新增试卷版本、备注、乱序开关、题型分布 JSON、难度分布 JSON
 - `biz_paper_question`：试卷-题目关系表，存放题目顺序、分值、是否必答
 

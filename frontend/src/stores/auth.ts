@@ -19,7 +19,8 @@ export const useAuthStore = defineStore('auth', {
     initialized: false
   }),
   getters: {
-    isAuthenticated: (state) => Boolean(state.token)
+    isAuthenticated: (state) => Boolean(state.token),
+    permissions: (state) => state.currentUser?.permissions || []
   },
   actions: {
     async login(username: string, password: string) {
@@ -63,6 +64,9 @@ export const useAuthStore = defineStore('auth', {
       this.menus = []
       this.initialized = true
       clearToken()
+    },
+    hasPermission(permission: string) {
+      return this.permissions.includes(permission)
     }
   }
 })

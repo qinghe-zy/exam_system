@@ -8,7 +8,7 @@
 - 页面：`QuestionBankView`
 - 接口：`/api/exam/questions*`
 - 表：`biz_question_bank`
-- 当前能力：题目维护、题目导入导出、知识点/标签/解析等元数据
+- 当前能力：题目维护、题目导入导出、知识点/标签/解析等元数据、填空题/论述题/材料题基础版、富文本 HTML、附件 JSON、知识点自动组题
 
 ### 2. 试卷与组卷
 - 页面：`ExamPaperView`、`ExamPaperBuilderView`
@@ -52,7 +52,12 @@
 - 阅卷老师：访问阅卷相关数据
 - 学生：只访问自己的考试、消息和已发布成绩
 
-## 四、当前限制
+## 四、账号入口增强
+- 页面：`LoginView`
+- 接口：`/api/auth/register-options`、`/api/auth/verification-codes/send`、`/api/auth/register`、`/api/auth/password/reset`
+- 表：`sys_verification_code`
+- 当前能力：学生注册基础版、找回密码基础版、邮箱/短信验证码 mock 通道
+## 五、当前限制
 - 数据权限仍是基础版
 - 防作弊仍是基础版
 - 高级分析和更复杂规则引擎仍未实现

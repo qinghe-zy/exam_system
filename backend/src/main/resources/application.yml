@@ -42,6 +42,10 @@ app:
     secret: cHJvamVjdGV4YW1wbGUtdGVtcGxhdGUtZmFjdG9yeS1iYXNlLWp3dC1zZWNyZXQ=
     expiration-minutes: 720
     issuer: projectexample-exam-system
+  auth:
+    verification:
+      expire-minutes: ${AUTH_VERIFICATION_EXPIRE_MINUTES:10}
+      mock-enabled: ${AUTH_VERIFICATION_MOCK_ENABLED:true}
   ai:
     api-base-url: ${AI_API_BASE_URL:https://api.deepseek.com}
     api-key: ${AI_API_KEY:}

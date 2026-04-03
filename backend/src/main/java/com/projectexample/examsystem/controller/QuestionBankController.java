@@ -1,6 +1,7 @@
 package com.projectexample.examsystem.controller;
 
 import com.projectexample.examsystem.common.ApiResponse;
+import com.projectexample.examsystem.dto.KnowledgePointAutoGroupRequest;
 import com.projectexample.examsystem.dto.QuestionImportRequest;
 import com.projectexample.examsystem.dto.QuestionBankSaveRequest;
 import com.projectexample.examsystem.service.QuestionBankService;
@@ -30,6 +31,12 @@ public class QuestionBankController {
     @PostMapping("/import")
     @PreAuthorize("hasAnyRole('ADMIN','ORG_ADMIN','TEACHER')")
     public ApiResponse<List<QuestionBankVO>> importQuestions(@Valid @RequestBody QuestionImportRequest request) { return ApiResponse.success("questions imported", questionBankService.importQuestions(request)); }
+
+    @PostMapping("/auto-group/knowledge-points")
+    @PreAuthorize("hasAnyRole('ADMIN','ORG_ADMIN','TEACHER')")
+    public ApiResponse<List<QuestionBankVO>> autoGroupByKnowledgePoint(@Valid @RequestBody KnowledgePointAutoGroupRequest request) {
+        return ApiResponse.success("knowledge point auto group generated", questionBankService.autoGroupByKnowledgePoint(request));
+    }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','ORG_ADMIN','TEACHER')")

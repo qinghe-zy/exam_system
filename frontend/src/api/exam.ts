@@ -14,6 +14,7 @@ import type {
   ExamRecord,
   GradingTask,
   GradingWorkspace,
+  KnowledgePointQuotaItem,
   QuestionBank
 } from '../types/exam'
 
@@ -31,6 +32,15 @@ export function exportQuestions() {
 
 export function importQuestions(payload: { questions: Omit<QuestionBank, 'id'>[] }) {
   return http.post<never, QuestionBank[]>('/api/exam/questions/import', payload)
+}
+
+export function autoGroupQuestionsByKnowledgePoint(payload: {
+  subject: string
+  difficultyLevel?: string
+  questionType?: string
+  quotas: KnowledgePointQuotaItem[]
+}) {
+  return http.post<never, QuestionBank[]>('/api/exam/questions/auto-group/knowledge-points', payload)
 }
 
 export function generateAiQuestionDraft(payload: AiQuestionDraftRequest) {
