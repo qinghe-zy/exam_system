@@ -1,7 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { ElMessage } from 'element-plus'
 
 import { useAuthStore } from '../stores/auth'
 import AdminLayout from '../layouts/AdminLayout.vue'
+import type { SystemMenu } from '../api/system'
 
 const DashboardView = () => import('../views/dashboard/DashboardView.vue')
 const AnalysisView = () => import('../views/exam/AnalysisView.vue')
@@ -160,6 +162,35 @@ const router = createRouter({
   ]
 })
 
+function flattenPagePaths(menus: SystemMenu[]): string[] {
+  const result: string[] = []
+  const walk = (items: SystemMenu[]) => {
+    items.forEach((item) => {
+      if (item.path && (item.menuType === 'PAGE' || Boolean(item.component))) {
+        result.push(item.path)
+      }
+      if (item.children?.length) {
+        walk(item.children)
+      }
+    })
+  }
+  walk(menus)
+  return result
+}
+
+function resolveFallbackPath(menus: SystemMenu[]) {
+  const pagePaths = flattenPagePaths(menus)
+  if (pagePaths.includes('/dashboard')) {
+    return '/dashboard'
+  }
+  return pagePaths[0] || '/dashboard'
+}
+
+function canAccessPath(path: string, menus: SystemMenu[]) {
+  const pagePaths = flattenPagePaths(menus)
+  return pagePaths.some((menuPath) => path === menuPath || path.startsWith(`${menuPath}/`))
+}
+
 router.beforeEach(async (to) => {
   const authStore = useAuthStore()
   if (!authStore.initialized) {
@@ -172,6 +203,11 @@ router.beforeEach(async (to) => {
 
   if (to.path === '/login' && authStore.isAuthenticated) {
     return '/dashboard'
+  }
+
+  if (to.meta.requiresAuth && authStore.isAuthenticated && to.path !== '/' && !canAccessPath(to.path, authStore.menus)) {
+    ElMessage.warning('当前账号无权访问该页面，已为你切换到可访问入口')
+    return resolveFallbackPath(authStore.menus)
   }
 
   if (typeof to.meta.title === 'string') {

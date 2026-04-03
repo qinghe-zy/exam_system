@@ -1,143 +1,126 @@
 # 开发记录
 
-## 一、当前阶段
-- 阶段名称：学生考试态修复 + 独立建卷页重构 + AI 题库辅助接入阶段
-- 当前状态：代码、数据库、前后端入口与验证已完成，AI 外部调用受当前环境缺少私有密钥限制
+## 1. 当前阶段
+- 阶段名称：系统能力全量核查、权限一致性修复与浏览器回归验证阶段
+- 当前状态：已完成“核查 -> 补缺口 -> Playwright 回归 -> 文档回写”闭环，仓库进入可提交收口状态
 
-## 二、已完成内容
-### 1. 学生端考试页面修复
-- 答题卡改为桌面端固定定位，主答题区滚动时右侧答题卡不再一起上滑。
-- 全屏按钮改为双态切换：
-  - 未全屏：显示“进入全屏”
-  - 已全屏：显示“退出全屏”
-- 主动点击“退出全屏”不再记为异常事件。
-- 保存答案现在有真实接口调用与明确反馈。
-- 提交试卷改为显式确认弹窗，并修复了考试态下弹窗被页面层盖住的问题。
-- 考试态 overlay 层级已下调，关键弹窗统一 `append-to-body` 并抬高 `z-index`。
+## 2. 已完成内容
+### 2.1 完成全量系统能力核查
+- 已读取并核对根目录正式文档、`docs/**`、数据库说明和模块 README。
+- 已核对后端控制器、服务、权限注解、组织范围过滤逻辑。
+- 已核对前端路由、菜单、考试页面、题库页面、试卷与考试发布页面。
+- 已核对 `sql/mysql/init.sql`、`schema.sql`、`data.sql` 与本地 MySQL `exam_system` 实库。
+- 已新增正式中文文档：
+  - `docs/product/系统功能核查矩阵.md`
+  - `docs/product/系统能力差距分析.md`
 
-### 2. 管理端试卷创建与组卷重构
-- 列表页与建卷页已拆分：
-  - 列表页：`/exam/papers`
-  - 新建页：`/exam/papers/create`
-  - 编辑页：`/exam/papers/:paperId/edit`
-- 旧“大而杂的单弹窗”不再作为主要建卷入口。
-- 独立建卷页按流程拆分为：
-  - 试卷基础信息
-  - 手工选题
-  - 随机组卷
-  - 策略组卷
-  - 卷面预览
-- 已真实验证：
-  - 手工选题建卷成功
-  - 随机组卷建卷成功
-  - 策略组卷建卷成功
+### 2.2 基于核查结果补齐高优先级缺口
+- 发现并修复高优先级权限一致性问题：
+  - 修复前：学生可直接访问 `/exam/proctor`，页面骨架能打开，但接口返回 403，形成“页面能进、数据加载失败、出现 Access Denied”的半残状态。
+  - 修复后：前端在进入受保护页面前，会根据当前菜单树与角色可见页面进行路由拦截，并自动回退到当前账号可访问入口。
+- 修复位置：
+  - `frontend/src/router/index.ts`
 
-### 3. 防作弊规则修正
-- 当前仍保留异常检测：
-  - 页面可见性变化
-  - 窗口失焦
-  - 全屏退出
-  - 自动保存与异常事件联动
-- 规则修正后：
-  - 主动点击退出全屏：不记异常
-  - 页面切换 / 标签切换 / 页面不可见：记异常
-  - 异常触发后继续自动保存并落库
-- 已通过真实验证：
-  - 主动退出全屏前后 `FULLSCREEN_EXIT` 事件数不增加
-  - 触发 `visibilitychange` 后 `TAB_SWITCH` 事件落库
+### 2.3 补强浏览器回归用例
+- 新增权限回归用例：
+  - `frontend/tests/e2e/permission-route-guard.spec.ts`
+- 修复既有教师链路用例的脆弱点：
+  1. 不再误点考试列表第一行，而是精确定位本次创建的考试。
+  2. 将写死的绝对时间改为基于当前时间动态生成，避免测试在当天晚些时候自然失效。
+- 新增共享测试辅助：
+  - `frontend/tests/e2e/helpers.ts`
+- 同步更新以下 E2E：
+  - `teacher-exam-workflow.spec.ts`
+  - `student-exam.spec.ts`
+  - `grading-flow.spec.ts`
 
-### 4. AI 模块从预留推进到局部接入
-- 已接入模块：题库管理
-- 当前已落地能力：
-  - AI 生成题目草稿
-  - AI 优化当前题干 / 答案 / 解析 / 选项
-- 前端入口：
-  - 题库页顶部“AI 生成题目草稿”
-  - 题目编辑弹窗内“AI 优化当前题目”
-- 后端新增：
-  - `QuestionAiController`
-  - `AiQuestionAssistService`
-  - `AiQuestionAssistServiceImpl`
-  - `AiQuestionDraftRequest`
-  - `AiQuestionPolishRequest`
-  - `AiQuestionDraftVO`
-  - `AiQuestionPolishVO`
-  - `AiGatewayClient` 已升级为真实 DeepSeek HTTP 客户端
-- 当前环境真实 blocker：
-  - 本机未设置 `AI_API_KEY`
-  - 因此已验证到“前端入口 -> 后端 controller -> service -> gateway -> 中文错误提示”闭环
-  - 未能完成真实外部 DeepSeek 成功调用
-
-## 三、本轮改动文件 / 模块
-### 1. 前端
-- `frontend/src/views/exam/CandidateExamView.vue`
-- `frontend/src/views/exam/ExamPaperView.vue`
-- `frontend/src/views/exam/ExamPaperBuilderView.vue`
-- `frontend/src/views/exam/QuestionBankView.vue`
+## 3. 本轮改动文件 / 模块
+### 3.1 代码
 - `frontend/src/router/index.ts`
-- `frontend/src/api/exam.ts`
-- `frontend/src/types/exam.ts`
+- `frontend/tests/e2e/helpers.ts`
+- `frontend/tests/e2e/permission-route-guard.spec.ts`
+- `frontend/tests/e2e/teacher-exam-workflow.spec.ts`
+- `frontend/tests/e2e/student-exam.spec.ts`
+- `frontend/tests/e2e/grading-flow.spec.ts`
 
-### 2. 后端
-- `backend/src/main/java/com/projectexample/examsystem/infra/ai/AiGatewayClient.java`
-- `backend/src/main/java/com/projectexample/examsystem/controller/QuestionAiController.java`
-- `backend/src/main/java/com/projectexample/examsystem/service/AiQuestionAssistService.java`
-- `backend/src/main/java/com/projectexample/examsystem/service/impl/AiQuestionAssistServiceImpl.java`
-- AI 相关 DTO / VO
-- `backend/src/main/resources/application.yml`
-
-### 3. 文档
-- `README.md`
+### 3.2 文档
+- `docs/product/系统功能核查矩阵.md`
+- `docs/product/系统能力差距分析.md`
 - `Documentation.md`
 - `EVALS.md`
 - `HANDOFF.md`
-- `docs/modules/paper-builder.md`
-- `docs/modules/ai-question-assistant.md`
-- `docs/modules/README.md`
+- `PLAN.md`
+- `DECISIONS.md`
+- `CHANGELOG.md`
+- `docs/testing/README.md`
+- `docs/product/README.md`
+- `database/README.md`
+- `frontend/README.md`
+- `task_plan.md`
+- `findings.md`
+- `progress.md`
 
-## 四、验证结果
-### 1. 构建 / 测试
-- 后端 `mvn -q test`：通过
-- 后端 `mvn -q -DskipTests compile`：通过
-- 前端 `npm.cmd run build`：通过
-- 前端 `npm.cmd run test:e2e`：通过（5 / 5）
+## 4. 验证结果
+### 4.1 文档与数据库核查
+- 已确认远端仓库 `origin` 为：`https://github.com/qinghe-zy/exam_system.git`
+- 已确认本地 MySQL `exam_system` 存在
+- 已确认本地 MySQL 关键表存在：
+  - `biz_question_bank`
+  - `biz_exam_paper`
+  - `biz_exam_plan`
+  - `biz_exam_candidate`
+  - `biz_answer_sheet`
+  - `biz_answer_item`
+  - `biz_grading_record`
+  - `biz_score_record`
+  - `biz_anti_cheat_event`
+  - `biz_audit_log`
+  - `biz_in_app_message`
+- 已核对关键数据量：
+  - 组织 12
+  - 角色 6
+  - 用户 74
+  - 菜单 20
+  - 题目 320
+  - 当前数据库中试卷、考试、答卷、成绩和监考事件数据均已存在，并能被页面与接口读取
 
-### 2. 学生端真实验证
-- 答题卡滚动前后位置：
-  - `before.y = 219.18`
-  - `after.y = 219.18`
-  - 结论：桌面端已固定，不再跟随主内容上滑
-- 全屏按钮：
-  - 点击前：`进入全屏`
-  - 点击后：`退出全屏`
-  - 再点击：恢复 `进入全屏`
-- 主动退出全屏：
-  - `FULLSCREEN_EXIT` 事件数前后保持 0
-- 切标签 / 页面不可见：
-  - `TAB_SWITCH` 事件增加到 1
-- 保存答案：
-  - 页面出现“答案已保存”
-- 提交试卷：
-  - 出现“提交确认”弹窗，可关闭
+### 4.2 构建与自动化验证
+- 后端：`mvn -q test` 通过
+- 前端：`npm.cmd run build` 通过
+- 前端：`npx.cmd playwright test` 通过（6 / 6）
 
-### 3. 管理端建卷验证
-- 手工卷已创建：`MAN-*`
-- 随机卷已创建：`RND-*`
-- 策略卷已创建：`STR-*`
-- 三类试卷均已真实落库并可回查 `assemblyMode`
+### 4.3 浏览器与主流程验证
+- 教师端：
+  - 题库页 AI 草稿入口：通过
+  - 试卷管理 -> 新建试卷：通过
+  - 随机组卷 / 策略组卷：通过
+  - 考试发布：通过
+- 学生端：
+  - 待考列表进入考试：通过
+  - 倒计时展示：通过
+  - 保存答案：通过
+  - 提交确认：通过
+  - 自动交卷链路：通过
+- 阅卷端：
+  - 阅卷任务列表：通过
+  - 主观题评分：通过
+  - 成绩发布提醒：通过
+- 防作弊：
+  - 切屏 / 失焦 / 全屏退出事件链路：通过
+  - 事件落库并在监考页可查：通过
+- 权限：
+  - 学生直达未授权监考页会被路由守卫拦回：通过
+  - 未再出现本轮核查前的“页面骨架可见、接口 403”半残状态
 
-### 4. AI 链路验证
-- 前端点击“AI 生成题目草稿”后，当前环境返回：
-  - `AI 功能尚未配置。请在本地环境变量中设置 AI_API_KEY，并确认 AI_API_BASE_URL / AI_MODEL 可用后重试。`
-- 后端直调 `/api/exam/questions/ai/draft` 也返回相同中文错误
-- 结论：调用链已接通，真实外部成功调用受本地密钥缺失阻塞
+## 5. 剩余风险
+1. 当前题型仍以单选、多选、判断、简答为主，复杂题型和多媒体题尚未实现。
+2. 防作弊仍是浏览器侧基础留痕，不是完整智能监考系统。
+3. 学生侧成绩查看、错题本、考后解析仍未补齐。
+4. 安全与运维能力仍偏弱，缺少登录风控、限流、健康检查、告警、备份恢复与并发压测。
+5. AI 当前只接入题库辅助，且当前环境未配置真实 `AI_API_KEY`，因此只验证到“入口、后端调用链和缺配置中文反馈”。
 
-## 五、剩余风险
-- 当前 AI 仅接入题库模块，阅卷建议与成绩分析摘要尚未接入。
-- 本机未配置 DeepSeek 私有密钥，AI 外部成功调用属于当前环境 blocker。
-- 防作弊仍是浏览器侧基础实现，不含摄像头、人脸、设备锁定、多端协同。
-
-## 六、下一步建议
-1. 在本地私有环境变量中补齐 `AI_API_KEY` 后，直接验证 AI 草稿与 AI 优化成功路径。
-2. 若进入下一阶段，优先扩展 AI 到阅卷评分建议。
-3. 继续补真实人工考试态手测脚本，覆盖浏览器最小化、跨屏和网络波动。
+## 6. 下一步建议
+1. 继续优先补齐题型扩展、知识点组卷和学生考后闭环。
+2. 对服务端数据权限做更细的行级策略收口，并增加按钮级授权校验。
+3. 增加登录风控、限流、健康检查和备份恢复 runbook，提升运维交付能力。
+4. 若进入下一轮，应优先在学生侧开放成绩查看和错题分析，以增强验收观感与学习闭环。

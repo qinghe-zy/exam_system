@@ -1,11 +1,18 @@
-# Database Directory
+# 数据库目录说明
 
-This directory stores database-facing assets that are not raw application runtime resources.
+## 一、目录用途
+本目录用于存放数据库侧的补充材料，而不是应用运行时直接加载的 SQL 资源。
 
-Planned contents:
-- migration notes
-- verification reports
-- seed strategy notes
-- rollback guidance
+## 二、建议放置内容
+- 数据库迁移说明
+- 回归验证记录
+- 种子数据策略说明
+- 回滚说明
+- 结构调整评审记录
 
-Authoritative executable initialization SQL remains under `sql/`.
+## 三、当前口径
+- 可执行初始化 SQL 仍以 `sql/` 目录为准
+- 当前正式交付初始化脚本为 `sql/mysql/init.sql`
+- 当前运行时初始化脚本为：
+  - `backend/src/main/resources/schema.sql`
+  - `backend/src/main/resources/data.sql`

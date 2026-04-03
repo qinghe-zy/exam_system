@@ -1,16 +1,14 @@
 # Progress Log
 
-## 2026-04-01 Session
-- Confirmed working directory and loaded repository-level `AGENTS.md`.
-- Loaded the planning workflow skill and established a file-based planning approach.
-- Audited required root docs and found they exist but are incomplete and partially malformed.
-- Audited current repository structure, backend stack, frontend stack, and SQL baseline.
-- Confirmed this directory was not yet a Git repository.
-- Initialized the local Git repository.
-- Expanded the backend schema and services to cover exam plan, candidate answer, grading, score, analytics, anti-cheat, and AI placeholder support.
-- Rebuilt key frontend views to match the new backend chain.
-- Passed backend compile, test context, and package verification.
-- Passed frontend production build verification.
-- Passed live HTTP smoke checks for candidate, grading, and analytics flows.
-- Imported synchronized SQL into local MySQL and verified key table counts.
-- Added `origin` and pushed `main` to GitHub successfully.
+## 2026-04-03 Session
+- 读取并核对根目录正式文档、`docs/**`、数据库说明与项目记忆文件
+- 核对后端控制器、服务、权限注解、数据库脚本和前端路由、页面、Playwright 用例
+- 连接本地 MySQL `exam_system`，确认核心表与真实数据存在
+- 执行后端测试与前端构建
+- 执行 Playwright 回归并发现两类真实问题：
+  - 学生可直接输入未授权监考路由，页面半残
+  - E2E 存在写死时间导致的自然失效风险
+- 修复前端路由守卫，新增权限回归用例
+- 修复教师/学生/阅卷相关 E2E 的时间与定位问题
+- 再次执行 `npx.cmd playwright test`，6 / 6 通过
+- 输出正式中文核查文档并同步根目录文档、交接文档与项目记忆文件

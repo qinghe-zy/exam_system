@@ -1,7 +1,10 @@
 import { expect, test } from '@playwright/test'
 
+import { buildActiveExamWindow } from './helpers'
+
 test('阅卷老师登录后完成主观题评分', async ({ page, request }) => {
   const suffix = Date.now().toString().slice(-6)
+  const { startTime, endTime } = buildActiveExamWindow()
   const teacherLogin = await request.post('http://127.0.0.1:8083/api/auth/login', {
     data: { username: '800001', password: '123456' }
   })
@@ -18,8 +21,8 @@ test('阅卷老师登录后完成主观题评分', async ({ page, request }) => 
       examCode: `GRD-${suffix}`,
       examName: `阅卷验证-${suffix}`,
       paperId: paper.id,
-      startTime: '2026-04-03T11:00:00',
-      endTime: '2026-04-03T16:00:00',
+      startTime,
+      endTime,
       durationMinutes: 90,
       passScore: Math.min(60, paper.totalScore),
       candidateScope: 'ASSIGNED',
