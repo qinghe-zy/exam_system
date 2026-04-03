@@ -16,9 +16,14 @@ public class ExamPaper extends BaseEntity {
     private String subject;
     private String assemblyMode;
     private String descriptionText;
+    private String paperVersion;
+    private String remarkText;
     private Integer durationMinutes;
     private Double totalScore;
     private Double passScore;
     private Integer questionCount;
+    private Integer shuffleEnabled;
+    private String questionTypeConfigJson;
+    private String difficultyConfigJson;
     private Integer publishStatus;
 }

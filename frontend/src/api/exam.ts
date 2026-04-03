@@ -90,7 +90,10 @@ export function submitCandidateAnswers(examPlanId: number, answers: { questionId
   return http.post<never, CandidateExamWorkspace>(`/api/exam/candidate/exams/${examPlanId}/submit`, { answers })
 }
 
-export function reportCandidateEvent(examPlanId: number, payload: { answerSheetId?: number; eventType: string; severity: string; detailText?: string }) {
+export function reportCandidateEvent(
+  examPlanId: number,
+  payload: { answerSheetId?: number; eventType: string; severity: string; leaveCount?: number; triggeredAutoSave?: number; saveVersion?: number; detailText?: string }
+) {
   return http.post(`/api/exam/candidate/exams/${examPlanId}/events`, payload)
 }
 

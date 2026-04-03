@@ -6,15 +6,15 @@ import lombok.Data;
 @Data
 public class PaperQuestionItemRequest {
 
-    @NotNull(message = "Question id is required")
+    @NotNull(message = "题目不能为空")
     private Long questionId;
 
-    @NotNull(message = "Sort order is required")
+    @NotNull(message = "题目顺序不能为空")
     private Integer sortNo;
 
-    @NotNull(message = "Score is required")
+    @NotNull(message = "题目分值不能为空")
     private Double score;
 
-    @NotNull(message = "Required flag is required")
+    @NotNull(message = "必答标记不能为空")
     private Integer requiredFlag;
 }

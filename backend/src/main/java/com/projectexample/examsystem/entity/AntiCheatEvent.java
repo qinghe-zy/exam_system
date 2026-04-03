@@ -17,6 +17,9 @@ public class AntiCheatEvent extends BaseEntity {
     private Long userId;
     private String eventType;
     private String severity;
+    private Integer leaveCount;
+    private Integer triggeredAutoSave;
+    private Integer saveVersion;
     private String detailText;
     private LocalDateTime occurredAt;
 }

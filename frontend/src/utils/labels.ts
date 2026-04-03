@@ -46,7 +46,8 @@ const severityMap: Record<string, string> = {
 const eventTypeMap: Record<string, string> = {
   TAB_SWITCH: '切换页面标签',
   WINDOW_BLUR: '窗口失焦',
-  FULLSCREEN_EXIT: '退出全屏'
+  FULLSCREEN_EXIT: '退出全屏',
+  AUTO_SAVE_FAILURE: '自动保存失败'
 }
 
 export function labelQuestionType(value?: string) {

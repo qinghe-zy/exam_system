@@ -15,6 +15,9 @@ public class CandidateExamVO {
     private String subject;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
+    private LocalDateTime entryDeadlineAt;
+    private LocalDateTime answerDeadlineAt;
+    private Integer durationMinutes;
     private String candidateStatus;
     private Integer attemptCount;
     private String answerSheetStatus;

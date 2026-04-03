@@ -18,7 +18,7 @@
 
 ### 2. 题库与试卷
 - `biz_question_bank`：题库表，包含题型、选项 JSON、答案、解析、知识点、章节、标签、默认分值、审核状态、版本号
-- `biz_exam_paper`：试卷表
+- `biz_exam_paper`：试卷表，除试卷基础信息外，新增试卷版本、备注、乱序开关、题型分布 JSON、难度分布 JSON
 - `biz_paper_question`：试卷-题目关系表，存放题目顺序、分值、是否必答
 
 ### 3. 考试发布与作答
@@ -33,7 +33,7 @@
 
 ### 5. 运营与审计
 - `biz_notice`：通知公告
-- `biz_anti_cheat_event`：反作弊事件表
+- `biz_anti_cheat_event`：反作弊事件表，新增异常累计次数、是否联动自动保存、答卷版本字段
 - `biz_audit_log`：审计日志表
 
 ## 四、主链路关系
@@ -54,6 +54,12 @@
 - `PENDING_GRADING`
 - `PARTIALLY_GRADED`
 - `PUBLISHED`
+
+### 3. 考试时间语义
+- `biz_exam_plan.start_time / end_time`：学生允许进入考试的时间窗口
+- `biz_exam_plan.duration_minutes`：学生进入考试后的标准作答时长
+- `biz_answer_sheet.started_at`：学生实际进入考试时间
+- 实际作答截止时间：`min(started_at + duration_minutes, end_time)`
 
 ## 六、与实现一致性说明
 当前代码中以下能力依赖这些表：

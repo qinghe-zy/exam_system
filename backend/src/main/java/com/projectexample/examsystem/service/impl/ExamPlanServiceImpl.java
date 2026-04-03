@@ -89,12 +89,21 @@ public class ExamPlanServiceImpl implements ExamPlanService {
     private ExamPaper requirePaper(Long paperId) {
         ExamPaper paper = examPaperMapper.selectById(paperId);
         if (paper == null) {
-            throw new BusinessException(4041, "Exam paper not found");
+            throw new BusinessException(4041, "试卷不存在");
+        }
+        if (!accessScopeService.isAdmin()) {
+            accessScopeService.assertOrganizationAccessible(paper.getOrganizationId());
         }
         return paper;
     }
 
     private void apply(ExamPlan entity, ExamPlanSaveRequest request, ExamPaper paper) {
+        if (request.getEndTime().isBefore(request.getStartTime()) || request.getEndTime().isEqual(request.getStartTime())) {
+            throw new BusinessException(4004, "考试结束时间必须晚于开始时间");
+        }
+        if (request.getPassScore() > paper.getTotalScore()) {
+            throw new BusinessException(4004, "考试及格线不能高于试卷总分");
+        }
         entity.setOrganizationId(paper.getOrganizationId() == null ? accessScopeService.currentUser().getOrganizationId() : paper.getOrganizationId());
         entity.setExamCode(request.getExamCode());
         entity.setExamName(request.getExamName());

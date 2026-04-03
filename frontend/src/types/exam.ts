@@ -18,6 +18,13 @@ export interface QuestionBank {
   status: number
 }
 
+export interface PaperRuleConfigItem {
+  code: string
+  label: string
+  count: number
+  score?: number | null
+}
+
 export interface PaperQuestionItem {
   questionId: number
   sortNo: number
@@ -25,6 +32,7 @@ export interface PaperQuestionItem {
   requiredFlag: number
   questionCode?: string
   questionType?: string
+  difficultyLevel?: string
   stem?: string
 }
 
@@ -35,10 +43,15 @@ export interface ExamPaper {
   subject: string
   assemblyMode: string
   descriptionText?: string
+  paperVersion?: string
+  remarkText?: string
   durationMinutes: number
   totalScore: number
   passScore: number
   questionCount: number
+  shuffleEnabled: number
+  questionTypeConfigs: PaperRuleConfigItem[]
+  difficultyConfigs: PaperRuleConfigItem[]
   publishStatus: number
   questionItems: PaperQuestionItem[]
 }
@@ -76,6 +89,9 @@ export interface CandidateExam {
   subject: string
   startTime: string
   endTime: string
+  entryDeadlineAt?: string
+  answerDeadlineAt?: string
+  durationMinutes: number
   candidateStatus: string
   attemptCount: number
   answerSheetStatus: string
@@ -105,9 +121,17 @@ export interface CandidateExamWorkspace {
   instructionText?: string
   startTime: string
   endTime: string
+  entryDeadlineAt: string
+  answerDeadlineAt: string
   durationMinutes: number
+  remainingSeconds: number
   answerSheetId: number
   answerSheetStatus: string
+  autoSubmitEnabled: number
+  autoSubmitFlag: number
+  saveVersion: number
+  shuffleEnabled: number
+  paperVersion?: string
   items: CandidateAnswerItem[]
 }
 
@@ -191,10 +215,15 @@ export interface AnalysisOverview {
 export interface AntiCheatEvent {
   id: number
   examPlanId: number
+  examName?: string
   answerSheetId?: number
   userId: number
+  candidateName?: string
   eventType: string
   severity: string
+  leaveCount?: number
+  triggeredAutoSave?: number
+  saveVersion?: number
   detailText?: string
   occurredAt: string
 }

@@ -13,5 +13,6 @@ public class PaperQuestionItemVO {
     private Integer requiredFlag;
     private String questionCode;
     private String questionType;
+    private String difficultyLevel;
     private String stem;
 }

@@ -17,8 +17,16 @@ public class CandidateExamWorkspaceVO {
     private String instructionText;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
+    private LocalDateTime entryDeadlineAt;
+    private LocalDateTime answerDeadlineAt;
     private Integer durationMinutes;
+    private Integer remainingSeconds;
     private Long answerSheetId;
     private String answerSheetStatus;
+    private Integer autoSubmitEnabled;
+    private Integer autoSubmitFlag;
+    private Integer saveVersion;
+    private Integer shuffleEnabled;
+    private String paperVersion;
     private List<CandidateAnswerItemVO> items;
 }

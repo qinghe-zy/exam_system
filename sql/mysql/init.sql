@@ -145,10 +145,15 @@ CREATE TABLE biz_exam_paper (
     subject VARCHAR(64) NOT NULL,
     assembly_mode VARCHAR(32) NOT NULL,
     description_text VARCHAR(500),
+    paper_version VARCHAR(64),
+    remark_text VARCHAR(500),
     duration_minutes INT NOT NULL,
     total_score DECIMAL(10,2) NOT NULL,
     pass_score DECIMAL(10,2) NOT NULL,
     question_count INT NOT NULL DEFAULT 0,
+    shuffle_enabled INT NOT NULL DEFAULT 0,
+    question_type_config_json TEXT,
+    difficulty_config_json TEXT,
     publish_status INT NOT NULL DEFAULT 0,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -289,6 +294,9 @@ CREATE TABLE biz_anti_cheat_event (
     user_id BIGINT NOT NULL,
     event_type VARCHAR(64) NOT NULL,
     severity VARCHAR(16) NOT NULL,
+    leave_count INT NOT NULL DEFAULT 1,
+    triggered_auto_save INT NOT NULL DEFAULT 0,
+    save_version INT NOT NULL DEFAULT 0,
     detail_text VARCHAR(500),
     occurred_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -802,15 +810,15 @@ INSERT INTO biz_question_bank (id, question_code, organization_id, subject, ques
     (319, 'DL-039', 6, '地理', 'TRUE_FALSE', 'HARD', '【地理第39题】区域地理是地理学科中的重要基础内容，需要结合具体条件进行判断。该表述是否正确？', '["正确","错误"]', '正确', '本题考查对区域地理基础概念的理解，判断题应重点关注关键词和限定条件。', '区域地理', '区域与环境', '清河大学考试资源库', '地理,区域地理,课堂基础', 5, 'APPROVED', 1, 1, 0),
     (320, 'DL-040', 6, '地理', 'SHORT_ANSWER', 'EASY', '【地理第40题】请结合人文地理，概述解决相关问题时需要关注的核心思路。', NULL, '参考答案：应围绕人文地理的基本概念、关键条件、常见误区和应用场景进行作答。', '本题考查人文地理的理解与表达能力，阅卷时重点关注概念准确性、逻辑完整性和学科术语使用。', '人文地理', '区域与环境', '清河大学考试资源库', '地理,人文地理,课堂基础', 15, 'APPROVED', 1, 1, 0);
 
-INSERT INTO biz_exam_paper (id, paper_code, organization_id, paper_name, subject, assembly_mode, description_text, duration_minutes, total_score, pass_score, question_count, publish_status, deleted) VALUES
-    (1, 'SJ-YW-001', 2, '语文期中模拟卷', '语文', 'MANUAL', '用于语文学科日常测验与期中演练。', 90, 175, 105, 20, 1, 0),
-    (2, 'SJ-SX-001', 3, '数学期中模拟卷', '数学', 'MANUAL', '用于数学学科日常测验与期中演练。', 90, 175, 105, 20, 1, 0),
-    (3, 'SJ-YY-001', 4, '英语期中模拟卷', '英语', 'MANUAL', '用于英语学科日常测验与期中演练。', 90, 175, 105, 20, 1, 0),
-    (4, 'SJ-WL-001', 3, '物理期中模拟卷', '物理', 'MANUAL', '用于物理学科日常测验与期中演练。', 90, 175, 105, 20, 1, 0),
-    (5, 'SJ-HX-001', 3, '化学期中模拟卷', '化学', 'MANUAL', '用于化学学科日常测验与期中演练。', 90, 175, 105, 20, 1, 0),
-    (6, 'SJ-SW-001', 5, '生物期中模拟卷', '生物', 'MANUAL', '用于生物学科日常测验与期中演练。', 90, 175, 105, 20, 1, 0),
-    (7, 'SJ-LS-001', 6, '历史期中模拟卷', '历史', 'MANUAL', '用于历史学科日常测验与期中演练。', 90, 175, 105, 20, 1, 0),
-    (8, 'SJ-DL-001', 6, '地理期中模拟卷', '地理', 'MANUAL', '用于地理学科日常测验与期中演练。', 90, 175, 105, 20, 1, 0);
+INSERT INTO biz_exam_paper (id, paper_code, organization_id, paper_name, subject, assembly_mode, description_text, paper_version, remark_text, duration_minutes, total_score, pass_score, question_count, shuffle_enabled, question_type_config_json, difficulty_config_json, publish_status, deleted) VALUES
+    (1, 'SJ-YW-001', 2, '语文期中模拟卷', '语文', 'MANUAL', '用于语文学科日常测验与期中演练。', '2026春季A卷', '初始化示例试卷', 90, 175, 105, 20, 0, NULL, NULL, 1, 0),
+    (2, 'SJ-SX-001', 3, '数学期中模拟卷', '数学', 'MANUAL', '用于数学学科日常测验与期中演练。', '2026春季A卷', '初始化示例试卷', 90, 175, 105, 20, 0, NULL, NULL, 1, 0),
+    (3, 'SJ-YY-001', 4, '英语期中模拟卷', '英语', 'MANUAL', '用于英语学科日常测验与期中演练。', '2026春季A卷', '初始化示例试卷', 90, 175, 105, 20, 0, NULL, NULL, 1, 0),
+    (4, 'SJ-WL-001', 3, '物理期中模拟卷', '物理', 'MANUAL', '用于物理学科日常测验与期中演练。', '2026春季A卷', '初始化示例试卷', 90, 175, 105, 20, 0, NULL, NULL, 1, 0),
+    (5, 'SJ-HX-001', 3, '化学期中模拟卷', '化学', 'MANUAL', '用于化学学科日常测验与期中演练。', '2026春季A卷', '初始化示例试卷', 90, 175, 105, 20, 0, NULL, NULL, 1, 0),
+    (6, 'SJ-SW-001', 5, '生物期中模拟卷', '生物', 'MANUAL', '用于生物学科日常测验与期中演练。', '2026春季A卷', '初始化示例试卷', 90, 175, 105, 20, 0, NULL, NULL, 1, 0),
+    (7, 'SJ-LS-001', 6, '历史期中模拟卷', '历史', 'MANUAL', '用于历史学科日常测验与期中演练。', '2026春季A卷', '初始化示例试卷', 90, 175, 105, 20, 0, NULL, NULL, 1, 0),
+    (8, 'SJ-DL-001', 6, '地理期中模拟卷', '地理', 'MANUAL', '用于地理学科日常测验与期中演练。', '2026春季A卷', '初始化示例试卷', 90, 175, 105, 20, 0, NULL, NULL, 1, 0);
 
 INSERT INTO biz_paper_question (id, paper_id, question_id, sort_no, score, required_flag, deleted) VALUES
     (1, 1, 1, 1, 5, 1, 0),
@@ -1122,19 +1130,19 @@ INSERT INTO biz_score_record (id, exam_plan_id, answer_sheet_id, user_id, candid
     (11, 6, 11, 20, '陈婷瑞', '2026级历史地理综合测验', '历史期中模拟卷', TIMESTAMP '2026-04-12 10:30:00', 20, 0, 20, 0, 0, 'PENDING_GRADING', 0),
     (12, 6, 12, 26, '孙博哲', '2026级历史地理综合测验', '历史期中模拟卷', TIMESTAMP '2026-04-13 10:30:00', 20, 0, 20, 0, 0, 'PENDING_GRADING', 0);
 
-INSERT INTO biz_anti_cheat_event (id, exam_plan_id, answer_sheet_id, user_id, event_type, severity, detail_text, occurred_at, deleted) VALUES
-    (1, 1, 1, 15, 'TAB_SWITCH', 'MEDIUM', '考生在考试过程中发生过一次切屏行为。', TIMESTAMP '2026-04-02 09:35:00', 0),
-    (2, 1, 2, 21, 'TAB_SWITCH', 'MEDIUM', '考生在考试过程中发生过一次切屏行为。', TIMESTAMP '2026-04-03 09:35:00', 0),
-    (3, 2, 3, 16, 'TAB_SWITCH', 'MEDIUM', '考生在考试过程中发生过一次切屏行为。', TIMESTAMP '2026-04-04 09:35:00', 0),
-    (4, 2, 4, 22, 'TAB_SWITCH', 'MEDIUM', '考生在考试过程中发生过一次切屏行为。', TIMESTAMP '2026-04-05 09:35:00', 0),
-    (5, 3, 5, 17, 'TAB_SWITCH', 'MEDIUM', '考生在考试过程中发生过一次切屏行为。', TIMESTAMP '2026-04-06 09:35:00', 0),
-    (6, 3, 6, 23, 'TAB_SWITCH', 'MEDIUM', '考生在考试过程中发生过一次切屏行为。', TIMESTAMP '2026-04-07 09:35:00', 0),
-    (7, 4, 7, 18, 'TAB_SWITCH', 'MEDIUM', '考生在考试过程中发生过一次切屏行为。', TIMESTAMP '2026-04-08 09:35:00', 0),
-    (8, 4, 8, 24, 'TAB_SWITCH', 'MEDIUM', '考生在考试过程中发生过一次切屏行为。', TIMESTAMP '2026-04-09 09:35:00', 0),
-    (9, 5, 9, 19, 'TAB_SWITCH', 'MEDIUM', '考生在考试过程中发生过一次切屏行为。', TIMESTAMP '2026-04-10 09:35:00', 0),
-    (10, 5, 10, 25, 'TAB_SWITCH', 'MEDIUM', '考生在考试过程中发生过一次切屏行为。', TIMESTAMP '2026-04-11 09:35:00', 0),
-    (11, 6, 11, 20, 'TAB_SWITCH', 'MEDIUM', '考生在考试过程中发生过一次切屏行为。', TIMESTAMP '2026-04-12 09:35:00', 0),
-    (12, 6, 12, 26, 'TAB_SWITCH', 'MEDIUM', '考生在考试过程中发生过一次切屏行为。', TIMESTAMP '2026-04-13 09:35:00', 0);
+INSERT INTO biz_anti_cheat_event (id, exam_plan_id, answer_sheet_id, user_id, event_type, severity, leave_count, triggered_auto_save, save_version, detail_text, occurred_at, deleted) VALUES
+    (1, 1, 1, 15, 'TAB_SWITCH', 'MEDIUM', 1, 1, 3, '考生在考试过程中发生过一次切屏行为。', TIMESTAMP '2026-04-02 09:35:00', 0),
+    (2, 1, 2, 21, 'TAB_SWITCH', 'MEDIUM', 1, 1, 3, '考生在考试过程中发生过一次切屏行为。', TIMESTAMP '2026-04-03 09:35:00', 0),
+    (3, 2, 3, 16, 'TAB_SWITCH', 'MEDIUM', 1, 1, 3, '考生在考试过程中发生过一次切屏行为。', TIMESTAMP '2026-04-04 09:35:00', 0),
+    (4, 2, 4, 22, 'TAB_SWITCH', 'MEDIUM', 1, 1, 3, '考生在考试过程中发生过一次切屏行为。', TIMESTAMP '2026-04-05 09:35:00', 0),
+    (5, 3, 5, 17, 'TAB_SWITCH', 'MEDIUM', 1, 1, 3, '考生在考试过程中发生过一次切屏行为。', TIMESTAMP '2026-04-06 09:35:00', 0),
+    (6, 3, 6, 23, 'TAB_SWITCH', 'MEDIUM', 1, 1, 3, '考生在考试过程中发生过一次切屏行为。', TIMESTAMP '2026-04-07 09:35:00', 0),
+    (7, 4, 7, 18, 'TAB_SWITCH', 'MEDIUM', 1, 1, 3, '考生在考试过程中发生过一次切屏行为。', TIMESTAMP '2026-04-08 09:35:00', 0),
+    (8, 4, 8, 24, 'TAB_SWITCH', 'MEDIUM', 1, 1, 3, '考生在考试过程中发生过一次切屏行为。', TIMESTAMP '2026-04-09 09:35:00', 0),
+    (9, 5, 9, 19, 'TAB_SWITCH', 'MEDIUM', 1, 1, 3, '考生在考试过程中发生过一次切屏行为。', TIMESTAMP '2026-04-10 09:35:00', 0),
+    (10, 5, 10, 25, 'TAB_SWITCH', 'MEDIUM', 1, 1, 3, '考生在考试过程中发生过一次切屏行为。', TIMESTAMP '2026-04-11 09:35:00', 0),
+    (11, 6, 11, 20, 'TAB_SWITCH', 'MEDIUM', 1, 1, 3, '考生在考试过程中发生过一次切屏行为。', TIMESTAMP '2026-04-12 09:35:00', 0),
+    (12, 6, 12, 26, 'TAB_SWITCH', 'MEDIUM', 1, 1, 3, '考生在考试过程中发生过一次切屏行为。', TIMESTAMP '2026-04-13 09:35:00', 0);
 
 INSERT INTO biz_audit_log (id, operator_id, operator_name, module_name, action_name, target_type, target_id, detail_text, deleted) VALUES
     (1, 2, '教务管理员', '系统运营', '执行操作', '业务对象', 1, '教师完成中文题目录入', 0),

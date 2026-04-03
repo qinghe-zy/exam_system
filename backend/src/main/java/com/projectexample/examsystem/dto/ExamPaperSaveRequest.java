@@ -1,5 +1,6 @@
 package com.projectexample.examsystem.dto;
 
+import com.projectexample.examsystem.common.PaperRuleConfigItem;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -11,33 +12,44 @@ import java.util.List;
 @Data
 public class ExamPaperSaveRequest {
 
-    @NotBlank(message = "Paper code is required")
+    @NotBlank(message = "试卷编码不能为空")
     private String paperCode;
 
-    @NotBlank(message = "Paper name is required")
+    @NotBlank(message = "试卷名称不能为空")
     private String paperName;
 
-    @NotBlank(message = "Subject is required")
+    @NotBlank(message = "学科不能为空")
     private String subject;
 
-    @NotBlank(message = "Assembly mode is required")
+    @NotBlank(message = "组卷方式不能为空")
     private String assemblyMode;
 
     private String descriptionText;
+    private String paperVersion;
+    private String remarkText;
 
-    @NotNull(message = "Duration is required")
+    @NotNull(message = "考试时长不能为空")
     private Integer durationMinutes;
 
-    @NotNull(message = "Total score is required")
+    @NotNull(message = "总分不能为空")
     private Double totalScore;
 
-    @NotNull(message = "Pass score is required")
+    @NotNull(message = "及格线不能为空")
     private Double passScore;
 
-    @NotNull(message = "Publish status is required")
+    @NotNull(message = "乱序设置不能为空")
+    private Integer shuffleEnabled;
+
+    @Valid
+    private List<PaperRuleConfigItem> questionTypeConfigs;
+
+    @Valid
+    private List<PaperRuleConfigItem> difficultyConfigs;
+
+    @NotNull(message = "发布状态不能为空")
     private Integer publishStatus;
 
-    @NotEmpty(message = "At least one paper question is required")
+    @NotEmpty(message = "至少需要选择一道题目")
     @Valid
     private List<PaperQuestionItemRequest> questionItems;
 }

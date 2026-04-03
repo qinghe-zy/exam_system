@@ -14,5 +14,8 @@ public class CandidateEventReportRequest {
     @NotBlank(message = "Severity is required")
     private String severity;
 
+    private Integer leaveCount;
+    private Integer triggeredAutoSave;
+    private Integer saveVersion;
     private String detailText;
 }

@@ -1,6 +1,9 @@
 package com.projectexample.examsystem.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.projectexample.examsystem.dto.CandidateAnswerItemRequest;
 import com.projectexample.examsystem.dto.CandidateAnswerSheetSaveRequest;
 import com.projectexample.examsystem.dto.CandidateEventReportRequest;
@@ -9,6 +12,7 @@ import com.projectexample.examsystem.entity.AnswerSheet;
 import com.projectexample.examsystem.entity.AntiCheatEvent;
 import com.projectexample.examsystem.entity.AuditLog;
 import com.projectexample.examsystem.entity.ExamCandidate;
+import com.projectexample.examsystem.entity.ExamPaper;
 import com.projectexample.examsystem.entity.ExamPlan;
 import com.projectexample.examsystem.entity.ExamRecord;
 import com.projectexample.examsystem.entity.PaperQuestion;
@@ -20,6 +24,7 @@ import com.projectexample.examsystem.mapper.AnswerSheetMapper;
 import com.projectexample.examsystem.mapper.AntiCheatEventMapper;
 import com.projectexample.examsystem.mapper.AuditLogMapper;
 import com.projectexample.examsystem.mapper.ExamCandidateMapper;
+import com.projectexample.examsystem.mapper.ExamPaperMapper;
 import com.projectexample.examsystem.mapper.ExamPlanMapper;
 import com.projectexample.examsystem.mapper.ExamRecordMapper;
 import com.projectexample.examsystem.mapper.PaperQuestionMapper;
@@ -31,12 +36,17 @@ import com.projectexample.examsystem.vo.CandidateExamVO;
 import com.projectexample.examsystem.vo.CandidateExamWorkspaceVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -47,6 +57,7 @@ public class CandidateExamServiceImpl implements CandidateExamService {
     private final SysUserMapper sysUserMapper;
     private final ExamPlanMapper examPlanMapper;
     private final ExamCandidateMapper examCandidateMapper;
+    private final ExamPaperMapper examPaperMapper;
     private final PaperQuestionMapper paperQuestionMapper;
     private final QuestionBankMapper questionBankMapper;
     private final AnswerSheetMapper answerSheetMapper;
@@ -54,6 +65,7 @@ public class CandidateExamServiceImpl implements CandidateExamService {
     private final ExamRecordMapper examRecordMapper;
     private final AuditLogMapper auditLogMapper;
     private final AntiCheatEventMapper antiCheatEventMapper;
+    private final ObjectMapper objectMapper;
 
     @Override
     public List<CandidateExamVO> listMyExams(String username) {
@@ -70,6 +82,8 @@ public class CandidateExamServiceImpl implements CandidateExamService {
                 .map(candidate -> {
                     ExamPlan plan = requirePlan(candidate.getExamPlanId());
                     AnswerSheet sheet = sheetMap.get(plan.getId());
+                    LocalDateTime entryDeadlineAt = computeEntryDeadline(plan);
+                    LocalDateTime answerDeadlineAt = sheet == null ? null : computeAnswerDeadline(plan, sheet);
                     return CandidateExamVO.builder()
                             .examPlanId(plan.getId())
                             .examName(plan.getExamName())
@@ -77,6 +91,9 @@ public class CandidateExamServiceImpl implements CandidateExamService {
                             .subject(plan.getSubject())
                             .startTime(plan.getStartTime())
                             .endTime(plan.getEndTime())
+                            .entryDeadlineAt(entryDeadlineAt)
+                            .answerDeadlineAt(answerDeadlineAt)
+                            .durationMinutes(plan.getDurationMinutes())
                             .candidateStatus(candidate.getStatus())
                             .attemptCount(candidate.getAttemptCount())
                             .answerSheetStatus(sheet == null ? "NOT_STARTED" : sheet.getStatus())
@@ -94,6 +111,10 @@ public class CandidateExamServiceImpl implements CandidateExamService {
         ensurePlanOpen(plan, sheet);
         ensureAttemptAllowed(plan, candidate, sheet);
         ensurePasswordAllowed(plan, sheet, examPassword);
+        if (sheet.getStartedAt() == null) {
+            sheet = markSheetStarted(sheet);
+        }
+        sheet = autoSubmitIfNeeded(plan, user, candidate, sheet);
         return buildWorkspace(plan, sheet);
     }
 
@@ -105,44 +126,28 @@ public class CandidateExamServiceImpl implements CandidateExamService {
         AnswerSheet sheet = getOrCreateSheet(plan, user, true);
         ensurePlanOpen(plan, sheet);
         ensureAttemptAllowed(plan, candidate, sheet);
-        Map<Long, PaperQuestion> paperQuestionMap = paperQuestionMapper.selectList(Wrappers.lambdaQuery(PaperQuestion.class)
-                        .eq(PaperQuestion::getPaperId, plan.getPaperId()))
-                .stream()
-                .collect(Collectors.toMap(PaperQuestion::getQuestionId, Function.identity()));
-        Map<Long, QuestionBank> questionMap = questionBankMapper.selectBatchIds(paperQuestionMap.keySet()).stream()
-                .collect(Collectors.toMap(QuestionBank::getId, Function.identity()));
-        Map<Long, AnswerItem> existingItems = answerItemMapper.selectList(Wrappers.lambdaQuery(AnswerItem.class)
-                        .eq(AnswerItem::getAnswerSheetId, sheet.getId()))
-                .stream()
-                .collect(Collectors.toMap(AnswerItem::getQuestionId, Function.identity(), (left, right) -> right, HashMap::new));
 
-        for (CandidateAnswerItemRequest itemRequest : request.getAnswers()) {
-            PaperQuestion paperQuestion = paperQuestionMap.get(itemRequest.getQuestionId());
-            QuestionBank question = questionMap.get(itemRequest.getQuestionId());
-            if (paperQuestion == null || question == null) {
-                throw new BusinessException(4004, "Question is not part of the current paper");
-            }
-            AnswerItem answerItem = existingItems.getOrDefault(itemRequest.getQuestionId(), new AnswerItem());
-            answerItem.setAnswerSheetId(sheet.getId());
-            answerItem.setQuestionId(question.getId());
-            answerItem.setQuestionType(question.getQuestionType());
-            answerItem.setQuestionOrder(paperQuestion.getSortNo());
-            answerItem.setAnswerContent(itemRequest.getAnswerContent());
-            answerItem.setMaxScore(paperQuestion.getScore());
-            if (answerItem.getId() == null) {
-                answerItem.setStatus("PENDING");
-                answerItemMapper.insert(answerItem);
-            } else {
-                answerItemMapper.updateById(answerItem);
-            }
-            existingItems.put(itemRequest.getQuestionId(), answerItem);
-        }
+        Map<Long, PaperQuestion> paperQuestionMap = loadPaperQuestionMap(plan.getPaperId());
+        Map<Long, QuestionBank> questionMap = loadQuestionMap(paperQuestionMap.keySet());
+        Map<Long, AnswerItem> existingItems = loadExistingAnswerItems(sheet.getId());
 
+        upsertAnswerItems(sheet, request.getAnswers(), paperQuestionMap, questionMap, existingItems);
         sheet.setSaveVersion((sheet.getSaveVersion() == null ? 0 : sheet.getSaveVersion()) + 1);
         sheet.setStatus(submit ? "SUBMITTED" : "IN_PROGRESS");
+
+        LocalDateTime answerDeadlineAt = computeAnswerDeadline(plan, sheet);
+        if (!submit && LocalDateTime.now().isAfter(answerDeadlineAt)) {
+            if (isAutoSubmitEnabled(plan)) {
+                finalizeSubmission(plan, user, candidate, sheet, paperQuestionMap, questionMap, existingItems, true);
+                return buildWorkspace(plan, answerSheetMapper.selectById(sheet.getId()));
+            }
+            answerSheetMapper.updateById(sheet);
+            throw new BusinessException(4005, "本场考试作答时间已结束，请立即交卷");
+        }
+
         if (submit) {
             ensureEarlySubmitAllowed(plan, sheet);
-            finalizeSubmission(plan, user, candidate, sheet, paperQuestionMap, questionMap, existingItems);
+            finalizeSubmission(plan, user, candidate, sheet, paperQuestionMap, questionMap, existingItems, false);
         } else {
             answerSheetMapper.updateById(sheet);
         }
@@ -159,18 +164,87 @@ public class CandidateExamServiceImpl implements CandidateExamService {
         event.setUserId(user.getId());
         event.setEventType(request.getEventType());
         event.setSeverity(request.getSeverity());
+        event.setLeaveCount(request.getLeaveCount());
+        event.setTriggeredAutoSave(request.getTriggeredAutoSave());
+        event.setSaveVersion(request.getSaveVersion());
         event.setDetailText(request.getDetailText());
         event.setOccurredAt(LocalDateTime.now());
         antiCheatEventMapper.insert(event);
     }
 
-    private void finalizeSubmission(ExamPlan plan, SysUser user, ExamCandidate candidate, AnswerSheet sheet,
-                                    Map<Long, PaperQuestion> paperQuestionMap, Map<Long, QuestionBank> questionMap,
-                                    Map<Long, AnswerItem> existingItems) {
+    private CandidateExamWorkspaceVO buildWorkspace(ExamPlan plan, AnswerSheet sheet) {
+        ExamPaper paper = requirePaper(plan.getPaperId());
+        List<PaperQuestion> paperQuestions = paperQuestionMapper.selectList(Wrappers.lambdaQuery(PaperQuestion.class)
+                .eq(PaperQuestion::getPaperId, plan.getPaperId())
+                .orderByAsc(PaperQuestion::getSortNo, PaperQuestion::getId));
+        Map<Long, QuestionBank> questionMap = loadQuestionMap(paperQuestions.stream().map(PaperQuestion::getQuestionId).toList());
+        Map<Long, AnswerItem> answerMap = loadExistingAnswerItems(sheet.getId());
+
+        List<PaperQuestion> displayQuestions = resolveDisplayQuestions(paperQuestions, paper, sheet);
+        List<CandidateAnswerItemVO> items = new ArrayList<>();
+        int displayOrder = 1;
+        for (PaperQuestion paperQuestion : displayQuestions) {
+            QuestionBank question = questionMap.get(paperQuestion.getQuestionId());
+            AnswerItem answerItem = answerMap.get(paperQuestion.getQuestionId());
+            items.add(CandidateAnswerItemVO.builder()
+                    .answerItemId(answerItem == null ? null : answerItem.getId())
+                    .questionId(paperQuestion.getQuestionId())
+                    .questionOrder(displayOrder++)
+                    .questionCode(question == null ? null : question.getQuestionCode())
+                    .questionType(question == null ? null : question.getQuestionType())
+                    .stem(question == null ? null : question.getStem())
+                    .optionsJson(question == null ? null : transformOptions(question.getOptionsJson(), paper, sheet, paperQuestion.getQuestionId()))
+                    .maxScore(paperQuestion.getScore())
+                    .answerContent(answerItem == null ? null : answerItem.getAnswerContent())
+                    .scoreAwarded(answerItem == null ? null : answerItem.getScoreAwarded())
+                    .status(answerItem == null ? "PENDING" : answerItem.getStatus())
+                    .markedFlag(answerItem == null ? 0 : answerItem.getMarkedFlag())
+                    .reviewComment(answerItem == null ? null : answerItem.getReviewComment())
+                    .build());
+        }
+
+        LocalDateTime entryDeadlineAt = computeEntryDeadline(plan);
+        LocalDateTime answerDeadlineAt = computeAnswerDeadline(plan, sheet);
+        int remainingSeconds = (int) Math.max(0, Duration.between(LocalDateTime.now(), answerDeadlineAt).getSeconds());
+
+        return CandidateExamWorkspaceVO.builder()
+                .examPlanId(plan.getId())
+                .examName(plan.getExamName())
+                .paperName(plan.getPaperName())
+                .subject(plan.getSubject())
+                .instructionText(plan.getInstructionText())
+                .startTime(plan.getStartTime())
+                .endTime(plan.getEndTime())
+                .entryDeadlineAt(entryDeadlineAt)
+                .answerDeadlineAt(answerDeadlineAt)
+                .durationMinutes(plan.getDurationMinutes())
+                .remainingSeconds(remainingSeconds)
+                .answerSheetId(sheet.getId())
+                .answerSheetStatus(sheet.getStatus())
+                .autoSubmitEnabled(plan.getAutoSubmitEnabled())
+                .autoSubmitFlag(sheet.getAutoSubmitFlag())
+                .saveVersion(sheet.getSaveVersion())
+                .shuffleEnabled(paper.getShuffleEnabled())
+                .paperVersion(paper.getPaperVersion())
+                .items(items)
+                .build();
+    }
+
+    private void finalizeSubmission(ExamPlan plan,
+                                    SysUser user,
+                                    ExamCandidate candidate,
+                                    AnswerSheet sheet,
+                                    Map<Long, PaperQuestion> paperQuestionMap,
+                                    Map<Long, QuestionBank> questionMap,
+                                    Map<Long, AnswerItem> existingItems,
+                                    boolean autoSubmit) {
         double objectiveScore = 0D;
         boolean hasSubjective = false;
         for (PaperQuestion paperQuestion : paperQuestionMap.values().stream().sorted(Comparator.comparing(PaperQuestion::getSortNo)).toList()) {
             QuestionBank question = questionMap.get(paperQuestion.getQuestionId());
+            if (question == null) {
+                continue;
+            }
             AnswerItem answerItem = existingItems.getOrDefault(question.getId(), new AnswerItem());
             answerItem.setAnswerSheetId(sheet.getId());
             answerItem.setQuestionId(question.getId());
@@ -184,7 +258,7 @@ public class CandidateExamServiceImpl implements CandidateExamService {
                 answerItem.setScoreAwarded(awarded);
                 answerItem.setAutoScored(1);
                 answerItem.setMarkedFlag(1);
-                answerItem.setReviewComment("Auto scored");
+                answerItem.setReviewComment(autoSubmit ? "系统自动交卷后完成客观题判分" : "系统自动判分");
                 answerItem.setStatus("AUTO_SCORED");
                 objectiveScore += awarded;
             } else {
@@ -202,11 +276,12 @@ public class CandidateExamServiceImpl implements CandidateExamService {
             }
         }
 
-        sheet.setSubmittedAt(LocalDateTime.now());
+        sheet.setSubmittedAt(sheet.getSubmittedAt() == null ? LocalDateTime.now() : sheet.getSubmittedAt());
         sheet.setObjectiveScore(objectiveScore);
         sheet.setSubjectiveScore(0D);
         sheet.setFinalScore(objectiveScore);
         sheet.setStatus(hasSubjective ? "SUBMITTED" : "GRADED");
+        sheet.setAutoSubmitFlag(autoSubmit ? 1 : 0);
         answerSheetMapper.updateById(sheet);
 
         candidate.setStatus(hasSubjective ? "SUBMITTED" : "COMPLETED");
@@ -242,60 +317,76 @@ public class CandidateExamServiceImpl implements CandidateExamService {
         log.setOperatorId(user.getId());
         log.setOperatorName(sheet.getCandidateName());
         log.setModuleName("CANDIDATE_EXAM");
-        log.setActionName("SUBMIT");
+        log.setActionName(autoSubmit ? "AUTO_SUBMIT" : "SUBMIT");
         log.setTargetType("ANSWER_SHEET");
         log.setTargetId(sheet.getId());
-        log.setDetailText("Candidate submitted exam " + plan.getExamName());
+        log.setDetailText(autoSubmit ? "系统已根据考试时长自动交卷：" + plan.getExamName() : "考生提交考试：" + plan.getExamName());
         auditLogMapper.insert(log);
     }
 
-    private CandidateExamWorkspaceVO buildWorkspace(ExamPlan plan, AnswerSheet sheet) {
-        List<PaperQuestion> paperQuestions = paperQuestionMapper.selectList(Wrappers.lambdaQuery(PaperQuestion.class)
-                .eq(PaperQuestion::getPaperId, plan.getPaperId())
-                .orderByAsc(PaperQuestion::getSortNo, PaperQuestion::getId));
-        Map<Long, QuestionBank> questionMap = questionBankMapper.selectBatchIds(paperQuestions.stream().map(PaperQuestion::getQuestionId).toList())
+    private AnswerSheet autoSubmitIfNeeded(ExamPlan plan, SysUser user, ExamCandidate candidate, AnswerSheet sheet) {
+        if (sheet.getStartedAt() == null || isFinished(sheet) || !isAutoSubmitEnabled(plan)) {
+            return sheet;
+        }
+        if (!LocalDateTime.now().isAfter(computeAnswerDeadline(plan, sheet))) {
+            return sheet;
+        }
+
+        Map<Long, PaperQuestion> paperQuestionMap = loadPaperQuestionMap(plan.getPaperId());
+        Map<Long, QuestionBank> questionMap = loadQuestionMap(paperQuestionMap.keySet());
+        Map<Long, AnswerItem> existingItems = loadExistingAnswerItems(sheet.getId());
+        sheet.setSaveVersion((sheet.getSaveVersion() == null ? 0 : sheet.getSaveVersion()) + 1);
+        finalizeSubmission(plan, user, candidate, sheet, paperQuestionMap, questionMap, existingItems, true);
+        return answerSheetMapper.selectById(sheet.getId());
+    }
+
+    private void upsertAnswerItems(AnswerSheet sheet,
+                                   List<CandidateAnswerItemRequest> answers,
+                                   Map<Long, PaperQuestion> paperQuestionMap,
+                                   Map<Long, QuestionBank> questionMap,
+                                   Map<Long, AnswerItem> existingItems) {
+        for (CandidateAnswerItemRequest itemRequest : answers) {
+            PaperQuestion paperQuestion = paperQuestionMap.get(itemRequest.getQuestionId());
+            QuestionBank question = questionMap.get(itemRequest.getQuestionId());
+            if (paperQuestion == null || question == null) {
+                throw new BusinessException(4004, "题目不在当前试卷内，无法保存");
+            }
+            AnswerItem answerItem = existingItems.getOrDefault(itemRequest.getQuestionId(), new AnswerItem());
+            answerItem.setAnswerSheetId(sheet.getId());
+            answerItem.setQuestionId(question.getId());
+            answerItem.setQuestionType(question.getQuestionType());
+            answerItem.setQuestionOrder(paperQuestion.getSortNo());
+            answerItem.setAnswerContent(itemRequest.getAnswerContent());
+            answerItem.setMaxScore(paperQuestion.getScore());
+            if (answerItem.getId() == null) {
+                answerItem.setStatus("PENDING");
+                answerItemMapper.insert(answerItem);
+            } else {
+                answerItemMapper.updateById(answerItem);
+            }
+            existingItems.put(itemRequest.getQuestionId(), answerItem);
+        }
+    }
+
+    private Map<Long, PaperQuestion> loadPaperQuestionMap(Long paperId) {
+        return paperQuestionMapper.selectList(Wrappers.lambdaQuery(PaperQuestion.class)
+                        .eq(PaperQuestion::getPaperId, paperId))
                 .stream()
+                .collect(Collectors.toMap(PaperQuestion::getQuestionId, Function.identity()));
+    }
+
+    private Map<Long, QuestionBank> loadQuestionMap(Iterable<Long> questionIds) {
+        List<Long> ids = new ArrayList<>();
+        questionIds.forEach(ids::add);
+        return questionBankMapper.selectBatchIds(ids).stream()
                 .collect(Collectors.toMap(QuestionBank::getId, Function.identity()));
-        Map<Long, AnswerItem> answerMap = answerItemMapper.selectList(Wrappers.lambdaQuery(AnswerItem.class)
-                        .eq(AnswerItem::getAnswerSheetId, sheet.getId()))
+    }
+
+    private Map<Long, AnswerItem> loadExistingAnswerItems(Long answerSheetId) {
+        return answerItemMapper.selectList(Wrappers.lambdaQuery(AnswerItem.class)
+                        .eq(AnswerItem::getAnswerSheetId, answerSheetId))
                 .stream()
-                .collect(Collectors.toMap(AnswerItem::getQuestionId, Function.identity(), (left, right) -> right));
-
-        List<CandidateAnswerItemVO> items = paperQuestions.stream()
-                .map(paperQuestion -> {
-                    QuestionBank question = questionMap.get(paperQuestion.getQuestionId());
-                    AnswerItem answerItem = answerMap.get(paperQuestion.getQuestionId());
-                    return CandidateAnswerItemVO.builder()
-                            .answerItemId(answerItem == null ? null : answerItem.getId())
-                            .questionId(paperQuestion.getQuestionId())
-                            .questionOrder(paperQuestion.getSortNo())
-                            .questionCode(question == null ? null : question.getQuestionCode())
-                            .questionType(question == null ? null : question.getQuestionType())
-                            .stem(question == null ? null : question.getStem())
-                            .optionsJson(question == null ? null : question.getOptionsJson())
-                            .maxScore(paperQuestion.getScore())
-                            .answerContent(answerItem == null ? null : answerItem.getAnswerContent())
-                            .scoreAwarded(answerItem == null ? null : answerItem.getScoreAwarded())
-                            .status(answerItem == null ? "PENDING" : answerItem.getStatus())
-                            .markedFlag(answerItem == null ? 0 : answerItem.getMarkedFlag())
-                            .reviewComment(answerItem == null ? null : answerItem.getReviewComment())
-                            .build();
-                })
-                .toList();
-
-        return CandidateExamWorkspaceVO.builder()
-                .examPlanId(plan.getId())
-                .examName(plan.getExamName())
-                .paperName(plan.getPaperName())
-                .subject(plan.getSubject())
-                .instructionText(plan.getInstructionText())
-                .startTime(plan.getStartTime())
-                .endTime(plan.getEndTime())
-                .durationMinutes(plan.getDurationMinutes())
-                .answerSheetId(sheet.getId())
-                .answerSheetStatus(sheet.getStatus())
-                .items(items)
-                .build();
+                .collect(Collectors.toMap(AnswerItem::getQuestionId, Function.identity(), (left, right) -> right, HashMap::new));
     }
 
     private AnswerSheet getOrCreateSheet(ExamPlan plan, SysUser user, boolean markStarted) {
@@ -328,53 +419,30 @@ public class CandidateExamServiceImpl implements CandidateExamService {
         return sheet;
     }
 
-    private SysUser requireUser(String username) {
-        SysUser user = sysUserMapper.selectOne(Wrappers.lambdaQuery(SysUser.class).eq(SysUser::getUsername, username).last("limit 1"));
-        if (user == null) {
-            throw new BusinessException(4010, "User session is invalid");
-        }
-        return user;
-    }
-
-    private ExamPlan requirePlan(Long examPlanId) {
-        ExamPlan plan = examPlanMapper.selectById(examPlanId);
-        if (plan == null) {
-            throw new BusinessException(4040, "Exam plan not found");
-        }
-        return plan;
-    }
-
-    private ExamCandidate requireCandidate(Long examPlanId, Long userId) {
-        ExamCandidate candidate = examCandidateMapper.selectOne(Wrappers.lambdaQuery(ExamCandidate.class)
-                .eq(ExamCandidate::getExamPlanId, examPlanId)
-                .eq(ExamCandidate::getUserId, userId)
-                .last("limit 1"));
-        if (candidate == null) {
-            throw new BusinessException(4030, "Current user is not assigned to this exam");
-        }
-        return candidate;
+    private AnswerSheet markSheetStarted(AnswerSheet sheet) {
+        sheet.setStartedAt(LocalDateTime.now());
+        sheet.setStatus("IN_PROGRESS");
+        answerSheetMapper.updateById(sheet);
+        return answerSheetMapper.selectById(sheet.getId());
     }
 
     private void ensurePlanOpen(ExamPlan plan, AnswerSheet sheet) {
         LocalDateTime now = LocalDateTime.now();
         if (plan.getPublishStatus() == null || plan.getPublishStatus() != 1) {
-            throw new BusinessException(4005, "This exam is not published");
+            throw new BusinessException(4005, "当前考试尚未发布");
         }
         if (now.isBefore(plan.getStartTime())) {
-            throw new BusinessException(4006, "This exam has not started yet");
+            throw new BusinessException(4006, "考试尚未开始，请在允许时间内进入");
         }
-        if (sheet.getStartedAt() == null && plan.getLateEntryMinutes() != null && now.isAfter(plan.getStartTime().plusMinutes(plan.getLateEntryMinutes()))) {
-            throw new BusinessException(4006, "The allowed late-entry window has ended");
-        }
-        if (now.isAfter(plan.getEndTime())) {
-            throw new BusinessException(4007, "This exam is already closed");
+        if (sheet.getStartedAt() == null && now.isAfter(computeEntryDeadline(plan))) {
+            throw new BusinessException(4006, "考试允许进入的时间窗口已结束");
         }
     }
 
     private void ensureAttemptAllowed(ExamPlan plan, ExamCandidate candidate, AnswerSheet sheet) {
-        boolean finished = List.of("SUBMITTED", "PARTIALLY_GRADED", "GRADED").contains(sheet.getStatus());
+        boolean finished = isFinished(sheet);
         if (finished && candidate.getAttemptCount() != null && plan.getAttemptLimit() != null && candidate.getAttemptCount() >= plan.getAttemptLimit()) {
-            throw new BusinessException(4005, "The allowed attempt count has been exhausted");
+            throw new BusinessException(4005, "你已达到本场考试允许的参考次数");
         }
     }
 
@@ -383,7 +451,7 @@ public class CandidateExamServiceImpl implements CandidateExamService {
             return;
         }
         if (examPassword == null || !plan.getExamPassword().equals(examPassword)) {
-            throw new BusinessException(4005, "Exam password is required or invalid");
+            throw new BusinessException(4005, "考试口令不正确，无法进入考试");
         }
     }
 
@@ -392,12 +460,102 @@ public class CandidateExamServiceImpl implements CandidateExamService {
             return;
         }
         if (LocalDateTime.now().isBefore(sheet.getStartedAt().plusMinutes(plan.getEarlySubmitMinutes()))) {
-            throw new BusinessException(4005, "Early submission is not allowed yet");
+            throw new BusinessException(4005, "当前尚未达到允许提前交卷的时间");
         }
     }
 
+    private LocalDateTime computeEntryDeadline(ExamPlan plan) {
+        if (plan.getLateEntryMinutes() != null && plan.getLateEntryMinutes() > 0) {
+            LocalDateTime lateDeadline = plan.getStartTime().plusMinutes(plan.getLateEntryMinutes());
+            return lateDeadline.isBefore(plan.getEndTime()) ? lateDeadline : plan.getEndTime();
+        }
+        return plan.getEndTime();
+    }
+
+    private LocalDateTime computeAnswerDeadline(ExamPlan plan, AnswerSheet sheet) {
+        if (sheet.getStartedAt() == null) {
+            return computeEntryDeadline(plan);
+        }
+        LocalDateTime durationDeadline = sheet.getStartedAt().plusMinutes(plan.getDurationMinutes() == null ? 0 : plan.getDurationMinutes());
+        return durationDeadline.isBefore(plan.getEndTime()) ? durationDeadline : plan.getEndTime();
+    }
+
+    private List<PaperQuestion> resolveDisplayQuestions(List<PaperQuestion> paperQuestions, ExamPaper paper, AnswerSheet sheet) {
+        if (paper.getShuffleEnabled() == null || paper.getShuffleEnabled() != 1) {
+            return paperQuestions.stream()
+                    .sorted(Comparator.comparing(PaperQuestion::getSortNo).thenComparing(PaperQuestion::getId))
+                    .toList();
+        }
+        return paperQuestions.stream()
+                .sorted(Comparator.comparingInt(question -> stableWeight(sheet.getId(), question.getQuestionId())))
+                .toList();
+    }
+
+    private String transformOptions(String optionsJson, ExamPaper paper, AnswerSheet sheet, Long questionId) {
+        if (!StringUtils.hasText(optionsJson) || paper.getShuffleEnabled() == null || paper.getShuffleEnabled() != 1) {
+            return optionsJson;
+        }
+        try {
+            List<String> options = objectMapper.readValue(optionsJson, new TypeReference<List<String>>() {});
+            return objectMapper.writeValueAsString(options.stream()
+                    .sorted(Comparator.comparingInt(option -> stableWeight(sheet.getId() + questionId, option.hashCode() * 1L)))
+                    .toList());
+        } catch (JsonProcessingException exception) {
+            return optionsJson;
+        }
+    }
+
+    private int stableWeight(Long seed, Long value) {
+        return Math.abs(Objects.hash(seed, value));
+    }
+
+    private boolean isAutoSubmitEnabled(ExamPlan plan) {
+        return plan.getAutoSubmitEnabled() == null || plan.getAutoSubmitEnabled() == 1;
+    }
+
+    private boolean isFinished(AnswerSheet sheet) {
+        return List.of("SUBMITTED", "PARTIALLY_GRADED", "GRADED").contains(sheet.getStatus());
+    }
+
+    private SysUser requireUser(String username) {
+        SysUser user = sysUserMapper.selectOne(Wrappers.lambdaQuery(SysUser.class)
+                .eq(SysUser::getUsername, username)
+                .last("limit 1"));
+        if (user == null) {
+            throw new BusinessException(4010, "登录状态已失效，请重新登录");
+        }
+        return user;
+    }
+
+    private ExamPlan requirePlan(Long examPlanId) {
+        ExamPlan plan = examPlanMapper.selectById(examPlanId);
+        if (plan == null) {
+            throw new BusinessException(4040, "考试计划不存在");
+        }
+        return plan;
+    }
+
+    private ExamPaper requirePaper(Long paperId) {
+        ExamPaper paper = examPaperMapper.selectById(paperId);
+        if (paper == null) {
+            throw new BusinessException(4041, "试卷不存在");
+        }
+        return paper;
+    }
+
+    private ExamCandidate requireCandidate(Long examPlanId, Long userId) {
+        ExamCandidate candidate = examCandidateMapper.selectOne(Wrappers.lambdaQuery(ExamCandidate.class)
+                .eq(ExamCandidate::getExamPlanId, examPlanId)
+                .eq(ExamCandidate::getUserId, userId)
+                .last("limit 1"));
+        if (candidate == null) {
+            throw new BusinessException(4030, "当前账号未被分配到该考试");
+        }
+        return candidate;
+    }
+
     private boolean isObjective(String questionType) {
-        return List.of("SINGLE_CHOICE", "MULTIPLE_CHOICE", "TRUE_FALSE", "JUDGE").contains(questionType);
+        return List.of("SINGLE_CHOICE", "MULTIPLE_CHOICE", "TRUE_FALSE", "JUDGE").contains(String.valueOf(questionType).toUpperCase(Locale.ROOT));
     }
 
     private String normalizeAnswer(String answer, String questionType) {

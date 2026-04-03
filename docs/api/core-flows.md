@@ -69,6 +69,12 @@
 - `POST /api/exam/candidate/exams/{examPlanId}/submit`
 - `POST /api/exam/candidate/exams/{examPlanId}/events`
 
+说明：
+- `startTime / endTime` 表示允许进入考试的时间窗口
+- 工作区接口会返回 `entryDeadlineAt` 与 `answerDeadlineAt`
+- 学生端展示的倒计时必须以 `answerDeadlineAt` 为准
+- `events` 接口当前会上报切屏、窗口失焦、退出全屏等事件，并携带自动保存联动信息
+
 ## 七、阅卷、成绩与监考
 - `GET /api/exam/grading/tasks`
 - `GET /api/exam/grading/{answerSheetId}`

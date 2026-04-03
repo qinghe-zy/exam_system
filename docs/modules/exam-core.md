@@ -14,7 +14,7 @@
 - 页面：`ExamPaperView`
 - 接口：`/api/exam/papers*`
 - 表：`biz_exam_paper`、`biz_paper_question`
-- 当前能力：手工组卷、随机组卷、基础策略组卷
+- 当前能力：手工组卷、随机组卷、按题型/难度的基础策略组卷、试卷版本/备注/乱序配置
 
 ### 3. 考试发布
 - 页面：`ExamPlanView`
@@ -26,7 +26,7 @@
 - 页面：`CandidateExamView`
 - 接口：`/api/exam/candidate/*`
 - 表：`biz_answer_sheet`、`biz_answer_item`
-- 当前能力：待考列表、进入考试、答题卡、自动保存、手动保存、交卷
+- 当前能力：待考列表、进入考试、进入窗口说明、实际作答倒计时、答题卡、自动保存、手动保存、交卷
 
 ### 5. 阅卷与成绩
 - 页面：`GradingView`、`ExamRecordView`
@@ -38,7 +38,7 @@
 - 页面：`AnalysisView`、`ProctorView`
 - 接口：`/api/exam/analytics/overview`、`/api/exam/proctor/events`
 - 表：`biz_anti_cheat_event`
-- 当前能力：平均分、最高分、最低分、及格率、排名、分数段、知识点、题目得分率、基础事件查看
+- 当前能力：平均分、最高分、最低分、及格率、排名、分数段、知识点、题目得分率、基础事件查看、异常行为自动保存联动记录
 
 ## 三、权限边界
 - 管理员：可查看全局

@@ -8,12 +8,13 @@ test('学生登录后进入考试、作答并提交', async ({ page }) => {
   await page.waitForURL('**/dashboard')
 
   await page.goto('/candidate/exams')
-  await expect(page.getByRole('cell', { name: '进入考试' }).getByRole('button')).toBeVisible()
-  await page.getByRole('cell', { name: '进入考试' }).getByRole('button').click()
+  const examRow = page.getByRole('row', { name: /2026级语文阶段测验/ })
+  await expect(examRow.getByRole('button')).toBeVisible()
+  await examRow.getByRole('button').click()
   await page.getByPlaceholder('请输入考试口令（如有）').fill('YW2026')
   await page.getByRole('dialog').getByRole('button', { name: '进入考试' }).click()
 
-  await expect(page.getByRole('button', { name: '提交试卷' })).toBeVisible()
+  await expect(page.locator('.metric-card--timer strong')).toBeVisible()
   const answerBoxes = page.getByPlaceholder('请在此输入答案')
   await answerBoxes.nth(0).fill('@Controller')
   await answerBoxes.nth(1).fill('Atomicity|Consistency|Isolation|Durability')
