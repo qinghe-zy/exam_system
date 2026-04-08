@@ -1,6 +1,7 @@
 package com.projectexample.examsystem.controller;
 
 import com.projectexample.examsystem.common.ApiResponse;
+import com.projectexample.examsystem.dto.GradingReviewRequest;
 import com.projectexample.examsystem.dto.GradingSubmitRequest;
 import com.projectexample.examsystem.security.UserPrincipal;
 import com.projectexample.examsystem.service.GradingService;
@@ -39,5 +40,13 @@ public class GradingController {
                                                   @Valid @RequestBody GradingSubmitRequest request,
                                                   @AuthenticationPrincipal UserPrincipal userPrincipal) {
         return ApiResponse.success("grading updated", gradingService.submitGrading(answerSheetId, request, userPrincipal.getUsername()));
+    }
+
+    @PostMapping("/{answerSheetId}/review")
+    @PreAuthorize("hasAnyRole('ADMIN','ORG_ADMIN','GRADER','TEACHER')")
+    public ApiResponse<GradingWorkspaceVO> review(@PathVariable Long answerSheetId,
+                                                  @Valid @RequestBody GradingReviewRequest request,
+                                                  @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return ApiResponse.success("grading review updated", gradingService.reviewGrading(answerSheetId, request, userPrincipal.getUsername()));
     }
 }

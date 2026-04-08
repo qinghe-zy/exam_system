@@ -16,4 +16,5 @@ public class ExamPerformanceVO {
     private Double highestScore;
     private Double lowestScore;
     private Double passRate;
+    private Double excellentRate;
 }

@@ -82,8 +82,21 @@ test('学生登录后进入考试、作答并提交', async ({ page, request }) 
   await page.locator('.toolbar-actions button').first().click()
   await page.waitForTimeout(300)
   await expect(page.locator('.toolbar-actions button').first()).toHaveText('进入全屏')
+  await page.getByRole('button', { name: '标记待复查' }).first().click()
   await page.locator('.toolbar-actions button').nth(1).click()
   await expect(page.locator('.el-message')).toContainText('答案已保存')
+  const savedWorkspace = await page.evaluate(async (createdPlanId) => {
+    const token = localStorage.getItem('exam-system-template-token')
+    const response = await fetch(`http://127.0.0.1:8083/api/exam/candidate/exams/${createdPlanId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+    return response.json()
+  }, createdPlanId)
+  expect(savedWorkspace.code).toBe(0)
+  expect(savedWorkspace.data.items[0].reviewLaterFlag).toBe(1)
+  await expect(page.locator('.answer-card-cell.marked').first()).toBeVisible()
 
   const answerBoxes = page.getByPlaceholder('请在此输入答案')
   await answerBoxes.nth(0).fill('@Controller')

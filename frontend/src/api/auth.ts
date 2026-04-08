@@ -1,5 +1,32 @@
 import http from './http'
 
+function buildDeviceInfo() {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'unknown'
+  return [
+    `UA=${navigator.userAgent}`,
+    `Platform=${navigator.platform || 'unknown'}`,
+    `Lang=${navigator.language || 'unknown'}`,
+    `TZ=${timezone}`,
+    `Screen=${window.screen.width}x${window.screen.height}`
+  ].join(' | ')
+}
+
+function getDeviceFingerprint() {
+  const base = [
+    navigator.userAgent,
+    navigator.platform,
+    navigator.language,
+    Intl.DateTimeFormat().resolvedOptions().timeZone,
+    `${window.screen.width}x${window.screen.height}`
+  ].join('::')
+  let hash = 0
+  for (let index = 0; index < base.length; index += 1) {
+    hash = (hash << 5) - hash + base.charCodeAt(index)
+    hash |= 0
+  }
+  return `login-${Math.abs(hash)}`
+}
+
 export interface CurrentUser {
   id: number
   username: string
@@ -16,7 +43,12 @@ export interface LoginPayload {
 }
 
 export function login(username: string, password: string) {
-  return http.post<never, LoginPayload>('/api/auth/login', { username, password })
+  return http.post<never, LoginPayload>('/api/auth/login', { username, password }, {
+    headers: {
+      'X-Device-Fingerprint': getDeviceFingerprint(),
+      'X-Device-Info': buildDeviceInfo()
+    }
+  })
 }
 
 export interface RegisterOption {

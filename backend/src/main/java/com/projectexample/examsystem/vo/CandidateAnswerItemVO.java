@@ -22,5 +22,6 @@ public class CandidateAnswerItemVO {
     private Double scoreAwarded;
     private String status;
     private Integer markedFlag;
+    private Integer reviewLaterFlag;
     private String reviewComment;
 }

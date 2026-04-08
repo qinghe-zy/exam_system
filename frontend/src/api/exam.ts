@@ -1,5 +1,6 @@
 import http from './http'
 import type {
+  AnalysisQualityReport,
   AnalysisOverview,
   AiQuestionDraftRequest,
   AiQuestionDraftResult,
@@ -8,6 +9,7 @@ import type {
   AntiCheatEvent,
   CandidateExam,
   CandidateScoreDetail,
+  CandidateWrongQuestion,
   CandidateExamWorkspace,
   ExamPaper,
   ExamPlan,
@@ -15,8 +17,36 @@ import type {
   GradingTask,
   GradingWorkspace,
   KnowledgePointQuotaItem,
-  QuestionBank
+  QuestionBank,
+  ScoreAppeal
 } from '../types/exam'
+
+function buildDeviceInfo() {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'unknown'
+  return [
+    `UA=${navigator.userAgent}`,
+    `Platform=${navigator.platform || 'unknown'}`,
+    `Lang=${navigator.language || 'unknown'}`,
+    `TZ=${timezone}`,
+    `Screen=${window.screen.width}x${window.screen.height}`
+  ].join(' | ')
+}
+
+function getDeviceFingerprint() {
+  const base = [
+    navigator.userAgent,
+    navigator.platform,
+    navigator.language,
+    Intl.DateTimeFormat().resolvedOptions().timeZone,
+    `${window.screen.width}x${window.screen.height}`
+  ].join('::')
+  let hash = 0
+  for (let index = 0; index < base.length; index += 1) {
+    hash = (hash << 5) - hash + base.charCodeAt(index)
+    hash |= 0
+  }
+  return `exam-${Math.abs(hash)}`
+}
 
 export function fetchQuestions() {
   return http.get<never, QuestionBank[]>('/api/exam/questions')
@@ -101,7 +131,11 @@ export function fetchMyExams() {
 
 export function fetchCandidateWorkspace(examPlanId: number, examPassword?: string) {
   return http.get<never, CandidateExamWorkspace>(`/api/exam/candidate/exams/${examPlanId}`, {
-    params: examPassword ? { examPassword } : undefined
+    params: examPassword ? { examPassword } : undefined,
+    headers: {
+      'X-Device-Fingerprint': getDeviceFingerprint(),
+      'X-Device-Info': buildDeviceInfo()
+    }
   })
 }
 
@@ -115,7 +149,17 @@ export function submitCandidateAnswers(examPlanId: number, answers: { questionId
 
 export function reportCandidateEvent(
   examPlanId: number,
-  payload: { answerSheetId?: number; eventType: string; severity: string; leaveCount?: number; triggeredAutoSave?: number; saveVersion?: number; detailText?: string }
+  payload: {
+    answerSheetId?: number
+    eventType: string
+    severity: string
+    leaveCount?: number
+    triggeredAutoSave?: number
+    saveVersion?: number
+    deviceFingerprint?: string
+    deviceInfo?: string
+    detailText?: string
+  }
 ) {
   return http.post(`/api/exam/candidate/exams/${examPlanId}/events`, payload)
 }
@@ -132,8 +176,21 @@ export function submitGrading(answerSheetId: number, gradeItems: { answerItemId:
   return http.post<never, GradingWorkspace>(`/api/exam/grading/${answerSheetId}/submit`, { gradeItems })
 }
 
+export function reviewGrading(answerSheetId: number, action: 'APPROVE' | 'REJECT_REJUDGE', reviewComment?: string) {
+  return http.post<never, GradingWorkspace>(`/api/exam/grading/${answerSheetId}/review`, { action, reviewComment })
+}
+
 export function fetchExamRecords() {
   return http.get<never, ExamRecord[]>('/api/exam/records')
+}
+
+export async function exportExamRecordsCsv() {
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8083'}/api/exam/records/export`, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('exam-system-template-token') || ''}`
+    }
+  })
+  return response.text()
 }
 
 export function fetchMyExamRecords() {
@@ -144,8 +201,52 @@ export function fetchMyExamRecordDetail(id: number) {
   return http.get<never, CandidateScoreDetail>(`/api/exam/records/my/${id}`)
 }
 
+export function fetchScoreAppeals(scoreRecordId?: number) {
+  return http.get<never, ScoreAppeal[]>('/api/exam/score-appeals', {
+    params: scoreRecordId ? { scoreRecordId } : undefined
+  })
+}
+
+export function fetchMyScoreAppeals(scoreRecordId: number) {
+  return http.get<never, ScoreAppeal[]>(`/api/exam/score-appeals/my/${scoreRecordId}`)
+}
+
+export function submitScoreAppeal(scoreRecordId: number, payload: { appealReason: string; expectedOutcome?: string }) {
+  return http.post<never, ScoreAppeal>(`/api/exam/score-appeals/my/${scoreRecordId}`, payload)
+}
+
+export function processScoreAppeal(appealId: number, payload: { action: 'REJECT' | 'REJUDGE'; processComment?: string }) {
+  return http.post<never, ScoreAppeal>(`/api/exam/score-appeals/${appealId}/process`, payload)
+}
+
+export function fetchMyWrongQuestions() {
+  return http.get<never, CandidateWrongQuestion[]>('/api/exam/records/my/wrong-book')
+}
+
 export function fetchAnalysisOverview() {
   return http.get<never, AnalysisOverview>('/api/exam/analytics/overview')
+}
+
+export function fetchAnalysisQualityReport() {
+  return http.get<never, AnalysisQualityReport>('/api/exam/analytics/quality-report')
+}
+
+export async function exportAnalysisOverviewCsv() {
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8083'}/api/exam/analytics/export`, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('exam-system-template-token') || ''}`
+    }
+  })
+  return response.text()
+}
+
+export async function exportAnalysisQualityReportMarkdown() {
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8083'}/api/exam/analytics/quality-report/export`, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('exam-system-template-token') || ''}`
+    }
+  })
+  return response.text()
 }
 
 export function fetchProctorEvents() {

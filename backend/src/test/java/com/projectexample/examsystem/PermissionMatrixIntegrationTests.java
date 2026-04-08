@@ -57,6 +57,16 @@ class PermissionMatrixIntegrationTests {
                 .andExpect(status().isOk());
         mockMvc.perform(get("/api/exam/records/my").header("Authorization", bearer(student)))
                 .andExpect(status().isOk());
+        mockMvc.perform(get("/api/exam/score-appeals/my/1").header("Authorization", bearer(student)))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/exam/records/my/wrong-book").header("Authorization", bearer(student)))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/exam/score-appeals").header("Authorization", bearer(student)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/system/login-risks").header("Authorization", bearer(student)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/exam/proctor/events").header("Authorization", bearer(student)))
+                .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/system/organizations").header("Authorization", bearer(student)))
                 .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/system/runtime/health").header("Authorization", bearer(student)))

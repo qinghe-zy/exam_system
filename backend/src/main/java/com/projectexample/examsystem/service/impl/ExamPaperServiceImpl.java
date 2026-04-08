@@ -7,11 +7,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.projectexample.examsystem.common.PaperRuleConfigItem;
 import com.projectexample.examsystem.dto.ExamPaperSaveRequest;
 import com.projectexample.examsystem.dto.PaperQuestionItemRequest;
+import com.projectexample.examsystem.entity.AnswerSheet;
 import com.projectexample.examsystem.entity.ExamPaper;
+import com.projectexample.examsystem.entity.ExamPlan;
 import com.projectexample.examsystem.entity.PaperQuestion;
 import com.projectexample.examsystem.entity.QuestionBank;
 import com.projectexample.examsystem.exception.BusinessException;
 import com.projectexample.examsystem.mapper.ExamPaperMapper;
+import com.projectexample.examsystem.mapper.ExamPlanMapper;
+import com.projectexample.examsystem.mapper.AnswerSheetMapper;
 import com.projectexample.examsystem.mapper.PaperQuestionMapper;
 import com.projectexample.examsystem.mapper.QuestionBankMapper;
 import com.projectexample.examsystem.security.AccessScopeService;
@@ -29,6 +33,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.time.LocalDateTime;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -37,6 +42,8 @@ import java.util.stream.Collectors;
 public class ExamPaperServiceImpl implements ExamPaperService {
 
     private final ExamPaperMapper examPaperMapper;
+    private final ExamPlanMapper examPlanMapper;
+    private final AnswerSheetMapper answerSheetMapper;
     private final PaperQuestionMapper paperQuestionMapper;
     private final QuestionBankMapper questionBankMapper;
     private final AccessScopeService accessScopeService;
@@ -70,6 +77,7 @@ public class ExamPaperServiceImpl implements ExamPaperService {
     @Override
     public ExamPaperVO updatePaper(Long id, ExamPaperSaveRequest request) {
         ExamPaper entity = requireEntity(id);
+        assertPaperMutable(entity, "更新");
         applyPaper(entity, request);
         examPaperMapper.updateById(entity);
         replacePaperQuestions(id, request.getQuestionItems());
@@ -78,7 +86,8 @@ public class ExamPaperServiceImpl implements ExamPaperService {
 
     @Override
     public void deletePaper(Long id) {
-        requireEntity(id);
+        ExamPaper entity = requireEntity(id);
+        assertPaperMutable(entity, "删除");
         paperQuestionMapper.delete(Wrappers.lambdaQuery(PaperQuestion.class).eq(PaperQuestion::getPaperId, id));
         examPaperMapper.deleteById(id);
     }
@@ -367,5 +376,29 @@ public class ExamPaperServiceImpl implements ExamPaperService {
             case "HARD" -> "困难";
             default -> value;
         };
+    }
+
+    private void assertPaperMutable(ExamPaper paper, String actionName) {
+        List<ExamPlan> relatedPlans = examPlanMapper.selectList(Wrappers.lambdaQuery(ExamPlan.class)
+                .eq(ExamPlan::getPaperId, paper.getId()));
+        boolean started = relatedPlans.stream().anyMatch(this::isPlanStarted);
+        if (started) {
+            throw new BusinessException(4005, "当前试卷已被进行中的考试使用，暂不允许" + actionName + "试卷");
+        }
+        List<Long> planIds = relatedPlans.stream().map(ExamPlan::getId).toList();
+        if (!planIds.isEmpty()) {
+            long answerSheetCount = answerSheetMapper.selectCount(Wrappers.lambdaQuery(AnswerSheet.class)
+                    .in(AnswerSheet::getExamPlanId, planIds));
+            if (answerSheetCount > 0) {
+                throw new BusinessException(4005, "当前试卷已产生答卷，暂不允许" + actionName + "试卷");
+            }
+        }
+    }
+
+    private boolean isPlanStarted(ExamPlan plan) {
+        return plan.getPublishStatus() != null
+                && plan.getPublishStatus() == 1
+                && plan.getStartTime() != null
+                && !LocalDateTime.now().isBefore(plan.getStartTime());
     }
 }

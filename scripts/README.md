@@ -1,9 +1,16 @@
-# Scripts Directory
+# 脚本目录说明
 
-This directory stores reusable automation scripts for:
-- local environment bootstrap
-- validation entry points
-- smoke test helpers
-- maintenance and repair workflows
+## 一、文档目的
+本目录用于存放可复用的自动化脚本，覆盖初始化、验证、备份恢复、基础压测和日常运维辅助场景。
 
-Scripts should avoid embedding real secrets and should document required environment variables.
+## 二、当前脚本
+- `verify-mysql-init.ps1`：使用临时数据库回归验证 `sql/mysql/init.sql`
+- `backup-mysql.ps1`：导出 MySQL 数据库备份文件
+- `restore-mysql.ps1`：将备份文件恢复到指定 MySQL 数据库
+- `load-test-login.ps1`：执行登录接口基础压测
+- `run-backend-e2e.ps1`：辅助执行本地后端联调
+
+## 三、使用规则
+1. 禁止在脚本中写入真实生产密钥。
+2. 如需默认凭据，只能用于本地开发环境，并且必须在文档中写明用途。
+3. 新增脚本时，必须同步更新对应 runbook 或测试说明。

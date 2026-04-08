@@ -1,5 +1,6 @@
 DROP TABLE IF EXISTS biz_audit_log;
 DROP TABLE IF EXISTS biz_in_app_message;
+DROP TABLE IF EXISTS biz_login_risk_log;
 DROP TABLE IF EXISTS sys_dictionary_item;
 DROP TABLE IF EXISTS sys_config_item;
 DROP TABLE IF EXISTS biz_anti_cheat_event;
@@ -9,6 +10,7 @@ DROP TABLE IF EXISTS biz_answer_sheet;
 DROP TABLE IF EXISTS biz_exam_candidate;
 DROP TABLE IF EXISTS biz_exam_plan;
 DROP TABLE IF EXISTS biz_paper_question;
+DROP TABLE IF EXISTS biz_score_appeal;
 DROP TABLE IF EXISTS biz_score_record;
 DROP TABLE IF EXISTS biz_exam_paper;
 DROP TABLE IF EXISTS biz_question_bank;
@@ -53,6 +55,10 @@ CREATE TABLE sys_user (
     email VARCHAR(128),
     phone VARCHAR(32),
     candidate_no VARCHAR(64),
+    session_version INT NOT NULL DEFAULT 0,
+    login_fail_count INT NOT NULL DEFAULT 0,
+    last_login_failure_at TIMESTAMP NULL,
+    lock_until TIMESTAMP NULL,
     status INT NOT NULL DEFAULT 1,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -240,6 +246,7 @@ CREATE TABLE biz_answer_item (
     score_awarded DECIMAL(10,2) NOT NULL DEFAULT 0,
     auto_scored INT NOT NULL DEFAULT 0,
     marked_flag INT NOT NULL DEFAULT 0,
+    review_later_flag INT NOT NULL DEFAULT 0,
     review_comment TEXT,
     status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -253,6 +260,8 @@ CREATE TABLE biz_grading_record (
     answer_item_id BIGINT NOT NULL,
     grader_id BIGINT NOT NULL,
     grader_name VARCHAR(64) NOT NULL,
+    review_round INT NOT NULL DEFAULT 1,
+    grading_action VARCHAR(32) NOT NULL DEFAULT 'INITIAL',
     score_awarded DECIMAL(10,2) NOT NULL DEFAULT 0,
     comment_text TEXT,
     graded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -276,7 +285,31 @@ CREATE TABLE biz_score_record (
     final_score DECIMAL(10,2) NOT NULL DEFAULT 0,
     passed_flag INT NOT NULL DEFAULT 0,
     published_flag INT NOT NULL DEFAULT 0,
+    review_status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
+    appeal_status VARCHAR(32) NOT NULL DEFAULT 'NONE',
     status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
+    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE biz_score_appeal (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    score_record_id BIGINT NOT NULL,
+    answer_sheet_id BIGINT NOT NULL,
+    exam_plan_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    candidate_name VARCHAR(64) NOT NULL,
+    exam_name VARCHAR(128) NOT NULL,
+    appeal_reason TEXT NOT NULL,
+    expected_outcome VARCHAR(255),
+    status VARCHAR(32) NOT NULL DEFAULT 'SUBMITTED',
+    resolution_action VARCHAR(32),
+    process_comment TEXT,
+    processed_by BIGINT,
+    processed_by_name VARCHAR(64),
+    submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    processed_at TIMESTAMP NULL,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted INT NOT NULL DEFAULT 0
@@ -289,6 +322,12 @@ CREATE TABLE biz_anti_cheat_event (
     user_id BIGINT NOT NULL,
     event_type VARCHAR(64) NOT NULL,
     severity VARCHAR(16) NOT NULL,
+    leave_count INT NOT NULL DEFAULT 1,
+    triggered_auto_save INT NOT NULL DEFAULT 0,
+    save_version INT NOT NULL DEFAULT 0,
+    client_ip VARCHAR(64),
+    device_fingerprint VARCHAR(255),
+    device_info VARCHAR(1000),
     detail_text VARCHAR(500),
     occurred_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -319,6 +358,24 @@ CREATE TABLE biz_in_app_message (
     related_type VARCHAR(64),
     related_id BIGINT,
     read_flag INT NOT NULL DEFAULT 0,
+    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE biz_login_risk_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(64) NOT NULL,
+    user_id BIGINT,
+    role_code VARCHAR(64),
+    success_flag INT NOT NULL DEFAULT 1,
+    client_ip VARCHAR(64),
+    user_agent VARCHAR(500),
+    device_fingerprint VARCHAR(255),
+    device_info VARCHAR(1000),
+    risk_level VARCHAR(16) NOT NULL DEFAULT 'LOW',
+    risk_reason VARCHAR(500),
+    login_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted INT NOT NULL DEFAULT 0

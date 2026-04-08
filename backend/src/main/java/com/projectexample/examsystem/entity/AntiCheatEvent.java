@@ -20,6 +20,9 @@ public class AntiCheatEvent extends BaseEntity {
     private Integer leaveCount;
     private Integer triggeredAutoSave;
     private Integer saveVersion;
+    private String clientIp;
+    private String deviceFingerprint;
+    private String deviceInfo;
     private String detailText;
     private LocalDateTime occurredAt;
 }

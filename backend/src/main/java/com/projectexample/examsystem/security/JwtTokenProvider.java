@@ -33,12 +33,13 @@ public class JwtTokenProvider {
         this.secretKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateToken(String username, String nickname, String roleCode) {
+    public String generateToken(String username, String nickname, String roleCode, Integer sessionVersion) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .subject(username)
                 .claim("nickname", nickname)
                 .claim("roleCode", roleCode)
+                .claim("sessionVersion", sessionVersion == null ? 0 : sessionVersion)
                 .issuer(jwtProperties.getIssuer())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plus(jwtProperties.getExpirationMinutes(), ChronoUnit.MINUTES)))

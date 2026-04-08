@@ -12,6 +12,7 @@ import com.projectexample.examsystem.vo.AuthRegisterOptionVO;
 import com.projectexample.examsystem.vo.CurrentUserVO;
 import com.projectexample.examsystem.vo.VerificationCodeSendVO;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,8 +31,14 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ApiResponse<AuthTokenVO> login(@Valid @RequestBody LoginRequest request) {
-        return ApiResponse.success(authService.login(request));
+    public ApiResponse<AuthTokenVO> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpServletRequest) {
+        return ApiResponse.success(authService.login(
+                request,
+                httpServletRequest.getRemoteAddr(),
+                httpServletRequest.getHeader("User-Agent"),
+                httpServletRequest.getHeader("X-Device-Fingerprint"),
+                httpServletRequest.getHeader("X-Device-Info")
+        ));
     }
 
     @GetMapping("/register-options")
@@ -62,7 +69,10 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ApiResponse<Void> logout() {
+    public ApiResponse<Void> logout(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+        if (userPrincipal != null) {
+            authService.logout(userPrincipal.getUsername());
+        }
         return ApiResponse.success("logout success", null);
     }
 }

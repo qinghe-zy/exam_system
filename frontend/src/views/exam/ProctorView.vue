@@ -28,7 +28,8 @@ const filteredEvents = computed(() => {
 const summary = computed(() => ({
   total: events.value.length,
   high: events.value.filter((item) => item.severity === 'HIGH').length,
-  autoSaved: events.value.filter((item) => item.triggeredAutoSave === 1).length
+  autoSaved: events.value.filter((item) => item.triggeredAutoSave === 1).length,
+  deviceLogged: events.value.filter((item) => Boolean(item.deviceFingerprint)).length
 }))
 
 async function loadData() {
@@ -47,7 +48,7 @@ onMounted(loadData)
   <AppShellSection
     eyebrow="监考事件"
     title="基础防作弊事件已形成“触发-保存-落库-可查”闭环"
-    description="这里可以查看考试过程中的切屏、失焦、退出全屏等事件，以及这些异常行为是否联动触发了自动保存。用于老师、监考员和管理员快速核查本场考试风险。"
+    description="这里可以查看考试过程中的切屏、失焦、退出全屏、复制粘贴拦截、右键拦截、高风险快捷键拦截以及设备上下文记录，用于老师、监考员和管理员快速核查本场考试风险。"
   >
     <section class="summary-row">
       <div class="summary-card panel-card">
@@ -61,6 +62,10 @@ onMounted(loadData)
       <div class="summary-card panel-card">
         <strong>{{ summary.autoSaved }}</strong>
         <span>已联动自动保存</span>
+      </div>
+      <div class="summary-card panel-card">
+        <strong>{{ summary.deviceLogged }}</strong>
+        <span>含设备上下文</span>
       </div>
     </section>
 
@@ -90,7 +95,10 @@ onMounted(loadData)
             <el-tag :type="row.triggeredAutoSave === 1 ? 'success' : 'info'">{{ row.triggeredAutoSave === 1 ? '已触发' : '未触发' }}</el-tag>
           </template>
         </el-table-column>
+        <el-table-column prop="clientIp" label="IP" min-width="120" />
+        <el-table-column prop="deviceFingerprint" label="设备指纹" min-width="150" show-overflow-tooltip />
         <el-table-column prop="saveVersion" label="答卷版本" min-width="100" />
+        <el-table-column prop="deviceInfo" label="设备摘要" min-width="260" show-overflow-tooltip />
         <el-table-column prop="detailText" label="详情" min-width="320" show-overflow-tooltip />
       </el-table>
     </section>
@@ -100,7 +108,7 @@ onMounted(loadData)
 <style scoped>
 .summary-row {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.8rem;
   margin-bottom: 1rem;
 }

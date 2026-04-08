@@ -19,6 +19,7 @@ public class AnswerItem extends BaseEntity {
     private Double scoreAwarded;
     private Integer autoScored;
     private Integer markedFlag;
+    private Integer reviewLaterFlag;
     private String reviewComment;
     private String status;
 }

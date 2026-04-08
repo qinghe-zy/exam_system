@@ -17,5 +17,7 @@ public class CandidateEventReportRequest {
     private Integer leaveCount;
     private Integer triggeredAutoSave;
     private Integer saveVersion;
+    private String deviceFingerprint;
+    private String deviceInfo;
     private String detailText;
 }

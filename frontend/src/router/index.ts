@@ -8,6 +8,7 @@ import type { SystemMenu } from '../api/system'
 const DashboardView = () => import('../views/dashboard/DashboardView.vue')
 const AnalysisView = () => import('../views/exam/AnalysisView.vue')
 const CandidateExamView = () => import('../views/exam/CandidateExamView.vue')
+const CandidateReviewCenterView = () => import('../views/exam/CandidateReviewCenterView.vue')
 const CandidateScoreView = () => import('../views/exam/CandidateScoreView.vue')
 const ExamPaperView = () => import('../views/exam/ExamPaperView.vue')
 const ExamPaperBuilderView = () => import('../views/exam/ExamPaperBuilderView.vue')
@@ -22,6 +23,7 @@ const QuestionBankView = () => import('../views/exam/QuestionBankView.vue')
 const MenuView = () => import('../views/system/MenuView.vue')
 const AuditLogView = () => import('../views/system/AuditLogView.vue')
 const ConfigCenterView = () => import('../views/system/ConfigCenterView.vue')
+const LoginRiskView = () => import('../views/system/LoginRiskView.vue')
 const OrganizationView = () => import('../views/system/OrganizationView.vue')
 const RoleView = () => import('../views/system/RoleView.vue')
 const UserView = () => import('../views/system/UserView.vue')
@@ -85,6 +87,12 @@ const router = createRouter({
           name: 'system-config-center',
           component: ConfigCenterView,
           meta: { title: '配置中心' }
+        },
+        {
+          path: 'system/login-risks',
+          name: 'system-login-risks',
+          component: LoginRiskView,
+          meta: { title: '登录风险记录' }
         },
         {
           path: 'notices',
@@ -157,6 +165,12 @@ const router = createRouter({
           name: 'candidate-scores',
           component: CandidateScoreView,
           meta: { title: '我的成绩' }
+        },
+        {
+          path: 'candidate/review-center',
+          name: 'candidate-review-center',
+          component: CandidateReviewCenterView,
+          meta: { title: '答卷回看' }
         },
         {
           path: 'exam/proctor',

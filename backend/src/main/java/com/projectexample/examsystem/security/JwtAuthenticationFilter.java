@@ -1,5 +1,8 @@
 package com.projectexample.examsystem.security;
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.projectexample.examsystem.entity.SysUser;
+import com.projectexample.examsystem.mapper.SysUserMapper;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -20,18 +23,34 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final SysUserMapper sysUserMapper;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         String token = resolveToken(request);
+        if (StringUtils.hasText(token) && !jwtTokenProvider.isValid(token)) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Session token is invalid");
+            return;
+        }
         if (StringUtils.hasText(token) && jwtTokenProvider.isValid(token)) {
             Claims claims = jwtTokenProvider.parseClaims(token);
+            SysUser currentUser = sysUserMapper.selectOne(Wrappers.lambdaQuery(SysUser.class)
+                    .eq(SysUser::getUsername, claims.getSubject())
+                    .eq(SysUser::getStatus, 1)
+                    .last("limit 1"));
+            Integer tokenSessionVersion = claims.get("sessionVersion", Integer.class);
+            if (currentUser == null || !matchesSessionVersion(currentUser, tokenSessionVersion)) {
+                SecurityContextHolder.clearContext();
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Session token has expired");
+                return;
+            }
             UserPrincipal userPrincipal = new UserPrincipal(
                     claims.getSubject(),
                     claims.get("nickname", String.class),
-                    claims.get("roleCode", String.class)
+                    claims.get("roleCode", String.class),
+                    tokenSessionVersion == null ? 0 : tokenSessionVersion
             );
             UsernamePasswordAuthenticationToken authenticationToken =
                     new UsernamePasswordAuthenticationToken(userPrincipal, null, userPrincipal.getAuthorities());
@@ -48,5 +67,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return authorization.substring(7);
         }
         return null;
+    }
+
+    private boolean matchesSessionVersion(SysUser user, Integer tokenSessionVersion) {
+        int current = user.getSessionVersion() == null ? 0 : user.getSessionVersion();
+        int claimed = tokenSessionVersion == null ? 0 : tokenSessionVersion;
+        return current == claimed;
     }
 }

@@ -10,4 +10,6 @@ public class CandidateAnswerItemRequest {
     private Long questionId;
 
     private String answerContent;
+
+    private Integer reviewLaterFlag;
 }

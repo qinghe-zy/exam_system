@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 
 @RestController
@@ -32,8 +33,16 @@ public class CandidateExamController {
     @PreAuthorize("hasRole('STUDENT')")
     public ApiResponse<CandidateExamWorkspaceVO> workspace(@PathVariable Long examPlanId,
                                                            @RequestParam(required = false) String examPassword,
-                                                           @AuthenticationPrincipal UserPrincipal userPrincipal) {
-        return ApiResponse.success(candidateExamService.getWorkspace(examPlanId, examPassword, userPrincipal.getUsername()));
+                                                           @AuthenticationPrincipal UserPrincipal userPrincipal,
+                                                           HttpServletRequest httpServletRequest) {
+        return ApiResponse.success(candidateExamService.getWorkspace(
+                examPlanId,
+                examPassword,
+                userPrincipal.getUsername(),
+                httpServletRequest.getRemoteAddr(),
+                httpServletRequest.getHeader("X-Device-Fingerprint"),
+                httpServletRequest.getHeader("X-Device-Info")
+        ));
     }
 
     @PostMapping("/exams/{examPlanId}/save")
@@ -56,8 +65,9 @@ public class CandidateExamController {
     @PreAuthorize("hasRole('STUDENT')")
     public ApiResponse<Void> reportEvent(@PathVariable Long examPlanId,
                                          @Valid @RequestBody CandidateEventReportRequest request,
-                                         @AuthenticationPrincipal UserPrincipal userPrincipal) {
-        candidateExamService.reportEvent(examPlanId, request, userPrincipal.getUsername());
+                                         @AuthenticationPrincipal UserPrincipal userPrincipal,
+                                         HttpServletRequest httpServletRequest) {
+        candidateExamService.reportEvent(examPlanId, request, userPrincipal.getUsername(), httpServletRequest.getRemoteAddr());
         return ApiResponse.success("event recorded", null);
     }
 }

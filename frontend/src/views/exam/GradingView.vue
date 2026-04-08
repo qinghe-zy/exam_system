@@ -3,9 +3,11 @@ import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
 import AppShellSection from '../../components/AppShellSection.vue'
-import { fetchGradingTasks, fetchGradingWorkspace, submitGrading } from '../../api/exam'
+import { fetchGradingTasks, fetchGradingWorkspace, reviewGrading, submitGrading } from '../../api/exam'
 import type { GradingTask, GradingWorkspace } from '../../types/exam'
-import { labelAnswerSheetStatus, labelQuestionType } from '../../utils/labels'
+import { labelAnswerSheetStatus, labelAppealStatus, labelGradingReviewStatus, labelQuestionType } from '../../utils/labels'
+
+const OBJECTIVE_TYPES = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK']
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -44,7 +46,7 @@ async function submitCurrent() {
     workspace.value = await submitGrading(
       workspace.value.answerSheetId,
       workspace.value.items
-        .filter((item) => !['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE'].includes(item.questionType))
+        .filter((item) => !OBJECTIVE_TYPES.includes(item.questionType))
         .map((item) => ({
           answerItemId: item.answerItemId!,
           scoreAwarded: gradeForm[item.answerItemId || item.questionId]?.scoreAwarded || 0,
@@ -52,6 +54,22 @@ async function submitCurrent() {
         }))
     )
     ElMessage.success('阅卷结果已更新')
+    await loadData()
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function handleReview(action: 'APPROVE' | 'REJECT_REJUDGE') {
+  if (!workspace.value) return
+  submitting.value = true
+  try {
+    workspace.value = await reviewGrading(
+      workspace.value.answerSheetId,
+      action,
+      action === 'APPROVE' ? '复核通过，允许发布成绩。' : '复核退回重判，请重新核定主观题分数。'
+    )
+    ElMessage.success(action === 'APPROVE' ? '复核已通过，成绩已发布' : '已退回重判')
     await loadData()
   } finally {
     submitting.value = false
@@ -75,6 +93,8 @@ onMounted(loadData)
         <el-table-column prop="objectiveScore" label="客观分" min-width="100" />
         <el-table-column prop="pendingQuestionCount" label="待阅主观题" min-width="140" />
         <el-table-column label="状态" min-width="140"><template #default="{ row }">{{ labelAnswerSheetStatus(row.status) }}</template></el-table-column>
+        <el-table-column label="复核状态" min-width="140"><template #default="{ row }">{{ labelGradingReviewStatus(row.reviewStatus) }}</template></el-table-column>
+        <el-table-column label="申诉状态" min-width="150"><template #default="{ row }">{{ labelAppealStatus(row.appealStatus) }}</template></el-table-column>
         <el-table-column label="操作" min-width="120" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" plain @click="openWorkspace(row.answerSheetId)">打开</el-button>
@@ -92,8 +112,28 @@ onMounted(loadData)
               <p class="eyebrow">阅卷工作区</p>
               <h2>{{ workspace.examName }} · {{ workspace.candidateName }}</h2>
               <p class="muted">客观分：{{ workspace.objectiveScore }} · 当前总分：{{ workspace.finalScore }}</p>
+              <p class="muted">状态：{{ labelAnswerSheetStatus(workspace.status) }} · 复核：{{ labelGradingReviewStatus(workspace.reviewStatus) }} · 申诉：{{ labelAppealStatus(workspace.appealStatus) }}</p>
             </div>
-            <el-button type="primary" :loading="submitting" @click="submitCurrent">提交评分</el-button>
+            <div class="hero-actions">
+              <el-button
+                v-if="workspace.status === 'REVIEW_PENDING'"
+                type="success"
+                :loading="submitting"
+                @click="handleReview('APPROVE')"
+              >
+                复核通过并发布
+              </el-button>
+              <el-button
+                v-if="workspace.status === 'REVIEW_PENDING'"
+                type="warning"
+                plain
+                :loading="submitting"
+                @click="handleReview('REJECT_REJUDGE')"
+              >
+                退回重判
+              </el-button>
+              <el-button type="primary" :loading="submitting" @click="submitCurrent">提交评分</el-button>
+            </div>
           </header>
 
           <article v-for="item in workspace.items" :key="item.answerItemId || item.questionId" class="panel-card answer-card">
@@ -107,7 +147,7 @@ onMounted(loadData)
               <p>{{ item.answerContent || '未作答' }}</p>
             </div>
 
-            <template v-if="['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE'].includes(item.questionType)">
+            <template v-if="OBJECTIVE_TYPES.includes(item.questionType)">
               <div class="objective-result">
                 <el-tag type="success">{{ item.status }}</el-tag>
                 <span>{{ item.scoreAwarded }} / {{ item.maxScore }}</span>
@@ -148,6 +188,13 @@ onMounted(loadData)
   align-items: center;
 }
 
+.hero-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .workspace-hero h2 {
   margin: 0.35rem 0;
   font-family: 'Literata', Georgia, serif;
@@ -185,6 +232,10 @@ onMounted(loadData)
   .workspace-hero {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .hero-actions {
+    justify-content: flex-start;
   }
 }
 </style>

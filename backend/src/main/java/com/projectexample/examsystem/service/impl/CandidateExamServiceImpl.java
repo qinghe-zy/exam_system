@@ -11,6 +11,7 @@ import com.projectexample.examsystem.entity.AnswerItem;
 import com.projectexample.examsystem.entity.AnswerSheet;
 import com.projectexample.examsystem.entity.AntiCheatEvent;
 import com.projectexample.examsystem.entity.AuditLog;
+import com.projectexample.examsystem.entity.ConfigItem;
 import com.projectexample.examsystem.entity.ExamCandidate;
 import com.projectexample.examsystem.entity.ExamPaper;
 import com.projectexample.examsystem.entity.ExamPlan;
@@ -23,6 +24,7 @@ import com.projectexample.examsystem.mapper.AnswerItemMapper;
 import com.projectexample.examsystem.mapper.AnswerSheetMapper;
 import com.projectexample.examsystem.mapper.AntiCheatEventMapper;
 import com.projectexample.examsystem.mapper.AuditLogMapper;
+import com.projectexample.examsystem.mapper.ConfigItemMapper;
 import com.projectexample.examsystem.mapper.ExamCandidateMapper;
 import com.projectexample.examsystem.mapper.ExamPaperMapper;
 import com.projectexample.examsystem.mapper.ExamPlanMapper;
@@ -34,6 +36,7 @@ import com.projectexample.examsystem.service.CandidateExamService;
 import com.projectexample.examsystem.vo.CandidateAnswerItemVO;
 import com.projectexample.examsystem.vo.CandidateExamVO;
 import com.projectexample.examsystem.vo.CandidateExamWorkspaceVO;
+import com.projectexample.examsystem.vo.AntiCheatPolicyVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -47,6 +50,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Arrays;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -65,6 +69,7 @@ public class CandidateExamServiceImpl implements CandidateExamService {
     private final ExamRecordMapper examRecordMapper;
     private final AuditLogMapper auditLogMapper;
     private final AntiCheatEventMapper antiCheatEventMapper;
+    private final ConfigItemMapper configItemMapper;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -103,7 +108,12 @@ public class CandidateExamServiceImpl implements CandidateExamService {
     }
 
     @Override
-    public CandidateExamWorkspaceVO getWorkspace(Long examPlanId, String examPassword, String username) {
+    public CandidateExamWorkspaceVO getWorkspace(Long examPlanId,
+                                                 String examPassword,
+                                                 String username,
+                                                 String clientIp,
+                                                 String deviceFingerprint,
+                                                 String deviceInfo) {
         SysUser user = requireUser(username);
         ExamPlan plan = requirePlan(examPlanId);
         ExamCandidate candidate = requireCandidate(plan.getId(), user.getId());
@@ -111,6 +121,7 @@ public class CandidateExamServiceImpl implements CandidateExamService {
         ensurePlanOpen(plan, sheet);
         ensureAttemptAllowed(plan, candidate, sheet);
         ensurePasswordAllowed(plan, sheet, examPassword);
+        ensureSingleDeviceAllowed(plan, user, sheet, deviceFingerprint);
         if (sheet.getStartedAt() == null) {
             sheet = markSheetStarted(sheet);
         }
@@ -155,7 +166,7 @@ public class CandidateExamServiceImpl implements CandidateExamService {
     }
 
     @Override
-    public void reportEvent(Long examPlanId, CandidateEventReportRequest request, String username) {
+    public void reportEvent(Long examPlanId, CandidateEventReportRequest request, String username, String clientIp) {
         SysUser user = requireUser(username);
         requireCandidate(examPlanId, user.getId());
         AntiCheatEvent event = new AntiCheatEvent();
@@ -167,6 +178,9 @@ public class CandidateExamServiceImpl implements CandidateExamService {
         event.setLeaveCount(request.getLeaveCount());
         event.setTriggeredAutoSave(request.getTriggeredAutoSave());
         event.setSaveVersion(request.getSaveVersion());
+        event.setClientIp(resolveClientIp(clientIp));
+        event.setDeviceFingerprint(trimToLength(request.getDeviceFingerprint(), 255));
+        event.setDeviceInfo(trimToLength(request.getDeviceInfo(), 1000));
         event.setDetailText(request.getDetailText());
         event.setOccurredAt(LocalDateTime.now());
         antiCheatEventMapper.insert(event);
@@ -202,6 +216,7 @@ public class CandidateExamServiceImpl implements CandidateExamService {
                     .scoreAwarded(answerItem == null ? null : answerItem.getScoreAwarded())
                     .status(answerItem == null ? "PENDING" : answerItem.getStatus())
                     .markedFlag(answerItem == null ? 0 : answerItem.getMarkedFlag())
+                    .reviewLaterFlag(answerItem == null ? 0 : answerItem.getReviewLaterFlag())
                     .reviewComment(answerItem == null ? null : answerItem.getReviewComment())
                     .build());
         }
@@ -229,6 +244,8 @@ public class CandidateExamServiceImpl implements CandidateExamService {
                 .saveVersion(sheet.getSaveVersion())
                 .shuffleEnabled(paper.getShuffleEnabled())
                 .paperVersion(paper.getPaperVersion())
+                .antiCheatLevel(plan.getAntiCheatLevel())
+                .antiCheatPolicy(buildAntiCheatPolicy(plan))
                 .items(items)
                 .build();
     }
@@ -308,6 +325,10 @@ public class CandidateExamServiceImpl implements CandidateExamService {
         record.setSubjectiveScore(0D);
         record.setFinalScore(objectiveScore);
         record.setPassedFlag(objectiveScore >= plan.getPassScore() ? 1 : 0);
+        record.setReviewStatus(hasSubjective ? "PENDING" : "APPROVED");
+        if (!StringUtils.hasText(record.getAppealStatus())) {
+            record.setAppealStatus("NONE");
+        }
         record.setPublishedFlag(hasSubjective ? 0 : 1);
         record.setStatus(hasSubjective ? "PENDING_GRADING" : "PUBLISHED");
         if (record.getId() == null) {
@@ -361,6 +382,7 @@ public class CandidateExamServiceImpl implements CandidateExamService {
             answerItem.setQuestionOrder(paperQuestion.getSortNo());
             answerItem.setAnswerContent(itemRequest.getAnswerContent());
             answerItem.setMaxScore(paperQuestion.getScore());
+            answerItem.setReviewLaterFlag(itemRequest.getReviewLaterFlag() == null ? 0 : itemRequest.getReviewLaterFlag());
             if (answerItem.getId() == null) {
                 answerItem.setStatus("PENDING");
                 answerItemMapper.insert(answerItem);
@@ -516,8 +538,107 @@ public class CandidateExamServiceImpl implements CandidateExamService {
         return plan.getAutoSubmitEnabled() == null || plan.getAutoSubmitEnabled() == 1;
     }
 
+    private void ensureSingleDeviceAllowed(ExamPlan plan, SysUser user, AnswerSheet sheet, String deviceFingerprint) {
+        if (!configBoolean("exam.anti.cheat.single-device.enabled", true)) {
+            return;
+        }
+        if ("BASIC".equalsIgnoreCase(plan.getAntiCheatLevel())) {
+            return;
+        }
+        if (!StringUtils.hasText(deviceFingerprint) || isFinished(sheet)) {
+            return;
+        }
+        List<AntiCheatEvent> deviceEvents = antiCheatEventMapper.selectList(Wrappers.lambdaQuery(AntiCheatEvent.class)
+                .eq(AntiCheatEvent::getExamPlanId, plan.getId())
+                .eq(AntiCheatEvent::getUserId, user.getId())
+                .eq(AntiCheatEvent::getEventType, "DEVICE_CONTEXT")
+                .isNotNull(AntiCheatEvent::getDeviceFingerprint)
+                .orderByDesc(AntiCheatEvent::getOccurredAt, AntiCheatEvent::getId));
+        boolean hasOtherDevice = deviceEvents.stream()
+                .map(AntiCheatEvent::getDeviceFingerprint)
+                .filter(StringUtils::hasText)
+                .anyMatch(existing -> !existing.equals(deviceFingerprint));
+        if (hasOtherDevice) {
+            throw new BusinessException(4005, "当前考试已在另一台设备打开，基础单设备限制已阻止本次进入");
+        }
+    }
+
+    private AntiCheatPolicyVO buildAntiCheatPolicy(ExamPlan plan) {
+        boolean strictMode = !"BASIC".equalsIgnoreCase(plan.getAntiCheatLevel());
+        return AntiCheatPolicyVO.builder()
+                .blockCopyEnabled(flag(strictMode && configBoolean("exam.anti.cheat.block.copy.enabled", true)))
+                .blockPasteEnabled(flag(strictMode && configBoolean("exam.anti.cheat.block.paste.enabled", true)))
+                .blockContextMenuEnabled(flag(strictMode && configBoolean("exam.anti.cheat.block.context-menu.enabled", true)))
+                .blockShortcutEnabled(flag(strictMode && configBoolean("exam.anti.cheat.block.shortcuts.enabled", true)))
+                .deviceLoggingEnabled(flag(configBoolean("exam.anti.cheat.device-logging.enabled", true)))
+                .deviceCheckEnabled(flag(strictMode && configBoolean("exam.anti.cheat.device-check.enabled", true)))
+                .blockOnDeviceCheckFail(flag(strictMode && configBoolean("exam.anti.cheat.device-check.block-on-fail", true)))
+                .forbidMobileEntry(flag(strictMode && configBoolean("exam.anti.cheat.device-check.forbid-mobile", true)))
+                .requireFullscreenSupport(flag(strictMode && configBoolean("exam.anti.cheat.device-check.require-fullscreen-support", true)))
+                .minWindowWidth(configInt("exam.anti.cheat.device-check.min-window-width", 1200))
+                .minWindowHeight(configInt("exam.anti.cheat.device-check.min-window-height", 700))
+                .blockedShortcutKeys(parseCsvConfig("exam.anti.cheat.block.shortcuts.keys",
+                        "F5,Ctrl+R,Meta+R,Ctrl+Shift+I,F12,Ctrl+Shift+C,Ctrl+U"))
+                .allowedBrowserKeywords(parseCsvConfig("exam.anti.cheat.device-check.allowed-browsers",
+                        "Chrome,Edg"))
+                .build();
+    }
+
+    private boolean configBoolean(String key, boolean defaultValue) {
+        String value = configValue(key);
+        return value == null ? defaultValue : Boolean.parseBoolean(value);
+    }
+
+    private List<String> parseCsvConfig(String key, String defaultValue) {
+        String source = configValue(key);
+        String raw = StringUtils.hasText(source) ? source : defaultValue;
+        return Arrays.stream(raw.split(","))
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
+    }
+
+    private Integer configInt(String key, int defaultValue) {
+        String value = configValue(key);
+        if (!StringUtils.hasText(value)) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException exception) {
+            return defaultValue;
+        }
+    }
+
+    private String configValue(String key) {
+        ConfigItem item = configItemMapper.selectOne(Wrappers.lambdaQuery(ConfigItem.class)
+                .eq(ConfigItem::getConfigKey, key)
+                .eq(ConfigItem::getStatus, 1)
+                .last("limit 1"));
+        return item == null ? null : item.getConfigValue();
+    }
+
+    private Integer flag(boolean enabled) {
+        return enabled ? 1 : 0;
+    }
+
+    private String resolveClientIp(String rawIp) {
+        if (!StringUtils.hasText(rawIp)) {
+            return "unknown";
+        }
+        return trimToLength(rawIp, 64);
+    }
+
+    private String trimToLength(String value, int maxLength) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        return value.length() <= maxLength ? value : value.substring(0, maxLength);
+    }
+
     private boolean isFinished(AnswerSheet sheet) {
-        return List.of("SUBMITTED", "PARTIALLY_GRADED", "GRADED").contains(sheet.getStatus());
+        return List.of("SUBMITTED", "PARTIALLY_GRADED", "REVIEW_PENDING", "REJUDGING", "PUBLISHED").contains(sheet.getStatus());
     }
 
     private SysUser requireUser(String username) {

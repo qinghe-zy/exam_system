@@ -17,4 +17,6 @@ public class GradingTaskVO {
     private Integer subjectiveQuestionCount;
     private Integer pendingQuestionCount;
     private String status;
+    private String reviewStatus;
+    private String appealStatus;
 }

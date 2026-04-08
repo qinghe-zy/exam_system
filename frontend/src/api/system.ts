@@ -31,6 +31,21 @@ export interface AuditLogRecord {
   createTime: string
 }
 
+export interface LoginRiskLogRecord {
+  id: number
+  username: string
+  userId?: number
+  roleCode?: string
+  successFlag: number
+  clientIp?: string
+  userAgent?: string
+  deviceFingerprint?: string
+  deviceInfo?: string
+  riskLevel: string
+  riskReason?: string
+  loginAt: string
+}
+
 export interface ConfigItemRecord {
   id: number
   configKey: string
@@ -170,6 +185,10 @@ export function fetchCurrentMenus() {
 
 export function fetchAuditLogs() {
   return http.get<never, AuditLogRecord[]>('/api/system/audit-logs')
+}
+
+export function fetchLoginRiskLogs() {
+  return http.get<never, LoginRiskLogRecord[]>('/api/system/login-risks')
 }
 
 export function fetchConfigItems() {

@@ -31,13 +31,33 @@ const answerSheetStatusMap: Record<string, string> = {
   SUBMITTED: '已提交',
   PARTIALLY_GRADED: '部分阅卷完成',
   GRADED: '已完成评分',
+  REVIEW_PENDING: '待复核',
+  REJUDGING: '待重判',
   PENDING_GRADING: '待阅卷',
   PUBLISHED: '已发布'
 }
 
 const messageTypeMap: Record<string, string> = {
   EXAM_PUBLISH: '考试发布提醒',
-  SCORE_PUBLISH: '成绩发布提醒'
+  SCORE_PUBLISH: '成绩发布提醒',
+  SCORE_APPEAL: '成绩申诉提醒',
+  SCORE_APPEAL_RESULT: '成绩申诉处理结果',
+  SECURITY_ALERT: '登录安全告警'
+}
+
+const gradingReviewStatusMap: Record<string, string> = {
+  PENDING: '待复核',
+  IN_PROGRESS: '阅卷中',
+  APPROVED: '复核通过',
+  REJUDGE_REQUIRED: '退回重判'
+}
+
+const appealStatusMap: Record<string, string> = {
+  NONE: '无申诉',
+  SUBMITTED: '申诉待处理',
+  APPROVED_REJUDGE: '申诉通过待重判',
+  REJECTED: '申诉已驳回',
+  RESOLVED: '申诉已完成'
 }
 
 const severityMap: Record<string, string> = {
@@ -50,7 +70,14 @@ const eventTypeMap: Record<string, string> = {
   TAB_SWITCH: '切换页面标签',
   WINDOW_BLUR: '窗口失焦',
   FULLSCREEN_EXIT: '退出全屏',
-  AUTO_SAVE_FAILURE: '自动保存失败'
+  AUTO_SAVE_FAILURE: '自动保存失败',
+  COPY_ATTEMPT: '尝试复制',
+  PASTE_ATTEMPT: '尝试粘贴',
+  CONTEXT_MENU_BLOCKED: '右键菜单被拦截',
+  SHORTCUT_BLOCKED: '高风险快捷键被拦截',
+  DEVICE_CONTEXT: '记录设备上下文',
+  DEVICE_CHECK_PASSED: '设备检测通过',
+  DEVICE_CHECK_FAILED: '设备检测未通过'
 }
 
 export function labelQuestionType(value?: string) {
@@ -75,6 +102,14 @@ export function labelAnswerSheetStatus(value?: string) {
 
 export function labelMessageType(value?: string) {
   return value ? (messageTypeMap[value] || value) : ''
+}
+
+export function labelGradingReviewStatus(value?: string) {
+  return value ? (gradingReviewStatusMap[value] || value) : ''
+}
+
+export function labelAppealStatus(value?: string) {
+  return value ? (appealStatusMap[value] || value) : ''
 }
 
 export function labelSeverity(value?: string) {

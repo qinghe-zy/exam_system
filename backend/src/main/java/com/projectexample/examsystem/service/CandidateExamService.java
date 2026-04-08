@@ -11,9 +11,9 @@ public interface CandidateExamService {
 
     List<CandidateExamVO> listMyExams(String username);
 
-    CandidateExamWorkspaceVO getWorkspace(Long examPlanId, String examPassword, String username);
+    CandidateExamWorkspaceVO getWorkspace(Long examPlanId, String examPassword, String username, String clientIp, String deviceFingerprint, String deviceInfo);
 
     CandidateExamWorkspaceVO saveAnswers(Long examPlanId, CandidateAnswerSheetSaveRequest request, boolean submit, String username);
 
-    void reportEvent(Long examPlanId, CandidateEventReportRequest request, String username);
+    void reportEvent(Long examPlanId, CandidateEventReportRequest request, String username, String clientIp);
 }

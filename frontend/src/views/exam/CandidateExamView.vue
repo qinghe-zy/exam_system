@@ -1,11 +1,25 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { onBeforeRouteLeave } from 'vue-router'
 import { ElMessage } from 'element-plus'
 
 import AppShellSection from '../../components/AppShellSection.vue'
 import { fetchCandidateWorkspace, fetchMyExams, reportCandidateEvent, saveCandidateAnswers, submitCandidateAnswers } from '../../api/exam'
 import type { CandidateAnswerItem, CandidateExam, CandidateExamWorkspace } from '../../types/exam'
 import { labelAnswerSheetStatus, labelQuestionType } from '../../utils/labels'
+
+type DeviceCheckItem = {
+  code: string
+  label: string
+  status: 'pass' | 'fail'
+  detail: string
+}
+
+type DeviceCheckState = {
+  passed: boolean
+  blocking: boolean
+  items: DeviceCheckItem[]
+}
 
 const loading = ref(false)
 const saving = ref(false)
@@ -17,23 +31,27 @@ const workspace = ref<CandidateExamWorkspace | null>(null)
 const answers = ref<Record<number, string | string[]>>({})
 const countdownText = ref('--:--:--')
 const passwordDialogVisible = ref(false)
+const deviceCheckDialogVisible = ref(false)
 const submitConfirmVisible = ref(false)
 const pendingExamPlanId = ref<number | null>(null)
+const pendingWorkspace = ref<CandidateExamWorkspace | null>(null)
 const examPassword = ref('')
 const currentQuestionId = ref<number | null>(null)
 const lastSavedText = ref('尚未保存')
 const questionObserver = ref<IntersectionObserver | null>(null)
 const isFullscreen = ref(false)
 const manualFullscreenExitPending = ref(false)
+const latestWarningAt = reactive<Record<string, number>>({})
 const violationStats = reactive({
   tabSwitch: 0,
   blur: 0,
-  fullscreenExit: 0
+  fullscreenExit: 0,
+  restrictedOps: 0
 })
 let countdownTimer: number | undefined
 let autoSaveTimer: number | undefined
 
-const totalViolationCount = computed(() => violationStats.tabSwitch + violationStats.blur + violationStats.fullscreenExit)
+const totalViolationCount = computed(() => violationStats.tabSwitch + violationStats.blur + violationStats.fullscreenExit + violationStats.restrictedOps)
 const entryWindowText = computed(() => {
   if (!workspace.value) return '--'
   return `${formatDateTime(workspace.value.startTime)} 至 ${formatDateTime(workspace.value.entryDeadlineAt)}`
@@ -47,6 +65,28 @@ const autoSubmitText = computed(() => {
 const answeredCount = computed(() => {
   if (!workspace.value) return 0
   return workspace.value.items.filter((item) => hasAnswer(item.questionId)).length
+})
+const markedCount = computed(() => {
+  if (!workspace.value) return 0
+  return workspace.value.items.filter((item) => item.reviewLaterFlag === 1).length
+})
+const antiCheatPolicySummary = computed(() => {
+  const policy = workspace.value?.antiCheatPolicy
+  if (!policy) return '当前考试未下发额外监考策略。'
+  const enabledItems = [
+    policy.blockCopyEnabled === 1 ? '禁止复制' : '',
+    policy.blockPasteEnabled === 1 ? '禁止粘贴' : '',
+    policy.blockContextMenuEnabled === 1 ? '禁止右键' : '',
+    policy.blockShortcutEnabled === 1 ? `拦截快捷键 ${policy.blockedShortcutKeys.join(' / ')}` : '',
+    policy.deviceLoggingEnabled === 1 ? '记录设备上下文' : '',
+    policy.deviceCheckEnabled === 1 ? `进入前执行设备检测（最小 ${policy.minWindowWidth}x${policy.minWindowHeight}）` : ''
+  ].filter(Boolean)
+  return enabledItems.length ? enabledItems.join('；') : '当前考试仅保留基础行为留痕。'
+})
+const deviceCheckState = ref<DeviceCheckState>({
+  passed: true,
+  blocking: false,
+  items: []
 })
 
 function parseOptions(item: CandidateAnswerItem) {
@@ -84,6 +124,7 @@ function collectAnswers() {
   if (!workspace.value) return []
   return workspace.value.items.map((item) => ({
     questionId: item.questionId,
+    reviewLaterFlag: item.reviewLaterFlag === 1 ? 1 : 0,
     answerContent:
       item.questionType === 'MULTIPLE_CHOICE' || item.questionType === 'FILL_BLANK'
         ? ((answers.value[item.questionId] as string[] | undefined) || []).join('|')
@@ -114,21 +155,132 @@ async function openWorkspace(examPlanId: number) {
 
 async function confirmWorkspace() {
   if (!pendingExamPlanId.value) return
-  workspace.value = await fetchCandidateWorkspace(pendingExamPlanId.value, examPassword.value || undefined)
-  hydrateAnswers(workspace.value.items)
-  workspaceVisible.value = true
+  const loadedWorkspace = await fetchCandidateWorkspace(pendingExamPlanId.value, examPassword.value || undefined)
   passwordDialogVisible.value = false
-  currentQuestionId.value = workspace.value.items[0]?.questionId || null
+  if (loadedWorkspace.antiCheatPolicy?.deviceLoggingEnabled === 1) {
+    await reportCandidateEvent(loadedWorkspace.examPlanId, {
+      answerSheetId: loadedWorkspace.answerSheetId,
+      eventType: 'DEVICE_CONTEXT',
+      severity: 'LOW',
+      triggeredAutoSave: 0,
+      saveVersion: loadedWorkspace.saveVersion,
+      deviceFingerprint: getDeviceFingerprint(),
+      deviceInfo: buildDeviceInfo(),
+      detailText: `进入考试时记录设备上下文，策略等级：${loadedWorkspace.antiCheatLevel || 'BASIC'}。`
+    })
+  }
+  if (loadedWorkspace.antiCheatPolicy?.deviceCheckEnabled === 1) {
+    const detection = buildDeviceCheckState(loadedWorkspace)
+    deviceCheckState.value = detection
+    if (!detection.passed) {
+      await reportCandidateEvent(loadedWorkspace.examPlanId, {
+        answerSheetId: loadedWorkspace.answerSheetId,
+        eventType: 'DEVICE_CHECK_FAILED',
+        severity: detection.blocking ? 'HIGH' : 'MEDIUM',
+        triggeredAutoSave: 0,
+        saveVersion: loadedWorkspace.saveVersion,
+        deviceFingerprint: getDeviceFingerprint(),
+        deviceInfo: buildDeviceInfo(),
+        detailText: detection.items
+          .filter((item) => item.status === 'fail')
+          .map((item) => `${item.label}：${item.detail}`)
+          .join('；')
+      })
+      pendingWorkspace.value = loadedWorkspace
+      deviceCheckDialogVisible.value = true
+      return
+    }
+    await reportCandidateEvent(loadedWorkspace.examPlanId, {
+      answerSheetId: loadedWorkspace.answerSheetId,
+      eventType: 'DEVICE_CHECK_PASSED',
+      severity: 'LOW',
+      triggeredAutoSave: 0,
+      saveVersion: loadedWorkspace.saveVersion,
+      deviceFingerprint: getDeviceFingerprint(),
+      deviceInfo: buildDeviceInfo(),
+      detailText: '设备检测通过，允许进入考试。'
+    })
+  }
+  await activateWorkspace(loadedWorkspace)
+}
+
+async function activateWorkspace(loadedWorkspace: CandidateExamWorkspace) {
+  workspace.value = loadedWorkspace
+  pendingWorkspace.value = null
+  hydrateAnswers(loadedWorkspace.items)
+  workspaceVisible.value = true
+  currentQuestionId.value = loadedWorkspace.items[0]?.questionId || null
   resetViolationStats()
-  lastSavedText.value = workspace.value.saveVersion > 0 ? `已保存 ${workspace.value.saveVersion} 次` : '进入考试后将自动保存答案'
+  lastSavedText.value = loadedWorkspace.saveVersion > 0 ? `已保存 ${loadedWorkspace.saveVersion} 次` : '进入考试后将自动保存答案'
   await nextTick()
   bindQuestionObserver()
+}
+
+function buildDeviceCheckState(loadedWorkspace: CandidateExamWorkspace): DeviceCheckState {
+  const policy = loadedWorkspace.antiCheatPolicy
+  if (!policy || policy.deviceCheckEnabled !== 1) {
+    return { passed: true, blocking: false, items: [] }
+  }
+  const viewportWidth = window.innerWidth || window.screen.width || 0
+  const viewportHeight = window.innerHeight || window.screen.height || 0
+  const userAgent = navigator.userAgent || ''
+  const browserAllowed = !policy.allowedBrowserKeywords.length
+    || policy.allowedBrowserKeywords.some((item) => userAgent.includes(item))
+  const mobileDetected = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent)
+  const fullscreenSupported = typeof document.documentElement.requestFullscreen === 'function'
+  const items: DeviceCheckItem[] = [
+    {
+      code: 'browser',
+      label: '浏览器环境',
+      status: browserAllowed ? 'pass' : 'fail',
+      detail: browserAllowed ? `当前浏览器：${userAgent}` : `当前浏览器不在允许列表：${policy.allowedBrowserKeywords.join(' / ')}`
+    },
+    {
+      code: 'viewport',
+      label: '窗口尺寸',
+      status: viewportWidth >= policy.minWindowWidth && viewportHeight >= policy.minWindowHeight ? 'pass' : 'fail',
+      detail:
+        viewportWidth >= policy.minWindowWidth && viewportHeight >= policy.minWindowHeight
+          ? `当前窗口 ${viewportWidth}x${viewportHeight}`
+          : `当前窗口 ${viewportWidth}x${viewportHeight}，要求至少 ${policy.minWindowWidth}x${policy.minWindowHeight}`
+    },
+    {
+      code: 'mobile',
+      label: '设备类型',
+      status: policy.forbidMobileEntry === 1 && mobileDetected ? 'fail' : 'pass',
+      detail: mobileDetected ? '检测到移动端特征' : '当前为桌面端环境'
+    },
+    {
+      code: 'fullscreen',
+      label: '全屏能力',
+      status: policy.requireFullscreenSupport === 1 && !fullscreenSupported ? 'fail' : 'pass',
+      detail: fullscreenSupported ? '浏览器支持全屏 API' : '浏览器不支持全屏 API'
+    }
+  ]
+  const passed = items.every((item) => item.status === 'pass')
+  return {
+    passed,
+    blocking: !passed && policy.blockOnDeviceCheckFail === 1,
+    items
+  }
+}
+
+function closeDeviceCheck() {
+  deviceCheckDialogVisible.value = false
+  pendingWorkspace.value = null
+}
+
+async function continueAfterDeviceCheck() {
+  if (!pendingWorkspace.value) return
+  deviceCheckDialogVisible.value = false
+  await activateWorkspace(pendingWorkspace.value)
 }
 
 function resetViolationStats() {
   violationStats.tabSwitch = 0
   violationStats.blur = 0
   violationStats.fullscreenExit = 0
+  violationStats.restrictedOps = 0
 }
 
 async function saveCurrent(showMessage = true, triggerSource: 'manual' | 'timer' | 'event' = 'manual') {
@@ -191,11 +343,73 @@ async function reportSuspiciousEvent(eventType: string, severity: string, detail
       leaveCount: violationCount,
       triggeredAutoSave: autoSaved ? 1 : 0,
       saveVersion: workspace.value.saveVersion,
+      deviceFingerprint: getDeviceFingerprint(),
+      deviceInfo: buildDeviceInfo(),
       detailText
     })
   } catch {
     // 不阻塞考试主流程
   }
+}
+
+function toastPolicyWarning(key: string, message: string) {
+  const now = Date.now()
+  if (now - (latestWarningAt[key] || 0) < 1800) return
+  latestWarningAt[key] = now
+  ElMessage.warning(message)
+}
+
+function buildDeviceInfo() {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'unknown'
+  return [
+    `UA=${navigator.userAgent}`,
+    `Platform=${navigator.platform || 'unknown'}`,
+    `Lang=${navigator.language || 'unknown'}`,
+    `TZ=${timezone}`,
+    `Screen=${window.screen.width}x${window.screen.height}`
+  ].join(' | ')
+}
+
+function getDeviceFingerprint() {
+  const base = [
+    navigator.userAgent,
+    navigator.platform,
+    navigator.language,
+    Intl.DateTimeFormat().resolvedOptions().timeZone,
+    `${window.screen.width}x${window.screen.height}`
+  ].join('::')
+  let hash = 0
+  for (let index = 0; index < base.length; index += 1) {
+    hash = (hash << 5) - hash + base.charCodeAt(index)
+    hash |= 0
+  }
+  return `dev-${Math.abs(hash)}`
+}
+
+function normalizeShortcutKey(rawKey: string) {
+  if (!rawKey) return ''
+  return rawKey.length === 1 ? rawKey.toUpperCase() : rawKey
+}
+
+function buildShortcutText(event: KeyboardEvent) {
+  const parts: string[] = []
+  if (event.ctrlKey) parts.push('Ctrl')
+  if (event.metaKey) parts.push('Meta')
+  if (event.altKey) parts.push('Alt')
+  if (event.shiftKey) parts.push('Shift')
+  parts.push(normalizeShortcutKey(event.key))
+  return parts.join('+')
+}
+
+function matchesBlockedShortcut(event: KeyboardEvent) {
+  const shortcuts = workspace.value?.antiCheatPolicy?.blockedShortcutKeys || []
+  const current = buildShortcutText(event).toUpperCase()
+  return shortcuts.some((item) => item.trim().toUpperCase() === current)
+}
+
+async function logRestrictedOperation(eventType: string, detailText: string) {
+  violationStats.restrictedOps += 1
+  await reportSuspiciousEvent(eventType, 'HIGH', detailText, violationStats.restrictedOps)
 }
 
 function updateCountdown() {
@@ -260,6 +474,36 @@ async function handleFullscreenChange() {
   await reportSuspiciousEvent('FULLSCREEN_EXIT', 'HIGH', `考生第 ${violationStats.fullscreenExit} 次异常退出全屏考试态，建议监考端重点关注。`, violationStats.fullscreenExit)
 }
 
+async function handleCopy(event: ClipboardEvent) {
+  if (!workspaceVisible.value || workspace.value?.antiCheatPolicy?.blockCopyEnabled !== 1) return
+  event.preventDefault()
+  toastPolicyWarning('copy', '当前考试已禁止复制操作，系统已记录本次行为。')
+  await logRestrictedOperation('COPY_ATTEMPT', '考生尝试复制页面内容，操作已被系统拦截。')
+}
+
+async function handlePaste(event: ClipboardEvent) {
+  if (!workspaceVisible.value || workspace.value?.antiCheatPolicy?.blockPasteEnabled !== 1) return
+  event.preventDefault()
+  toastPolicyWarning('paste', '当前考试已禁止粘贴操作，系统已记录本次行为。')
+  await logRestrictedOperation('PASTE_ATTEMPT', '考生尝试粘贴内容到考试工作区，操作已被系统拦截。')
+}
+
+async function handleContextMenu(event: MouseEvent) {
+  if (!workspaceVisible.value || workspace.value?.antiCheatPolicy?.blockContextMenuEnabled !== 1) return
+  event.preventDefault()
+  toastPolicyWarning('contextmenu', '当前考试已禁止右键菜单，系统已记录本次行为。')
+  await logRestrictedOperation('CONTEXT_MENU_BLOCKED', '考生尝试打开右键菜单，操作已被系统拦截。')
+}
+
+async function handleKeydown(event: KeyboardEvent) {
+  if (!workspaceVisible.value || workspace.value?.antiCheatPolicy?.blockShortcutEnabled !== 1) return
+  if (!matchesBlockedShortcut(event)) return
+  event.preventDefault()
+  const shortcut = buildShortcutText(event)
+  toastPolicyWarning(`shortcut:${shortcut}`, `当前考试已拦截快捷键 ${shortcut}，系统已记录本次行为。`)
+  await logRestrictedOperation('SHORTCUT_BLOCKED', `考生尝试使用快捷键 ${shortcut}，操作已被系统拦截。`)
+}
+
 async function toggleFullscreen() {
   try {
     if (document.fullscreenElement) {
@@ -281,6 +525,10 @@ async function jumpToQuestion(questionId: number) {
   currentQuestionId.value = questionId
   await nextTick()
   document.getElementById(`question-${questionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+function toggleReviewLater(item: CandidateAnswerItem) {
+  item.reviewLaterFlag = item.reviewLaterFlag === 1 ? 0 : 1
 }
 
 function getBlankAnswers(questionId: number) {
@@ -330,7 +578,9 @@ watch(
       stopAutoSave()
       questionObserver.value?.disconnect()
       workspace.value = null
+      pendingWorkspace.value = null
       submitConfirmVisible.value = false
+      deviceCheckDialogVisible.value = false
       isFullscreen.value = false
       manualFullscreenExitPending.value = false
     }
@@ -349,12 +599,25 @@ function formatDateTime(value: string) {
   })
 }
 
+function handleBeforeUnload(event: BeforeUnloadEvent) {
+  if (!workspaceVisible.value || !workspace.value || workspace.value.answerSheetStatus === 'SUBMITTED') {
+    return
+  }
+  event.preventDefault()
+  event.returnValue = ''
+}
+
 onMounted(async () => {
   await loadExams()
   isFullscreen.value = Boolean(document.fullscreenElement)
   document.addEventListener('visibilitychange', handleVisibilityChange)
   window.addEventListener('blur', handleWindowBlur)
   document.addEventListener('fullscreenchange', handleFullscreenChange)
+  window.addEventListener('beforeunload', handleBeforeUnload)
+  document.addEventListener('copy', handleCopy)
+  document.addEventListener('paste', handlePaste)
+  document.addEventListener('contextmenu', handleContextMenu)
+  document.addEventListener('keydown', handleKeydown)
 })
 
 onBeforeUnmount(() => {
@@ -365,6 +628,20 @@ onBeforeUnmount(() => {
   document.removeEventListener('visibilitychange', handleVisibilityChange)
   window.removeEventListener('blur', handleWindowBlur)
   document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+  document.removeEventListener('copy', handleCopy)
+  document.removeEventListener('paste', handlePaste)
+  document.removeEventListener('contextmenu', handleContextMenu)
+  document.removeEventListener('keydown', handleKeydown)
+})
+
+onBeforeRouteLeave((_to, _from, next) => {
+  if (!workspaceVisible.value || !workspace.value || workspace.value.answerSheetStatus === 'SUBMITTED') {
+    next()
+    return
+  }
+  const shouldLeave = window.confirm('当前考试仍在进行中，离开页面前请确认答案已经保存。确定继续离开吗？')
+  next(shouldLeave)
 })
 </script>
 
@@ -401,6 +678,32 @@ onBeforeUnmount(() => {
       </template>
     </el-dialog>
 
+    <el-dialog v-model="deviceCheckDialogVisible" title="设备检测结果" width="min(560px, 96vw)" append-to-body :z-index="2600">
+      <p class="muted">
+        当前考试启用了设备检测。只有浏览器环境、窗口尺寸、设备类型和全屏能力满足要求时，才建议进入正式考试态。
+      </p>
+      <div class="device-check-list">
+        <article v-for="item in deviceCheckState.items" :key="item.code" class="device-check-item">
+          <div class="device-check-head">
+            <strong>{{ item.label }}</strong>
+            <el-tag :type="item.status === 'pass' ? 'success' : 'danger'">{{ item.status === 'pass' ? '通过' : '未通过' }}</el-tag>
+          </div>
+          <p>{{ item.detail }}</p>
+        </article>
+      </div>
+      <el-alert
+        v-if="!deviceCheckState.passed"
+        :type="deviceCheckState.blocking ? 'error' : 'warning'"
+        :closable="false"
+        show-icon
+        :title="deviceCheckState.blocking ? '当前设备检测未通过，系统已阻止进入考试。' : '设备检测存在风险项，请谨慎继续。'"
+      />
+      <template #footer>
+        <el-button @click="closeDeviceCheck">返回考试列表</el-button>
+        <el-button v-if="!deviceCheckState.blocking" type="primary" @click="continueAfterDeviceCheck">仍然进入</el-button>
+      </template>
+    </el-dialog>
+
     <section v-if="workspaceVisible && workspace" class="exam-overlay">
       <div class="exam-stage">
         <header class="exam-header">
@@ -426,6 +729,7 @@ onBeforeUnmount(() => {
           <div class="exam-toolbar">
             <div class="toolbar-note">
               <span>已答 {{ answeredCount }}/{{ workspace.items.length }}</span>
+              <span>待复查 {{ markedCount }} 题</span>
               <span>异常 {{ totalViolationCount }} 次</span>
               <span>{{ lastSavedText }}</span>
             </div>
@@ -448,6 +752,10 @@ onBeforeUnmount(() => {
                 <strong>监考说明</strong>
                 <p>页面切换、窗口失焦、退出全屏等异常行为会实时记录，并联动自动保存当前作答内容。</p>
               </div>
+              <div class="notice-card">
+                <strong>本场监考策略</strong>
+                <p>{{ antiCheatPolicySummary }}</p>
+              </div>
             </section>
 
             <article
@@ -465,7 +773,12 @@ onBeforeUnmount(() => {
                   <h3 v-if="!item.stemHtml">{{ item.stem }}</h3>
                   <div v-else class="stem-html" v-html="item.stemHtml"></div>
                 </div>
-                <el-tag type="warning">{{ item.maxScore }} 分</el-tag>
+                <div class="question-tags">
+                  <el-button size="small" plain :type="item.reviewLaterFlag === 1 ? 'warning' : 'default'" @click="toggleReviewLater(item)">
+                    {{ item.reviewLaterFlag === 1 ? '取消待复查' : '标记待复查' }}
+                  </el-button>
+                  <el-tag type="warning">{{ item.maxScore }} 分</el-tag>
+                </div>
               </div>
 
               <div v-if="parseAttachments(item).length" class="attachment-list">
@@ -516,7 +829,7 @@ onBeforeUnmount(() => {
                   :key="item.questionId"
                   type="button"
                   class="answer-card-cell"
-                  :class="{ answered: hasAnswer(item.questionId), active: currentQuestionId === item.questionId }"
+                  :class="{ answered: hasAnswer(item.questionId), active: currentQuestionId === item.questionId, marked: item.reviewLaterFlag === 1 }"
                   @click="jumpToQuestion(item.questionId)"
                 >
                   {{ item.questionOrder }}
@@ -533,6 +846,8 @@ onBeforeUnmount(() => {
                 <li>允许进入：{{ entryWindowText }}</li>
                 <li>作答截止：{{ formatDateTime(workspace.answerDeadlineAt) }}</li>
                 <li>自动交卷：{{ workspace.autoSubmitEnabled === 1 ? '开启' : '关闭' }}</li>
+                <li>监考等级：{{ workspace.antiCheatLevel || 'BASIC' }}</li>
+                <li>待复查：{{ markedCount }} 题</li>
                 <li>异常次数：{{ totalViolationCount }}</li>
               </ul>
             </section>
@@ -645,7 +960,8 @@ onBeforeUnmount(() => {
 .exam-notice,
 .exam-content,
 .question-head,
-.aside-head {
+.aside-head,
+.question-tags {
   display: flex;
   gap: 0.8rem;
 }
@@ -659,6 +975,12 @@ onBeforeUnmount(() => {
 
 .toolbar-actions {
   flex-wrap: wrap;
+}
+
+.question-tags {
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .toolbar-note {
@@ -739,6 +1061,32 @@ onBeforeUnmount(() => {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.device-check-list {
+  display: grid;
+  gap: 0.8rem;
+  margin: 1rem 0;
+}
+
+.device-check-item {
+  border: 1px solid color-mix(in oklch, var(--line) 72%, white);
+  border-radius: 18px;
+  padding: 0.85rem 1rem;
+  background: color-mix(in oklch, white 94%, var(--panel-soft));
+}
+
+.device-check-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.device-check-item p {
+  margin: 0.45rem 0 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
 .answer-card-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -759,6 +1107,10 @@ onBeforeUnmount(() => {
 .answer-card-cell.answered {
   background: color-mix(in oklch, var(--brand) 18%, white);
   color: var(--brand-deep);
+}
+
+.answer-card-cell.marked {
+  box-shadow: inset 0 0 0 2px color-mix(in oklch, #c68b3c 48%, white);
 }
 
 .answer-card-cell.active {

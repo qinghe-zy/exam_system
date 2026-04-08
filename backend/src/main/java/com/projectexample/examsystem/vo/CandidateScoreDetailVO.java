@@ -22,6 +22,8 @@ public class CandidateScoreDetailVO {
     private Double finalScore;
     private Integer passedFlag;
     private Integer publishedFlag;
+    private String reviewStatus;
+    private String appealStatus;
     private String status;
     private List<CandidateScoreItemVO> items;
 }

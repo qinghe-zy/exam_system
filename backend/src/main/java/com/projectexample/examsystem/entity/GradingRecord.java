@@ -16,6 +16,8 @@ public class GradingRecord extends BaseEntity {
     private Long answerItemId;
     private Long graderId;
     private String graderName;
+    private Integer reviewRound;
+    private String gradingAction;
     private Double scoreAwarded;
     private String commentText;
     private LocalDateTime gradedAt;

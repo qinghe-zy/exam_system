@@ -62,6 +62,16 @@ class AuthLifecycleIntegrationTests {
         String token = login("reg20260403", "Reg123456!");
         assertThat(token).isNotBlank();
 
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Device-Fingerprint", "risk-device-1")
+                        .header("X-Device-Info", "UA=JUnit | Screen=1280x720")
+                        .content("""
+                                {"username":"reg20260403","password":"wrong-password"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(org.hamcrest.Matchers.not(0)));
+
         String resetCode = sendCode("""
                 {
                   "purpose":"RESET_PASSWORD",
@@ -86,6 +96,13 @@ class AuthLifecycleIntegrationTests {
 
         String resetToken = login("reg20260403", "Reset123456!");
         assertThat(resetToken).isNotBlank();
+
+        String adminToken = login("900001", "123456");
+        mockMvc.perform(get("/api/system/login-risks")
+                        .header("Authorization", bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)));
     }
 
     private String sendCode(String payload) throws Exception {
@@ -102,6 +119,8 @@ class AuthLifecycleIntegrationTests {
     private String login(String username, String password) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Device-Fingerprint", "junit-device-1")
+                        .header("X-Device-Info", "UA=JUnit | Screen=1440x900")
                         .content("""
                                 {"username":"%s","password":"%s"}
                                 """.formatted(username, password)))
@@ -110,5 +129,9 @@ class AuthLifecycleIntegrationTests {
                 .andReturn();
         JsonNode payload = objectMapper.readTree(result.getResponse().getContentAsString());
         return payload.path("data").path("token").asText();
+    }
+
+    private String bearer(String token) {
+        return "Bearer " + token;
     }
 }

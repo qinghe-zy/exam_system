@@ -142,7 +142,7 @@ onMounted(loadData)
   <AppShellSection
     eyebrow="系统管理"
     title="配置中心与字典中心"
-    description="该页面集中管理系统参数、题型、标签、通知类别等基础配置，用于支撑考试规则、题库元数据和通知协同的统一管理。"
+    description="该页面集中管理系统参数、题型、标签、通知类别与基础监考策略配置，用于支撑考试规则、题库元数据、防作弊拦截策略和通知协同的统一管理。"
   >
     <section class="config-grid">
       <article class="panel-card section-card">

@@ -21,6 +21,7 @@ import com.projectexample.examsystem.vo.ExamPlanVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -60,6 +61,7 @@ public class ExamPlanServiceImpl implements ExamPlanService {
     @Override
     public ExamPlanVO updatePlan(Long id, ExamPlanSaveRequest request) {
         ExamPlan entity = requirePlan(id);
+        assertPlanMutable(entity, "更新");
         ExamPaper paper = requirePaper(request.getPaperId());
         apply(entity, request, paper);
         examPlanMapper.updateById(entity);
@@ -70,7 +72,8 @@ public class ExamPlanServiceImpl implements ExamPlanService {
 
     @Override
     public void deletePlan(Long id) {
-        requirePlan(id);
+        ExamPlan plan = requirePlan(id);
+        assertPlanMutable(plan, "删除");
         examCandidateMapper.delete(Wrappers.lambdaQuery(ExamCandidate.class).eq(ExamCandidate::getExamPlanId, id));
         examPlanMapper.deleteById(id);
     }
@@ -197,6 +200,18 @@ public class ExamPlanServiceImpl implements ExamPlanService {
             message.setRelatedId(examPlanId);
             message.setReadFlag(0);
             inAppMessageMapper.insert(message);
+        }
+    }
+
+    private void assertPlanMutable(ExamPlan plan, String actionName) {
+        long answerSheetCount = answerSheetMapper.selectCount(Wrappers.lambdaQuery(AnswerSheet.class)
+                .eq(AnswerSheet::getExamPlanId, plan.getId()));
+        boolean started = plan.getPublishStatus() != null
+                && plan.getPublishStatus() == 1
+                && plan.getStartTime() != null
+                && !LocalDateTime.now().isBefore(plan.getStartTime());
+        if (started || answerSheetCount > 0) {
+            throw new BusinessException(4005, "当前考试已开始或已有答卷，暂不允许" + actionName + "考试计划");
         }
     }
 }

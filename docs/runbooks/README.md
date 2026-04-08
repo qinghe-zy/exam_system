@@ -6,6 +6,8 @@
 ## 二、当前内容
 - `local-startup.md`：本地启动说明
 - `mysql-init.md`：MySQL 初始化与回归说明
+- `mysql-backup-restore.md`：MySQL 备份与恢复 runbook
+- `security-alert-runbook.md`：登录安全告警处置 runbook
 
 ## 三、使用原则
 - runbook 必须写清前置条件、执行步骤、预期结果、失败时的处理方式

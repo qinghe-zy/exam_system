@@ -1,114 +1,94 @@
 # 评测与验证说明
 
 ## 1. 当前阶段
-- 阶段名称：功能补全与可验收测试增强阶段
-- 评测日期：2026-04-03
+- 阶段名称：会话治理与考试计划保护增强阶段
+- 评测日期：2026-04-08
 
 ## 2. 已完成内容
 ### 2.1 功能补全
-- 学生注册与找回密码基础版
-- 邮箱 / 短信验证码 mock 通道
-- 按钮级权限基础版
-- 新题型（填空题、论述题、材料题）
-- 富文本 HTML、材料内容与附件 JSON 基础支持
-- 题目使用次数统计基础版
-- 按知识点自动组题基础版
-- 学生已发布成绩列表与成绩详情页
-- 消息中心跳转成绩详情
-- 管理端接口权限收紧
-- 运行时健康检查接口
-- MySQL 初始化回归脚本
+- 登录态会话治理基础版
+- 新登录使旧 token 失效
+- 登出使当前 token 失效
+- 考试进行中计划更新 / 删除保护
+- 考试进行中试卷更新 / 删除保护
+- 考试进行中高风险配置更新 / 删除保护
 
 ### 2.2 测试增强
-- 新增学生成绩流程 E2E
-- 新增权限矩阵断言
-- 新增数据库临时库初始化回归脚本
-- 新增运行态 HTTP smoke 校验
+- 新增 `SessionGovernanceIntegrationTests`
+- 新增 `ExamPlanProtectionIntegrationTests`
+- 新增 `ExamPaperProtectionIntegrationTests`
+- 新增 `ConfigCenterProtectionIntegrationTests`
+- 保持后端全量测试通过
+- Playwright 全量回归改为串行执行，以匹配单账号单会话治理规则
 
 ## 3. 本轮改动文件 / 模块
-- `frontend/src/views/exam/CandidateScoreView.vue`
-- `frontend/src/views/notices/MessageCenterView.vue`
-- `frontend/src/views/notices/NoticeView.vue`
-- `frontend/src/router/index.ts`
-- `frontend/src/api/exam.ts`
-- `frontend/src/types/exam.ts`
-- `frontend/tests/e2e/student-score-flow.spec.ts`
-- `frontend/tests/e2e/*`
-- `backend/src/main/java/com/projectexample/examsystem/controller/*`
-- `backend/src/main/java/com/projectexample/examsystem/service/impl/ExamRecordServiceImpl.java`
-- `scripts/verify-mysql-init.ps1`
+- `backend/src/main/java/com/projectexample/examsystem/security/JwtTokenProvider.java`
+- `backend/src/main/java/com/projectexample/examsystem/security/JwtAuthenticationFilter.java`
+- `backend/src/main/java/com/projectexample/examsystem/security/UserPrincipal.java`
+- `backend/src/main/java/com/projectexample/examsystem/service/impl/AuthServiceImpl.java`
+- `backend/src/main/java/com/projectexample/examsystem/service/impl/ExamPlanServiceImpl.java`
+- `backend/src/main/java/com/projectexample/examsystem/entity/SysUser.java`
+- `backend/src/test/java/com/projectexample/examsystem/SessionGovernanceIntegrationTests.java`
+- `backend/src/test/java/com/projectexample/examsystem/ExamPlanProtectionIntegrationTests.java`
+- `backend/src/test/java/com/projectexample/examsystem/ExamPaperProtectionIntegrationTests.java`
+- `backend/src/test/java/com/projectexample/examsystem/ConfigCenterProtectionIntegrationTests.java`
+- `frontend/playwright.config.ts`
+- `backend/src/main/resources/schema.sql`
+- `sql/schema-baseline.sql`
+- `sql/mysql/init.sql`
 
 ## 4. 验证结果
 ### 4.1 构建验证
 - 后端 `mvn -q test`：通过
-- 后端 `mvn -q -DskipTests package`：通过
 - 前端 `npm.cmd run build`：通过
+- Playwright 全量回归：15 / 15 通过（串行）
 
 ### 4.2 数据库回归
 - `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-mysql-init.ps1`：通过
 - 回归校验结果：
-  - `sys_menu`：21
+  - `sys_menu`：23
   - `sys_user`：74
+  - `sys_config_item`：28
   - `biz_question_bank`：320
   - `biz_exam_paper`：8
   - `biz_exam_plan`：6
   - `biz_score_record`：12
+  - `biz_score_appeal`：0
+  - `biz_login_risk_log`：4
+  - `sys_user` 安全字段：4
+  - `biz_score_record` 治理字段：2
 
-### 4.3 后端运行态 HTTP smoke
-- 注册选项：通过
-- 注册验证码发送：通过
-- 注册：通过
-- 找回密码验证码发送：通过
-- 找回密码：通过
-- 管理员登录：通过
-- `GET /api/system/runtime/health`：通过
-- 学生登录：通过
-- 教师 `POST /api/exam/questions/auto-group/knowledge-points`：通过
-- `GET /api/exam/records/my`：通过
-- `GET /api/exam/records/my/{id}`：通过
-- 教师 `GET /api/exam/questions`：通过
-- 学生 `GET /api/exam/questions`：403，符合预期
+### 4.3 真实库校验
+- 本地 MySQL `exam_system` 已补齐：
+  - `sys_user.session_version`
+  - `anti_cheat` 分组配置项：14
 
-### 4.4 Playwright 浏览器回归
-- `auth-account-flow.spec.ts`：通过
-- `teacher-paper-plan.spec.ts`：通过
-- `teacher-exam-workflow.spec.ts`：通过
-- `student-exam.spec.ts`：通过
-- `grading-flow.spec.ts`：通过
-- `question-ai.spec.ts`：通过
-- `question-type-enhancement.spec.ts`：通过
-- `permission-route-guard.spec.ts`：通过
-- `student-score-flow.spec.ts`：通过
+### 4.4 会话治理验证
+- `SessionGovernanceIntegrationTests`：通过
+- 关键断言覆盖：
+  - 同一账号重新登录后，旧 token 立即失效
+  - 主动登出后，当前 token 立即失效
 
-### 4.5 浏览器验证覆盖点
-1. 管理员 / 教师
-- 题库与建卷入口
-- 策略组卷
-- 考试发布
+### 4.5 防误操作验证
+- `ExamPlanProtectionIntegrationTests`：通过
+- 关键断言覆盖：
+  - 考试已开始时，不允许更新考试计划
+  - 考试已开始时，不允许删除考试计划
 
-2. 学生
-- 注册、找回密码、新密码登录
-- 待考列表
-- 进入考试
-- 保存与提交
-- 成绩查看
-- 消息跳转详情
-
-3. 阅卷老师
-- 阅卷任务
-- 主观题评分
-
-4. 权限
-- 未授权路由拦截
-- 管理接口 403 收口
-- 关键按钮按权限目录显示
+### 4.6 试卷与配置只读保护验证
+- `ExamPaperProtectionIntegrationTests`：通过
+- `ConfigCenterProtectionIntegrationTests`：通过
+- 关键断言覆盖：
+  - 当前试卷已被进行中的考试使用时，不允许更新或删除试卷
+  - 当前存在已开始考试时，不允许更新高风险配置组
 
 ## 5. 剩余风险
-1. 浏览器矩阵仍以 Edge 为主
-2. 没有并发压测与弱网专项测试
-3. AI 真实成功调用仍未完成
+1. 浏览器矩阵仍以 Edge 为主，尚未覆盖更多浏览器。
+2. 当前更强考试态控制仍未覆盖更多后台模块，例如考试期配置只读保护和更细多窗口识别。
+3. 当前设备检测仍是基础版，尚未覆盖摄像头、麦克风、活体或更强设备指纹校验。
+4. 当前质量报告仍缺班级/年级/部门对比与趋势分析。
 
 ## 6. 下一步建议
-1. 补学生错题本与个人答卷回看
-2. 补题型与富媒体支持
-3. 补登录风控和高并发保护
+1. 继续补更强考试态控制，如更多后台模块的考试期只读保护和更细多窗口识别。
+2. 继续补通知模板与外部通知通道。
+3. 继续补班级/年级/部门对比与趋势分析。

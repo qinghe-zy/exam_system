@@ -33,5 +33,7 @@ public class ExamRecord extends BaseEntity {
     private Double finalScore;
     private Integer passedFlag;
     private Integer publishedFlag;
+    private String reviewStatus;
+    private String appealStatus;
     private String status;
 }

@@ -2,6 +2,7 @@ package com.projectexample.examsystem.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.projectexample.examsystem.dto.GradeAnswerItemRequest;
+import com.projectexample.examsystem.dto.GradingReviewRequest;
 import com.projectexample.examsystem.dto.GradingSubmitRequest;
 import com.projectexample.examsystem.entity.AnswerItem;
 import com.projectexample.examsystem.entity.AnswerSheet;
@@ -11,6 +12,7 @@ import com.projectexample.examsystem.entity.ExamRecord;
 import com.projectexample.examsystem.entity.GradingRecord;
 import com.projectexample.examsystem.entity.InAppMessage;
 import com.projectexample.examsystem.entity.QuestionBank;
+import com.projectexample.examsystem.entity.ScoreAppeal;
 import com.projectexample.examsystem.entity.SysUser;
 import com.projectexample.examsystem.exception.BusinessException;
 import com.projectexample.examsystem.mapper.AnswerItemMapper;
@@ -21,6 +23,7 @@ import com.projectexample.examsystem.mapper.ExamRecordMapper;
 import com.projectexample.examsystem.mapper.GradingRecordMapper;
 import com.projectexample.examsystem.mapper.InAppMessageMapper;
 import com.projectexample.examsystem.mapper.QuestionBankMapper;
+import com.projectexample.examsystem.mapper.ScoreAppealMapper;
 import com.projectexample.examsystem.mapper.SysUserMapper;
 import com.projectexample.examsystem.security.AccessScopeService;
 import com.projectexample.examsystem.service.GradingService;
@@ -29,6 +32,7 @@ import com.projectexample.examsystem.vo.GradingTaskVO;
 import com.projectexample.examsystem.vo.GradingWorkspaceVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -46,6 +50,7 @@ public class GradingServiceImpl implements GradingService {
     private final QuestionBankMapper questionBankMapper;
     private final GradingRecordMapper gradingRecordMapper;
     private final ExamRecordMapper examRecordMapper;
+    private final ScoreAppealMapper scoreAppealMapper;
     private final SysUserMapper sysUserMapper;
     private final AuditLogMapper auditLogMapper;
     private final InAppMessageMapper inAppMessageMapper;
@@ -56,12 +61,25 @@ public class GradingServiceImpl implements GradingService {
         List<Long> accessibleOrgIds = accessScopeService.accessibleOrganizationIds();
         List<Long> planIds = accessScopeService.isAdmin()
                 ? examPlanMapper.selectList(null).stream().map(ExamPlan::getId).toList()
-                : examPlanMapper.selectList(Wrappers.lambdaQuery(ExamPlan.class).in(ExamPlan::getOrganizationId, accessibleOrgIds))
-                .stream().map(ExamPlan::getId).toList();
+                : examPlanMapper.selectList(Wrappers.lambdaQuery(ExamPlan.class)
+                        .in(ExamPlan::getOrganizationId, accessibleOrgIds)).stream().map(ExamPlan::getId).toList();
+
+        List<Long> sheetIds = answerSheetMapper.selectList(Wrappers.lambdaQuery(AnswerSheet.class)
+                        .in(!accessScopeService.isAdmin(), AnswerSheet::getExamPlanId, planIds.isEmpty() ? List.of(-1L) : planIds)
+                        .in(AnswerSheet::getStatus, List.of("SUBMITTED", "PARTIALLY_GRADED", "REVIEW_PENDING", "REJUDGING"))
+                        .orderByDesc(AnswerSheet::getSubmittedAt, AnswerSheet::getId))
+                .stream()
+                .map(AnswerSheet::getId)
+                .toList();
+
+        Map<Long, ExamRecord> recordMap = examRecordMapper.selectList(Wrappers.lambdaQuery(ExamRecord.class)
+                        .in(ExamRecord::getAnswerSheetId, sheetIds.isEmpty() ? List.of(-1L) : sheetIds))
+                .stream()
+                .collect(Collectors.toMap(ExamRecord::getAnswerSheetId, Function.identity(), (left, right) -> right));
 
         return answerSheetMapper.selectList(Wrappers.lambdaQuery(AnswerSheet.class)
                         .in(!accessScopeService.isAdmin(), AnswerSheet::getExamPlanId, planIds.isEmpty() ? List.of(-1L) : planIds)
-                        .in(AnswerSheet::getStatus, List.of("SUBMITTED", "PARTIALLY_GRADED"))
+                        .in(AnswerSheet::getStatus, List.of("SUBMITTED", "PARTIALLY_GRADED", "REVIEW_PENDING", "REJUDGING"))
                         .orderByDesc(AnswerSheet::getSubmittedAt, AnswerSheet::getId))
                 .stream()
                 .map(sheet -> {
@@ -69,7 +87,10 @@ public class GradingServiceImpl implements GradingService {
                     List<AnswerItem> items = answerItemMapper.selectList(Wrappers.lambdaQuery(AnswerItem.class)
                             .eq(AnswerItem::getAnswerSheetId, sheet.getId()));
                     long subjectiveCount = items.stream().filter(item -> !isObjective(item.getQuestionType())).count();
-                    long pendingCount = items.stream().filter(item -> !isObjective(item.getQuestionType()) && !"GRADED".equals(item.getStatus())).count();
+                    long pendingCount = items.stream()
+                            .filter(item -> !isObjective(item.getQuestionType()) && !"GRADED".equals(item.getStatus()))
+                            .count();
+                    ExamRecord record = recordMap.get(sheet.getId());
                     return GradingTaskVO.builder()
                             .answerSheetId(sheet.getId())
                             .examName(plan == null ? sheet.getPaperName() : plan.getExamName())
@@ -79,6 +100,8 @@ public class GradingServiceImpl implements GradingService {
                             .subjectiveQuestionCount((int) subjectiveCount)
                             .pendingQuestionCount((int) pendingCount)
                             .status(sheet.getStatus())
+                            .reviewStatus(record == null ? null : record.getReviewStatus())
+                            .appealStatus(record == null ? null : record.getAppealStatus())
                             .build();
                 })
                 .toList();
@@ -91,7 +114,7 @@ public class GradingServiceImpl implements GradingService {
         if (plan != null && !accessScopeService.isAdmin()) {
             accessScopeService.assertOrganizationAccessible(plan.getOrganizationId());
         }
-        return buildWorkspace(sheet, plan);
+        return buildWorkspace(sheet, plan, findRecord(answerSheetId));
     }
 
     @Override
@@ -126,7 +149,9 @@ public class GradingServiceImpl implements GradingService {
             record.setAnswerSheetId(answerSheetId);
             record.setAnswerItemId(item.getId());
             record.setGraderId(grader.getId());
-            record.setGraderName(grader.getFullName() == null ? grader.getNickname() : grader.getFullName());
+            record.setGraderName(resolveUserName(grader));
+            record.setReviewRound(resolveNextRound(item.getId()));
+            record.setGradingAction("REJUDGING".equalsIgnoreCase(sheet.getStatus()) ? "REJUDGE" : "INITIAL");
             record.setScoreAwarded(grade.getScoreAwarded());
             record.setCommentText(grade.getReviewComment());
             record.setGradedAt(LocalDateTime.now());
@@ -146,46 +171,118 @@ public class GradingServiceImpl implements GradingService {
 
         sheet.setSubjectiveScore(subjectiveScore);
         sheet.setFinalScore((sheet.getObjectiveScore() == null ? 0D : sheet.getObjectiveScore()) + subjectiveScore);
-        sheet.setStatus(pending ? "PARTIALLY_GRADED" : "GRADED");
+        sheet.setStatus(pending ? "PARTIALLY_GRADED" : "REVIEW_PENDING");
         answerSheetMapper.updateById(sheet);
 
-        ExamRecord record = examRecordMapper.selectOne(Wrappers.lambdaQuery(ExamRecord.class)
-                .eq(ExamRecord::getAnswerSheetId, answerSheetId)
-                .last("limit 1"));
+        ExamRecord record = findRecord(answerSheetId);
         if (record != null) {
             record.setSubjectiveScore(subjectiveScore);
             record.setFinalScore(sheet.getFinalScore());
             record.setPassedFlag(plan != null && sheet.getFinalScore() >= plan.getPassScore() ? 1 : 0);
-            record.setPublishedFlag(pending ? 0 : 1);
-            record.setStatus(pending ? "PARTIALLY_GRADED" : "PUBLISHED");
-            examRecordMapper.updateById(record);
-            if (!pending) {
-                InAppMessage message = new InAppMessage();
-                message.setRecipientUserId(record.getUserId());
-                message.setTitle("成绩发布提醒");
-                message.setMessageType("SCORE_PUBLISH");
-                message.setContent("考试《" + record.getExamName() + "》成绩已发布，请及时查看。");
-                message.setRelatedType("SCORE_RECORD");
-                message.setRelatedId(record.getId());
-                message.setReadFlag(0);
-                inAppMessageMapper.insert(message);
+            record.setPublishedFlag(0);
+            record.setReviewStatus(pending ? "IN_PROGRESS" : "PENDING");
+            if (!StringUtils.hasText(record.getAppealStatus())) {
+                record.setAppealStatus("NONE");
             }
+            record.setStatus(pending ? "PARTIALLY_GRADED" : "REVIEW_PENDING");
+            examRecordMapper.updateById(record);
         }
 
-        AuditLog log = new AuditLog();
-        log.setOperatorId(grader.getId());
-        log.setOperatorName(grader.getFullName() == null ? grader.getNickname() : grader.getFullName());
-        log.setModuleName("GRADING");
-        log.setActionName("SUBMIT_GRADE");
-        log.setTargetType("ANSWER_SHEET");
-        log.setTargetId(answerSheetId);
-        log.setDetailText("Updated grading for answer sheet " + answerSheetId);
-        auditLogMapper.insert(log);
-
-        return buildWorkspace(answerSheetMapper.selectById(answerSheetId), plan);
+        writeAuditLog(grader, "GRADING", "SUBMIT_GRADE", "ANSWER_SHEET", answerSheetId,
+                "完成阅卷评分提交：" + (plan == null ? answerSheetId : plan.getExamName()));
+        return buildWorkspace(answerSheetMapper.selectById(answerSheetId), plan, findRecord(answerSheetId));
     }
 
-    private GradingWorkspaceVO buildWorkspace(AnswerSheet sheet, ExamPlan plan) {
+    @Override
+    public GradingWorkspaceVO reviewGrading(Long answerSheetId, GradingReviewRequest request, String username) {
+        AnswerSheet sheet = requireSheet(answerSheetId);
+        ExamPlan plan = examPlanMapper.selectById(sheet.getExamPlanId());
+        if (plan != null && !accessScopeService.isAdmin()) {
+            accessScopeService.assertOrganizationAccessible(plan.getOrganizationId());
+        }
+        ExamRecord record = requireRecord(answerSheetId);
+        SysUser reviewer = requireUser(username);
+        String action = normalizeReviewAction(request.getAction());
+
+        if (!List.of("REVIEW_PENDING", "REJUDGING").contains(sheet.getStatus())) {
+            throw new BusinessException(4005, "当前答卷状态不支持复核处理");
+        }
+
+        if ("APPROVE".equals(action)) {
+            sheet.setStatus("PUBLISHED");
+            record.setStatus("PUBLISHED");
+            record.setReviewStatus("APPROVED");
+            record.setPublishedFlag(1);
+            if ("APPROVED_REJUDGE".equals(record.getAppealStatus())) {
+                record.setAppealStatus("RESOLVED");
+                markLatestAppealResolved(record.getId(), reviewer, request.getReviewComment());
+            } else if (!StringUtils.hasText(record.getAppealStatus())) {
+                record.setAppealStatus("NONE");
+            }
+            publishScoreMessage(record);
+        } else {
+            sheet.setStatus("REJUDGING");
+            record.setStatus("REJUDGING");
+            record.setReviewStatus("REJUDGE_REQUIRED");
+            record.setPublishedFlag(0);
+        }
+
+        answerSheetMapper.updateById(sheet);
+        examRecordMapper.updateById(record);
+        writeAuditLog(reviewer, "GRADING", action, "ANSWER_SHEET", answerSheetId,
+                "复核处理答卷：" + (plan == null ? answerSheetId : plan.getExamName()) + "，备注：" + defaultText(request.getReviewComment()));
+        return buildWorkspace(answerSheetMapper.selectById(answerSheetId), plan, findRecord(answerSheetId));
+    }
+
+    private void markLatestAppealResolved(Long scoreRecordId, SysUser reviewer, String reviewComment) {
+        ScoreAppeal appeal = scoreAppealMapper.selectOne(Wrappers.lambdaQuery(ScoreAppeal.class)
+                .eq(ScoreAppeal::getScoreRecordId, scoreRecordId)
+                .eq(ScoreAppeal::getStatus, "APPROVED_REJUDGE")
+                .orderByDesc(ScoreAppeal::getProcessedAt, ScoreAppeal::getId)
+                .last("limit 1"));
+        if (appeal == null) {
+            return;
+        }
+        appeal.setStatus("RESOLVED");
+        appeal.setProcessedBy(reviewer.getId());
+        appeal.setProcessedByName(resolveUserName(reviewer));
+        appeal.setProcessedAt(LocalDateTime.now());
+        if (StringUtils.hasText(reviewComment)) {
+            appeal.setProcessComment(trimValue(reviewComment, 1000));
+        }
+        scoreAppealMapper.updateById(appeal);
+        publishAppealResolvedMessage(scoreRecordId);
+    }
+
+    private void publishAppealResolvedMessage(Long scoreRecordId) {
+        ExamRecord record = examRecordMapper.selectById(scoreRecordId);
+        if (record == null) {
+            return;
+        }
+        InAppMessage message = new InAppMessage();
+        message.setRecipientUserId(record.getUserId());
+        message.setTitle("申诉重判完成");
+        message.setMessageType("SCORE_APPEAL_RESULT");
+        message.setContent("你的申诉重判已经完成，《" + record.getExamName() + "》的最新成绩已重新发布。");
+        message.setRelatedType("SCORE_RECORD");
+        message.setRelatedId(record.getId());
+        message.setReadFlag(0);
+        inAppMessageMapper.insert(message);
+    }
+
+    private void publishScoreMessage(ExamRecord record) {
+        InAppMessage message = new InAppMessage();
+        message.setRecipientUserId(record.getUserId());
+        message.setTitle("成绩发布提醒");
+        message.setMessageType("SCORE_PUBLISH");
+        message.setContent("考试《" + record.getExamName() + "》成绩已发布，请及时查看。");
+        message.setRelatedType("SCORE_RECORD");
+        message.setRelatedId(record.getId());
+        message.setReadFlag(0);
+        inAppMessageMapper.insert(message);
+    }
+
+    private GradingWorkspaceVO buildWorkspace(AnswerSheet sheet, ExamPlan plan, ExamRecord record) {
         List<AnswerItem> items = answerItemMapper.selectList(Wrappers.lambdaQuery(AnswerItem.class)
                 .eq(AnswerItem::getAnswerSheetId, sheet.getId())
                 .orderByAsc(AnswerItem::getQuestionOrder, AnswerItem::getId));
@@ -224,8 +321,25 @@ public class GradingServiceImpl implements GradingService {
                 .objectiveScore(sheet.getObjectiveScore())
                 .subjectiveScore(sheet.getSubjectiveScore())
                 .finalScore(sheet.getFinalScore())
+                .status(sheet.getStatus())
+                .reviewStatus(record == null ? null : record.getReviewStatus())
+                .appealStatus(record == null ? null : record.getAppealStatus())
                 .items(answerItemVOs)
                 .build();
+    }
+
+    private ExamRecord findRecord(Long answerSheetId) {
+        return examRecordMapper.selectOne(Wrappers.lambdaQuery(ExamRecord.class)
+                .eq(ExamRecord::getAnswerSheetId, answerSheetId)
+                .last("limit 1"));
+    }
+
+    private ExamRecord requireRecord(Long answerSheetId) {
+        ExamRecord record = findRecord(answerSheetId);
+        if (record == null) {
+            throw new BusinessException(4040, "成绩记录不存在");
+        }
+        return record;
     }
 
     private AnswerSheet requireSheet(Long answerSheetId) {
@@ -237,11 +351,60 @@ public class GradingServiceImpl implements GradingService {
     }
 
     private SysUser requireUser(String username) {
-        SysUser user = sysUserMapper.selectOne(Wrappers.lambdaQuery(SysUser.class).eq(SysUser::getUsername, username).last("limit 1"));
+        SysUser user = sysUserMapper.selectOne(Wrappers.lambdaQuery(SysUser.class)
+                .eq(SysUser::getUsername, username)
+                .last("limit 1"));
         if (user == null) {
             throw new BusinessException(4010, "User session is invalid");
         }
         return user;
+    }
+
+    private int resolveNextRound(Long answerItemId) {
+        Integer latestRound = gradingRecordMapper.selectList(Wrappers.lambdaQuery(GradingRecord.class)
+                        .eq(GradingRecord::getAnswerItemId, answerItemId)
+                        .orderByDesc(GradingRecord::getReviewRound, GradingRecord::getId))
+                .stream()
+                .map(GradingRecord::getReviewRound)
+                .filter(value -> value != null)
+                .findFirst()
+                .orElse(0);
+        return latestRound + 1;
+    }
+
+    private String normalizeReviewAction(String action) {
+        String normalized = String.valueOf(action).trim().toUpperCase();
+        if (!List.of("APPROVE", "REJECT_REJUDGE").contains(normalized)) {
+            throw new BusinessException(4004, "不支持的复核动作");
+        }
+        return normalized;
+    }
+
+    private void writeAuditLog(SysUser user, String module, String action, String targetType, Long targetId, String detail) {
+        AuditLog log = new AuditLog();
+        log.setOperatorId(user.getId());
+        log.setOperatorName(resolveUserName(user));
+        log.setModuleName(module);
+        log.setActionName(action);
+        log.setTargetType(targetType);
+        log.setTargetId(targetId);
+        log.setDetailText(detail);
+        auditLogMapper.insert(log);
+    }
+
+    private String resolveUserName(SysUser user) {
+        return user.getFullName() == null ? user.getNickname() : user.getFullName();
+    }
+
+    private String trimValue(String value, int maxLength) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        return value.length() <= maxLength ? value : value.substring(0, maxLength);
+    }
+
+    private String defaultText(String value) {
+        return StringUtils.hasText(value) ? value : "未填写";
     }
 
     private boolean isObjective(String questionType) {

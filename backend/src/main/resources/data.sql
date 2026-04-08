@@ -105,6 +105,7 @@ INSERT INTO sys_menu (id, name, path, component, icon, permission_code, visible_
     (6, '菜单管理', '/system/menus', 'system/MenuView', 'Menu', 'sys:menu:view', 'ADMIN', 2, 4, 'PAGE', 0),
     (7, '审计日志', '/system/audit-logs', 'system/AuditLogView', 'Document', 'sys:audit:view', 'ADMIN,ORG_ADMIN', 2, 5, 'PAGE', 0),
     (8, '配置中心', '/system/config-center', 'system/ConfigCenterView', 'Tools', 'sys:config:view', 'ADMIN,ORG_ADMIN', 2, 6, 'PAGE', 0),
+    (23, '登录风险记录', '/system/login-risks', 'system/LoginRiskView', 'Warning', 'sys:login-risk:view', 'ADMIN,ORG_ADMIN', 2, 7, 'PAGE', 0),
     (9, '公告管理', '/notices', 'notices/NoticeView', 'Bell', 'biz:notice:view', 'ADMIN,ORG_ADMIN,TEACHER,GRADER,PROCTOR,STUDENT', 0, 3, 'MENU', 0),
     (10, '消息中心', '/messages', 'notices/MessageCenterView', 'ChatDotRound', 'biz:message:view', 'ADMIN,ORG_ADMIN,TEACHER,GRADER,PROCTOR,STUDENT', 0, 4, 'PAGE', 0),
     (11, '考试业务', '/exam', '', 'Reading', 'exam:view', 'ADMIN,ORG_ADMIN,TEACHER,GRADER,PROCTOR', 0, 5, 'MENU', 0),
@@ -117,7 +118,8 @@ INSERT INTO sys_menu (id, name, path, component, icon, permission_code, visible_
     (18, '考生中心', '/candidate', '', 'Tickets', 'candidate:view', 'STUDENT', 0, 6, 'MENU', 0),
     (19, '我的考试', '/candidate/exams', 'exam/CandidateExamView', 'Tickets', 'candidate:exam:view', 'STUDENT', 18, 1, 'PAGE', 0),
     (20, '监考事件', '/exam/proctor', 'exam/ProctorView', 'Warning', 'exam:proctor:view', 'ADMIN,ORG_ADMIN,PROCTOR', 11, 7, 'PAGE', 0),
-    (21, '我的成绩', '/candidate/scores', 'exam/CandidateScoreView', 'Histogram', 'candidate:score:view', 'STUDENT', 18, 2, 'PAGE', 0);
+    (21, '我的成绩', '/candidate/scores', 'exam/CandidateScoreView', 'Histogram', 'candidate:score:view', 'STUDENT', 18, 2, 'PAGE', 0),
+    (22, '答卷回看', '/candidate/review-center', 'exam/CandidateReviewCenterView', 'ReadingLamp', 'candidate:review:view', 'STUDENT', 18, 3, 'PAGE', 0);
 
 INSERT INTO biz_notice (id, title, category, status, content, deleted) VALUES
     (1, '期中考试发布通知', 'exam_publish', 1, '本学期期中考试安排已发布，请相关教师完成监考准备，学生按时查看考试计划。', 0),
@@ -129,7 +131,30 @@ INSERT INTO sys_config_item (id, config_key, config_name, config_group, config_v
     (2, 'exam.max.attempt.limit', '单场考试最大参考次数', 'exam', '3', '系统允许配置的单场考试最大参考次数', 1, 0),
     (3, 'notice.message.enabled', '站内消息开关', 'notice', 'true', '控制站内消息中心是否启用', 1, 0),
     (4, 'exam.default.duration.minutes', '考试默认时长', 'exam', '90', '新建考试计划时的默认时长', 1, 0),
-    (5, 'grading.require.comment', '阅卷是否要求评语', 'grading', 'false', '是否要求主观题评分时填写评语', 1, 0);
+    (5, 'grading.require.comment', '阅卷是否要求评语', 'grading', 'false', '是否要求主观题评分时填写评语', 1, 0),
+    (6, 'exam.anti.cheat.block.copy.enabled', '考试中禁止复制', 'anti_cheat', 'true', '严格考试态下是否拦截复制操作', 1, 0),
+    (7, 'exam.anti.cheat.block.paste.enabled', '考试中禁止粘贴', 'anti_cheat', 'true', '严格考试态下是否拦截粘贴操作', 1, 0),
+    (8, 'exam.anti.cheat.block.context-menu.enabled', '考试中禁止右键菜单', 'anti_cheat', 'true', '严格考试态下是否拦截右键菜单', 1, 0),
+    (9, 'exam.anti.cheat.block.shortcuts.enabled', '考试中禁止高风险快捷键', 'anti_cheat', 'true', '严格考试态下是否拦截刷新、开发者工具等快捷键', 1, 0),
+    (10, 'exam.anti.cheat.block.shortcuts.keys', '考试中拦截快捷键清单', 'anti_cheat', 'F5,Ctrl+R,Meta+R,Ctrl+Shift+I,F12,Ctrl+Shift+C,Ctrl+U', '以英文逗号分隔的快捷键清单', 1, 0),
+    (11, 'exam.anti.cheat.device-logging.enabled', '考试中记录设备信息', 'anti_cheat', 'true', '是否记录客户端设备指纹和设备摘要', 1, 0),
+    (12, 'exam.anti.cheat.single-device.enabled', '考试中启用单设备限制', 'anti_cheat', 'true', '严格考试态下是否限制同一考试同一账号切换到另一台设备', 1, 0),
+    (13, 'exam.anti.cheat.device-check.enabled', '考试中启用设备检测', 'anti_cheat', 'true', '严格考试态下是否在进入考试前执行设备检测', 1, 0),
+    (14, 'exam.anti.cheat.device-check.block-on-fail', '设备检测失败时阻止进入', 'anti_cheat', 'true', '设备检测不通过时是否阻止进入考试工作区', 1, 0),
+    (15, 'exam.anti.cheat.device-check.forbid-mobile', '考试中禁止移动端进入', 'anti_cheat', 'true', '严格考试态下是否阻止移动端设备进入', 1, 0),
+    (16, 'exam.anti.cheat.device-check.require-fullscreen-support', '设备需支持全屏能力', 'anti_cheat', 'true', '严格考试态下是否要求浏览器支持全屏 API', 1, 0),
+    (17, 'exam.anti.cheat.device-check.min-window-width', '设备检测最小宽度', 'anti_cheat', '1200', '进入考试前要求的最小窗口宽度', 1, 0),
+    (18, 'exam.anti.cheat.device-check.min-window-height', '设备检测最小高度', 'anti_cheat', '700', '进入考试前要求的最小窗口高度', 1, 0),
+    (19, 'exam.anti.cheat.device-check.allowed-browsers', '设备检测允许浏览器关键字', 'anti_cheat', 'Chrome,Edg', '进入考试前允许的浏览器关键字列表，以英文逗号分隔', 1, 0),
+    (20, 'auth.security.login.max-failures', '登录失败最大次数', 'auth_security', '5', '单个账号在锁定窗口内允许的最大失败次数，达到后会临时锁定账号', 1, 0),
+    (21, 'auth.security.login.lock-minutes', '登录锁定时长（分钟）', 'auth_security', '30', '账号触发失败阈值后保持临时锁定的分钟数', 1, 0),
+    (22, 'auth.security.login.ip-rate-limit.window-seconds', '登录 IP 限流窗口（秒）', 'auth_security', '300', '统计同一客户端 IP 失败登录请求频率的时间窗口', 1, 0),
+    (23, 'auth.security.login.ip-rate-limit.max-attempts', '登录 IP 最大请求次数', 'auth_security', '12', '同一客户端 IP 在限流窗口内允许的最大失败登录请求次数', 1, 0),
+    (24, 'auth.security.verification.cooldown-seconds', '验证码发送冷却时间（秒）', 'auth_security', '60', '同一用途、通道和目标两次发送验证码之间的最小冷却时间', 1, 0),
+    (25, 'auth.security.verification.window-minutes', '验证码发送统计窗口（分钟）', 'auth_security', '60', '统计验证码发送次数的时间窗口', 1, 0),
+    (26, 'auth.security.verification.max-sends-per-window', '验证码窗口内最大发送次数', 'auth_security', '5', '同一用途、通道和目标在统计窗口内允许发送验证码的最大次数', 1, 0),
+    (27, 'auth.security.alert.message.enabled', '登录安全告警消息开关', 'auth_security', 'true', '是否在触发锁定或 IP 限流时向管理角色发送站内告警消息', 1, 0),
+    (28, 'auth.security.alert.recipient.roles', '登录安全告警接收角色', 'auth_security', 'ADMIN,ORG_ADMIN', '收到登录安全告警站内消息的角色编码列表，多个角色以英文逗号分隔', 1, 0);
 
 INSERT INTO sys_dictionary_item (id, dict_type, item_code, item_label, item_value, sort_no, status, deleted) VALUES
     (1, 'subject', 'subject_yuwen', '语文', '语文', 1, 1, 0),
@@ -895,3 +920,9 @@ INSERT INTO biz_in_app_message (id, recipient_user_id, title, message_type, cont
     (70, 62, '考试发布提醒', 'EXAM_PUBLISH', '你已被分配到《2026级历史地理综合测验》，请按时参加考试。', 'EXAM_PLAN', 6, 0, 0),
     (71, 68, '考试发布提醒', 'EXAM_PUBLISH', '你已被分配到《2026级历史地理综合测验》，请按时参加考试。', 'EXAM_PLAN', 6, 0, 0),
     (72, 74, '考试发布提醒', 'EXAM_PUBLISH', '你已被分配到《2026级历史地理综合测验》，请按时参加考试。', 'EXAM_PLAN', 6, 0, 0);
+
+INSERT INTO biz_login_risk_log (id, username, user_id, role_code, success_flag, client_ip, user_agent, device_fingerprint, device_info, risk_level, risk_reason, login_at, deleted) VALUES
+    (1, '900001', 1, 'ADMIN', 1, '127.0.0.1', 'Chrome/123 Demo', 'admin-device-1', 'UA=Chrome Demo | Screen=1920x1080', 'LOW', '成功登录，风险基线正常', TIMESTAMP '2026-04-08 08:30:00', 0),
+    (2, '20260001', 15, 'STUDENT', 1, '127.0.0.1', 'Chrome/123 Demo', 'student-device-1', 'UA=Chrome Demo | Screen=1366x768', 'LOW', '首次成功登录，已建立基础风险基线', TIMESTAMP '2026-04-08 08:40:00', 0),
+    (3, '20260001', 15, 'STUDENT', 0, '10.10.2.7', 'Chrome/123 Demo', 'unknown-device', 'UA=Chrome Demo | Screen=1366x768', 'MEDIUM', '登录失败，已记录基础风险信息', TIMESTAMP '2026-04-08 08:43:00', 0),
+    (4, '20260001', 15, 'STUDENT', 1, '10.10.2.8', 'Chrome/123 Demo', 'student-device-2', 'UA=Chrome Demo | Screen=1366x768', 'MEDIUM', '与最近一次成功登录相比，客户端 IP 和设备指纹均发生变化', TIMESTAMP '2026-04-08 09:00:00', 0);

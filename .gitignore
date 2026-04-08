@@ -49,6 +49,7 @@ test-results/
 *.sql.bak
 *.dump
 *.dmp
+database/backups/
 *.mv.db
 *.trace.db
 backend/data/

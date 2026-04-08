@@ -28,5 +28,7 @@ public class CandidateExamWorkspaceVO {
     private Integer saveVersion;
     private Integer shuffleEnabled;
     private String paperVersion;
+    private String antiCheatLevel;
+    private AntiCheatPolicyVO antiCheatPolicy;
     private List<CandidateAnswerItemVO> items;
 }

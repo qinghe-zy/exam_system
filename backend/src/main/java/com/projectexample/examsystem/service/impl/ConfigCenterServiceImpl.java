@@ -3,18 +3,24 @@ package com.projectexample.examsystem.service.impl;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.projectexample.examsystem.dto.ConfigItemSaveRequest;
 import com.projectexample.examsystem.dto.DictionaryItemSaveRequest;
+import com.projectexample.examsystem.entity.AnswerSheet;
 import com.projectexample.examsystem.entity.ConfigItem;
 import com.projectexample.examsystem.entity.DictionaryItem;
+import com.projectexample.examsystem.entity.ExamPlan;
 import com.projectexample.examsystem.exception.BusinessException;
+import com.projectexample.examsystem.mapper.AnswerSheetMapper;
 import com.projectexample.examsystem.mapper.ConfigItemMapper;
 import com.projectexample.examsystem.mapper.DictionaryItemMapper;
+import com.projectexample.examsystem.mapper.ExamPlanMapper;
 import com.projectexample.examsystem.service.ConfigCenterService;
 import com.projectexample.examsystem.vo.ConfigItemVO;
 import com.projectexample.examsystem.vo.DictionaryItemVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +28,9 @@ public class ConfigCenterServiceImpl implements ConfigCenterService {
 
     private final ConfigItemMapper configItemMapper;
     private final DictionaryItemMapper dictionaryItemMapper;
+    private final ExamPlanMapper examPlanMapper;
+    private final AnswerSheetMapper answerSheetMapper;
+    private static final Set<String> PROTECTED_CONFIG_GROUPS = Set.of("exam", "anti_cheat");
 
     @Override
     public List<ConfigItemVO> listConfigs() {
@@ -31,6 +40,7 @@ public class ConfigCenterServiceImpl implements ConfigCenterService {
 
     @Override
     public ConfigItemVO createConfig(ConfigItemSaveRequest request) {
+        assertConfigMutable(request.getConfigGroup(), "新增");
         ConfigItem item = new ConfigItem();
         apply(item, request);
         configItemMapper.insert(item);
@@ -40,6 +50,7 @@ public class ConfigCenterServiceImpl implements ConfigCenterService {
     @Override
     public ConfigItemVO updateConfig(Long id, ConfigItemSaveRequest request) {
         ConfigItem item = requireConfig(id);
+        assertConfigMutable(item.getConfigGroup(), "更新");
         apply(item, request);
         configItemMapper.updateById(item);
         return toVO(requireConfig(id));
@@ -47,7 +58,8 @@ public class ConfigCenterServiceImpl implements ConfigCenterService {
 
     @Override
     public void deleteConfig(Long id) {
-        requireConfig(id);
+        ConfigItem item = requireConfig(id);
+        assertConfigMutable(item.getConfigGroup(), "删除");
         configItemMapper.deleteById(id);
     }
 
@@ -135,5 +147,25 @@ public class ConfigCenterServiceImpl implements ConfigCenterService {
                 .sortNo(item.getSortNo())
                 .status(item.getStatus())
                 .build();
+    }
+
+    private void assertConfigMutable(String configGroup, String actionName) {
+        if (!PROTECTED_CONFIG_GROUPS.contains(String.valueOf(configGroup))) {
+            return;
+        }
+        List<ExamPlan> activePlans = examPlanMapper.selectList(Wrappers.lambdaQuery(ExamPlan.class)
+                .eq(ExamPlan::getPublishStatus, 1));
+        boolean started = activePlans.stream().anyMatch(plan -> plan.getStartTime() != null && !LocalDateTime.now().isBefore(plan.getStartTime()));
+        if (started) {
+            throw new BusinessException(4005, "当前存在已开始考试，暂不允许" + actionName + "高风险配置");
+        }
+        List<Long> planIds = activePlans.stream().map(ExamPlan::getId).toList();
+        if (!planIds.isEmpty()) {
+            long answerSheetCount = answerSheetMapper.selectCount(Wrappers.lambdaQuery(AnswerSheet.class)
+                    .in(AnswerSheet::getExamPlanId, planIds));
+            if (answerSheetCount > 0) {
+                throw new BusinessException(4005, "当前已存在考试答卷，暂不允许" + actionName + "高风险配置");
+            }
+        }
     }
 }

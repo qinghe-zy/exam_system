@@ -26,6 +26,6 @@ test('学生可从消息中心进入我的成绩详情页', async ({ page, reque
   await scoreRow.getByRole('button', { name: '查看详情' }).click()
 
   await expect(page).toHaveURL(new RegExp(`/candidate/scores\\?recordId=${scoreMessage.relatedId}`))
-  await expect(page.getByText('成绩详情')).toBeVisible()
+  await expect(page.getByText('成绩详情', { exact: true })).toBeVisible()
   await expect(page.getByText('逐题结果')).toBeVisible()
 })

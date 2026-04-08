@@ -21,5 +21,7 @@ public class ExamRecordVO {
     private Double finalScore;
     private Integer passedFlag;
     private Integer publishedFlag;
+    private String reviewStatus;
+    private String appealStatus;
     private String status;
 }

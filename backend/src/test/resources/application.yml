@@ -1,0 +1,32 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:exam-system-test;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  sql:
+    init:
+      mode: always
+      encoding: UTF-8
+  jackson:
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+app:
+  jwt:
+    secret: cHJvamVjdGV4YW1wbGUtdGVtcGxhdGUtZmFjdG9yeS1iYXNlLWp3dC1zZWNyZXQ=
+    expiration-minutes: 720
+    issuer: projectexample-exam-system
+  auth:
+    verification:
+      expire-minutes: 10
+      mock-enabled: true

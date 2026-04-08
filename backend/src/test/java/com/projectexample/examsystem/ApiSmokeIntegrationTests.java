@@ -49,11 +49,23 @@ class ApiSmokeIntegrationTests {
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.dbReachable").value(1));
 
+        mockMvc.perform(get("/api/system/login-risks")
+                        .header("Authorization", bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)));
+
         mockMvc.perform(get("/api/exam/questions/export")
                         .header("Authorization", bearer(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)));
+
+        MvcResult exportedRecords = mockMvc.perform(get("/api/exam/records/export")
+                        .header("Authorization", bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertThat(exportedRecords.getResponse().getContentType()).contains("text/csv");
 
         mockMvc.perform(get("/api/messages/my")
                         .header("Authorization", bearer(studentToken)))
@@ -75,6 +87,17 @@ class ApiSmokeIntegrationTests {
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.items.length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)));
 
+        mockMvc.perform(get("/api/exam/score-appeals/my/" + publishedScoreId)
+                        .header("Authorization", bearer(studentToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0));
+
+        mockMvc.perform(get("/api/exam/records/my/wrong-book")
+                        .header("Authorization", bearer(studentToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)));
+
         mockMvc.perform(get("/api/exam/candidate/my-exams")
                         .header("Authorization", bearer(studentToken)))
                 .andExpect(status().isOk())
@@ -83,16 +106,55 @@ class ApiSmokeIntegrationTests {
 
         mockMvc.perform(get("/api/exam/candidate/exams/1")
                         .queryParam("examPassword", "YW2026")
+                        .header("X-Device-Fingerprint", "smoke-device-a")
+                        .header("X-Device-Info", "UA=Smoke | Screen=1440x900")
                         .header("Authorization", bearer(studentToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
-                .andExpect(jsonPath("$.data.items.length()").value(20));
+                .andExpect(jsonPath("$.data.items.length()").value(20))
+                .andExpect(jsonPath("$.data.antiCheatLevel").value("BASIC"))
+                .andExpect(jsonPath("$.data.antiCheatPolicy.deviceLoggingEnabled").value(1))
+                .andExpect(jsonPath("$.data.antiCheatPolicy.deviceCheckEnabled").value(0))
+                .andExpect(jsonPath("$.data.antiCheatPolicy.blockedShortcutKeys.length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)));
+
+        mockMvc.perform(get("/api/exam/proctor/events")
+                        .header("Authorization", bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data[0].eventType").isNotEmpty());
+
+        mockMvc.perform(get("/api/exam/score-appeals")
+                        .header("Authorization", bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0));
 
         mockMvc.perform(get("/api/exam/analytics/overview")
                         .header("Authorization", bearer(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
-                .andExpect(jsonPath("$.data.scoreBands.length()").value(4));
+                .andExpect(jsonPath("$.data.scoreBands.length()").value(4))
+                .andExpect(jsonPath("$.data.organizationComparisons.length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.trendPoints.length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.excellentRate").exists());
+
+        mockMvc.perform(get("/api/exam/analytics/quality-report")
+                        .header("Authorization", bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.dimensionScores.length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.recommendations.length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)));
+
+        MvcResult exportedAnalysis = mockMvc.perform(get("/api/exam/analytics/export")
+                        .header("Authorization", bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertThat(exportedAnalysis.getResponse().getContentType()).contains("text/csv");
+
+        MvcResult exportedQualityReport = mockMvc.perform(get("/api/exam/analytics/quality-report/export")
+                        .header("Authorization", bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertThat(exportedQualityReport.getResponse().getContentType()).contains("text/markdown");
     }
 
     private String login(String username, String password) throws Exception {

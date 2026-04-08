@@ -13,7 +13,7 @@ import java.util.List;
 
 public interface AuthService {
 
-    AuthTokenVO login(LoginRequest request);
+    AuthTokenVO login(LoginRequest request, String clientIp, String userAgent, String deviceFingerprint, String deviceInfo);
 
     CurrentUserVO currentUser(String username);
 
@@ -24,4 +24,6 @@ public interface AuthService {
     void register(RegisterRequest request);
 
     void resetPassword(PasswordResetRequest request);
+
+    void logout(String username);
 }

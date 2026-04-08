@@ -16,6 +16,7 @@ public class UserPrincipal implements UserDetails {
     private final String username;
     private final String nickname;
     private final String roleCode;
+    private final Integer sessionVersion;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

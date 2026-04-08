@@ -166,6 +166,7 @@ export interface CandidateAnswerItem {
   scoreAwarded?: number
   status: string
   markedFlag: number
+  reviewLaterFlag?: number
   reviewComment?: string
 }
 
@@ -188,6 +189,22 @@ export interface CandidateExamWorkspace {
   saveVersion: number
   shuffleEnabled: number
   paperVersion?: string
+  antiCheatLevel?: string
+  antiCheatPolicy?: {
+    blockCopyEnabled: number
+    blockPasteEnabled: number
+    blockContextMenuEnabled: number
+    blockShortcutEnabled: number
+    deviceLoggingEnabled: number
+    deviceCheckEnabled: number
+    blockOnDeviceCheckFail: number
+    forbidMobileEntry: number
+    requireFullscreenSupport: number
+    minWindowWidth: number
+    minWindowHeight: number
+    blockedShortcutKeys: string[]
+    allowedBrowserKeywords: string[]
+  }
   items: CandidateAnswerItem[]
 }
 
@@ -200,6 +217,8 @@ export interface GradingTask {
   subjectiveQuestionCount: number
   pendingQuestionCount: number
   status: string
+  reviewStatus?: string
+  appealStatus?: string
 }
 
 export interface GradingWorkspace {
@@ -209,6 +228,9 @@ export interface GradingWorkspace {
   objectiveScore: number
   subjectiveScore: number
   finalScore: number
+  status: string
+  reviewStatus?: string
+  appealStatus?: string
   items: CandidateAnswerItem[]
 }
 
@@ -225,7 +247,28 @@ export interface ExamRecord {
   finalScore: number
   passedFlag: number
   publishedFlag: number
+  reviewStatus?: string
+  appealStatus?: string
   status: string
+}
+
+export interface ScoreAppeal {
+  id: number
+  scoreRecordId: number
+  answerSheetId: number
+  examPlanId: number
+  userId: number
+  candidateName: string
+  examName: string
+  appealReason: string
+  expectedOutcome?: string
+  status: string
+  resolutionAction?: string
+  processComment?: string
+  processedBy?: number
+  processedByName?: string
+  submittedAt: string
+  processedAt?: string
 }
 
 export interface CandidateScoreItem {
@@ -234,14 +277,44 @@ export interface CandidateScoreItem {
   questionCode?: string
   questionType: string
   stem?: string
+  stemHtml?: string
+  materialContent?: string
+  attachmentJson?: string
   optionsJson?: string
+  knowledgePoint?: string
+  chapterName?: string
   answerContent?: string
   referenceAnswer?: string
   analysisText?: string
   maxScore?: number
   scoreAwarded?: number
   status: string
+  reviewLaterFlag?: number
   reviewComment?: string
+}
+
+export interface CandidateWrongQuestion {
+  questionId: number
+  questionCode?: string
+  questionType: string
+  stem?: string
+  stemHtml?: string
+  materialContent?: string
+  attachmentJson?: string
+  optionsJson?: string
+  knowledgePoint?: string
+  chapterName?: string
+  referenceAnswer?: string
+  analysisText?: string
+  latestRecordId?: number
+  latestExamName?: string
+  latestPaperName?: string
+  latestSubmittedAt?: string
+  latestAnswerContent?: string
+  latestMaxScore?: number
+  latestScoreAwarded?: number
+  latestReviewLaterFlag?: number
+  mistakeCount: number
 }
 
 export interface CandidateScoreDetail {
@@ -257,6 +330,8 @@ export interface CandidateScoreDetail {
   finalScore: number
   passedFlag: number
   publishedFlag: number
+  reviewStatus?: string
+  appealStatus?: string
   status: string
   items: CandidateScoreItem[]
 }
@@ -271,6 +346,7 @@ export interface ExamPerformance {
   highestScore: number
   lowestScore: number
   passRate: number
+  excellentRate: number
 }
 
 export interface AnalysisOverview {
@@ -278,7 +354,23 @@ export interface AnalysisOverview {
   totalAnswerSheets: number
   averageScore: number
   passRate: number
+  excellentRate: number
   examPerformances: ExamPerformance[]
+  organizationComparisons: Array<{
+    organizationName: string
+    candidateCount: number
+    averageScore: number
+    passRate: number
+    excellentRate: number
+  }>
+  trendPoints: Array<{
+    examPlanId: number
+    examName: string
+    periodLabel: string
+    averageScore: number
+    passRate: number
+    excellentRate: number
+  }>
   rankings: Array<{
     rankNo: number
     candidateName: string
@@ -303,6 +395,49 @@ export interface AnalysisOverview {
   }>
 }
 
+export interface QualityDimension {
+  dimensionName: string
+  score: number
+  level: string
+  summary: string
+}
+
+export interface ExamQualityInsight {
+  examPlanId: number
+  examName: string
+  candidateCount: number
+  submittedCount: number
+  gradedCount: number
+  averageScore: number
+  passRate: number
+  level: string
+  summary: string
+  risk: string
+}
+
+export interface AnalysisQualityReport {
+  generatedAt: string
+  overallQualityScore: number
+  overallQualityLevel: string
+  summary: string
+  riskSummary: string
+  recommendations: string[]
+  dimensionScores: QualityDimension[]
+  examInsights: ExamQualityInsight[]
+  weakKnowledgePoints: Array<{
+    knowledgePoint: string
+    averageScoreRate: number
+    answerCount: number
+  }>
+  weakQuestions: Array<{
+    questionId: number
+    questionCode?: string
+    stem?: string
+    averageScoreRate: number
+    answerCount: number
+  }>
+}
+
 export interface AntiCheatEvent {
   id: number
   examPlanId: number
@@ -315,6 +450,9 @@ export interface AntiCheatEvent {
   leaveCount?: number
   triggeredAutoSave?: number
   saveVersion?: number
+  clientIp?: string
+  deviceFingerprint?: string
+  deviceInfo?: string
   detailText?: string
   occurredAt: string
 }
