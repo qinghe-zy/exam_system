@@ -25,24 +25,33 @@
 
 ## 系统角色与典型流程
 
-![系统总体架构图](docs/assets/diagrams/system-architecture.svg)
+| 角色 | 主要职责 | 常用入口 |
+| --- | --- | --- |
+| 平台管理员 | 全局组织、用户、角色、配置、审计与风险治理 | 首页看板、系统管理、登录风险、监考事件 |
+| 机构管理员 | 机构范围内账号、考试与通知治理 | 用户管理、组织管理、通知模板、成绩中心 |
+| 教师 | 题库、组卷、考试发布、分析报表 | 题库管理、试卷管理、考试发布、成绩分析 |
+| 阅卷老师 | 主观题评分、复核协作 | 阅卷中心、成绩中心 |
+| 监考员 | 监考事件与风险核查 | 监考事件、消息中心 |
+| 学生 | 待考、答题、查分、答卷回看 | 我的考试、我的成绩、答卷回看 |
 
-![核心业务闭环流程图](docs/assets/diagrams/core-business-flow.svg)
+<img src="docs/assets/readme/architecture-4x3.png" alt="系统总体架构图" width="640" height="480" />
+
+<img src="docs/assets/readme/business-flow-4x3.png" alt="核心业务闭环流程图" width="640" height="480" />
 
 ## 系统截图预览
 
 | 页面 | 预览 |
 | --- | --- |
-| 登录页 | ![登录页](docs/assets/screenshots/01-login.png) |
-| 首页看板 | ![首页看板](docs/assets/screenshots/02-dashboard.png) |
-| 题库管理 | ![题库管理](docs/assets/screenshots/05-question-bank.png) |
-| 组卷页 | ![组卷页](docs/assets/screenshots/06-paper-builder.png) |
-| 考试发布 | ![考试发布](docs/assets/screenshots/07-exam-plans.png) |
-| 学生考试工作区 | ![学生考试工作区](docs/assets/screenshots/10-student-exam.png) |
-| 阅卷中心 | ![阅卷中心](docs/assets/screenshots/08-grading.png) |
-| 成绩分析 | ![成绩分析](docs/assets/screenshots/09-analytics.png) |
-| 角色权限 | ![角色权限](docs/assets/screenshots/03-role-permissions.png) |
-| 系统配置 | ![系统配置](docs/assets/screenshots/04-system-config.png) |
+| 登录页 | <img src="docs/assets/readme/login-4x3.png" alt="登录页" width="320" height="240" /> |
+| 首页看板 | <img src="docs/assets/readme/dashboard-4x3.png" alt="首页看板" width="320" height="240" /> |
+| 题库管理 | <img src="docs/assets/readme/question-bank-4x3.png" alt="题库管理" width="320" height="240" /> |
+| 组卷页 | <img src="docs/assets/readme/paper-builder-4x3.png" alt="组卷页" width="320" height="240" /> |
+| 考试发布 | <img src="docs/assets/readme/exam-plans-4x3.png" alt="考试发布" width="320" height="240" /> |
+| 学生考试工作区 | <img src="docs/assets/readme/student-exam-4x3.png" alt="学生考试工作区" width="320" height="240" /> |
+| 阅卷中心 | <img src="docs/assets/readme/grading-4x3.png" alt="阅卷中心" width="320" height="240" /> |
+| 成绩分析 | <img src="docs/assets/readme/analytics-4x3.png" alt="成绩分析" width="320" height="240" /> |
+| 角色权限 | <img src="docs/assets/readme/role-permissions-4x3.png" alt="角色权限" width="320" height="240" /> |
+| 系统配置 | <img src="docs/assets/readme/system-config-4x3.png" alt="系统配置" width="320" height="240" /> |
 
 ## 技术架构概览
 
@@ -53,6 +62,24 @@
 | 数据库 | MySQL（正式口径）、H2（本地快速启动与测试） |
 | 自动化 | Maven 测试、Playwright E2E、MySQL 初始化回归脚本 |
 | 运维脚本 | 初始化、备份、恢复、压测、截图与图示生成 |
+
+## 部署拓扑
+
+当前交付口径以单体部署为主：浏览器访问前端 SPA，前端通过 JWT 调用 Spring Boot 后端，后端连接 MySQL 正式库；本地开发和自动化测试保留 H2 快速模式。
+
+<img src="docs/assets/readme/deployment-topology-4x3.png" alt="部署拓扑图" width="640" height="480" />
+
+## 目录结构
+
+| 路径 | 说明 |
+| --- | --- |
+| `backend/` | 后端源码、接口、服务、Mapper、集成测试 |
+| `frontend/` | 前端页面、路由、API、Playwright 回归 |
+| `sql/` | 初始化脚本与数据库基线 |
+| `scripts/` | 初始化回归、备份恢复、压测、图示生成脚本 |
+| `docs/assets/screenshots/` | 真实运行页面截图 |
+| `docs/assets/diagrams/` | draw.io 源图与导出图 |
+| `docs/ops/` | 正式使用说明书与运维说明 |
 
 ## 快速启动
 
@@ -116,13 +143,18 @@ npm.cmd run dev
 
 本轮已完成的真实验证：
 
-- 后端：`mvn -q test`
-- 后端打包：`mvn -q -DskipTests package`
+- 后端：`mvn -q clean test package`
 - 前端：`npm.cmd run build`
 - 浏览器回归：`npx.cmd playwright test`，17 条用例全部通过
 - 数据库：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-mysql-init.ps1`
 - 本地 MySQL 连通性校验：`sys_user`、`biz_exam_plan`、`sys_notification_template` 等关键表可查询
 - 图示导出：通过 draw.io CLI 生成 `.drawio + png + svg`
+
+补充说明：
+
+- 登录、注册、找回密码链路已在真实浏览器回归中验证
+- 题目录入、组卷、考试发布、学生作答、阅卷治理与成绩分析均有自动化覆盖
+- README 中展示的截图全部来自当前运行系统，而非占位图
 
 ## 已知限制
 
@@ -141,6 +173,14 @@ npm.cmd run dev
 - [模块说明](docs/modules/exam-core.md)
 - [运行与故障处理](docs/runbooks/README.md)
 - [部署说明](docs/deployment/README.md)
+
+## 交付建议
+
+如果你是甲方、老师或答辩评审，建议用下面的顺序快速理解项目：
+
+1. 先看本 README，了解系统范围、截图和启动方法
+2. 再看《产品级用户使用说明书》，理解角色、流程、部署与运维
+3. 最后结合 `docs/assets/diagrams/` 与 `docs/assets/screenshots/` 做验收或演示
 
 ## 仓库远端
 
