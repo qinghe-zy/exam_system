@@ -33,6 +33,7 @@ export interface CurrentUser {
   nickname: string
   fullName?: string
   roleCode: string
+  organizationId?: number
   organizationName?: string
   permissions: string[]
 }

@@ -60,6 +60,21 @@ public class AccessScopeService {
         return ids;
     }
 
+    public List<Long> visibleOrganizationIds() {
+        SysUser user = currentUser();
+        if ("ADMIN".equalsIgnoreCase(user.getRoleCode())) {
+            return organizationMapper.selectList(null).stream().map(Organization::getId).toList();
+        }
+        if (user.getOrganizationId() == null) {
+            return List.of();
+        }
+        List<Organization> all = organizationMapper.selectList(null);
+        List<Long> ids = new ArrayList<>();
+        collectAncestors(user.getOrganizationId(), all, ids);
+        collectSubtree(user.getOrganizationId(), all, ids);
+        return ids.stream().distinct().toList();
+    }
+
     public void assertOrganizationAccessible(Long organizationId) {
         if (organizationId == null) {
             return;
@@ -77,5 +92,21 @@ public class AccessScopeService {
         all.stream()
                 .filter(item -> rootId.equals(item.getParentId()))
                 .forEach(item -> collectSubtree(item.getId(), all, ids));
+    }
+
+    private void collectAncestors(Long currentId, List<Organization> all, List<Long> ids) {
+        Organization current = all.stream()
+                .filter(item -> currentId.equals(item.getId()))
+                .findFirst()
+                .orElse(null);
+        if (current == null) {
+            return;
+        }
+        ids.add(current.getId());
+        Long parentId = current.getParentId();
+        if (parentId == null || parentId == 0L || parentId.equals(current.getId())) {
+            return;
+        }
+        collectAncestors(parentId, all, ids);
     }
 }

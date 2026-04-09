@@ -18,6 +18,9 @@ public class ExamCandidate extends BaseEntity {
     private String organizationName;
     private String status;
     private String accessCode;
+    private String seatNo;
     private Integer attemptCount;
+    private Integer signedInFlag;
+    private LocalDateTime signedInAt;
     private LocalDateTime assignedTime;
 }

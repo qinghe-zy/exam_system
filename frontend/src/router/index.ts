@@ -14,10 +14,13 @@ const ExamPaperView = () => import('../views/exam/ExamPaperView.vue')
 const ExamPaperBuilderView = () => import('../views/exam/ExamPaperBuilderView.vue')
 const ExamPlanView = () => import('../views/exam/ExamPlanView.vue')
 const ExamRecordView = () => import('../views/exam/ExamRecordView.vue')
+const QuestionEditorView = () => import('../views/exam/QuestionEditorView.vue')
 const GradingView = () => import('../views/exam/GradingView.vue')
 const ProctorView = () => import('../views/exam/ProctorView.vue')
 const LoginView = () => import('../views/login/LoginView.vue')
 const MessageCenterView = () => import('../views/notices/MessageCenterView.vue')
+const NotificationDeliveryLogView = () => import('../views/notices/NotificationDeliveryLogView.vue')
+const NotificationTemplateView = () => import('../views/notices/NotificationTemplateView.vue')
 const NoticeView = () => import('../views/notices/NoticeView.vue')
 const QuestionBankView = () => import('../views/exam/QuestionBankView.vue')
 const MenuView = () => import('../views/system/MenuView.vue')
@@ -107,10 +110,34 @@ const router = createRouter({
           meta: { title: '消息中心' }
         },
         {
+          path: 'notifications/templates',
+          name: 'notification-templates',
+          component: NotificationTemplateView,
+          meta: { title: '通知模板' }
+        },
+        {
+          path: 'notifications/delivery-logs',
+          name: 'notification-delivery-logs',
+          component: NotificationDeliveryLogView,
+          meta: { title: '通知投递日志' }
+        },
+        {
           path: 'exam/questions',
           name: 'exam-questions',
           component: QuestionBankView,
           meta: { title: '题库管理' }
+        },
+        {
+          path: 'exam/questions/create',
+          name: 'exam-question-create',
+          component: QuestionEditorView,
+          meta: { title: '新建题目' }
+        },
+        {
+          path: 'exam/questions/:questionId/edit',
+          name: 'exam-question-edit',
+          component: QuestionEditorView,
+          meta: { title: '编辑题目' }
         },
         {
           path: 'exam/papers',

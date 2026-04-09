@@ -19,6 +19,7 @@ import com.projectexample.examsystem.mapper.AnswerSheetMapper;
 import com.projectexample.examsystem.mapper.PaperQuestionMapper;
 import com.projectexample.examsystem.mapper.QuestionBankMapper;
 import com.projectexample.examsystem.security.AccessScopeService;
+import com.projectexample.examsystem.security.ExamPeriodProtectionService;
 import com.projectexample.examsystem.service.ExamPaperService;
 import com.projectexample.examsystem.vo.ExamPaperVO;
 import com.projectexample.examsystem.vo.PaperQuestionItemVO;
@@ -47,6 +48,7 @@ public class ExamPaperServiceImpl implements ExamPaperService {
     private final PaperQuestionMapper paperQuestionMapper;
     private final QuestionBankMapper questionBankMapper;
     private final AccessScopeService accessScopeService;
+    private final ExamPeriodProtectionService examPeriodProtectionService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -76,6 +78,7 @@ public class ExamPaperServiceImpl implements ExamPaperService {
 
     @Override
     public ExamPaperVO updatePaper(Long id, ExamPaperSaveRequest request) {
+        examPeriodProtectionService.assertMutable("更新试卷");
         ExamPaper entity = requireEntity(id);
         assertPaperMutable(entity, "更新");
         applyPaper(entity, request);
@@ -86,6 +89,7 @@ public class ExamPaperServiceImpl implements ExamPaperService {
 
     @Override
     public void deletePaper(Long id) {
+        examPeriodProtectionService.assertMutable("删除试卷");
         ExamPaper entity = requireEntity(id);
         assertPaperMutable(entity, "删除");
         paperQuestionMapper.delete(Wrappers.lambdaQuery(PaperQuestion.class).eq(PaperQuestion::getPaperId, id));

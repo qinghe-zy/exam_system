@@ -13,6 +13,9 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(callSuper = true)
 public class Notice extends BaseEntity {
 
+    @TableField("organization_id")
+    private Long organizationId;
+
     private String title;
     private String category;
     private Integer status;

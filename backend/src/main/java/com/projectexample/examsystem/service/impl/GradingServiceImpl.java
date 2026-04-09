@@ -10,7 +10,6 @@ import com.projectexample.examsystem.entity.AuditLog;
 import com.projectexample.examsystem.entity.ExamPlan;
 import com.projectexample.examsystem.entity.ExamRecord;
 import com.projectexample.examsystem.entity.GradingRecord;
-import com.projectexample.examsystem.entity.InAppMessage;
 import com.projectexample.examsystem.entity.QuestionBank;
 import com.projectexample.examsystem.entity.ScoreAppeal;
 import com.projectexample.examsystem.entity.SysUser;
@@ -21,12 +20,12 @@ import com.projectexample.examsystem.mapper.AuditLogMapper;
 import com.projectexample.examsystem.mapper.ExamPlanMapper;
 import com.projectexample.examsystem.mapper.ExamRecordMapper;
 import com.projectexample.examsystem.mapper.GradingRecordMapper;
-import com.projectexample.examsystem.mapper.InAppMessageMapper;
 import com.projectexample.examsystem.mapper.QuestionBankMapper;
 import com.projectexample.examsystem.mapper.ScoreAppealMapper;
 import com.projectexample.examsystem.mapper.SysUserMapper;
 import com.projectexample.examsystem.security.AccessScopeService;
 import com.projectexample.examsystem.service.GradingService;
+import com.projectexample.examsystem.service.NotificationService;
 import com.projectexample.examsystem.vo.CandidateAnswerItemVO;
 import com.projectexample.examsystem.vo.GradingTaskVO;
 import com.projectexample.examsystem.vo.GradingWorkspaceVO;
@@ -53,8 +52,8 @@ public class GradingServiceImpl implements GradingService {
     private final ScoreAppealMapper scoreAppealMapper;
     private final SysUserMapper sysUserMapper;
     private final AuditLogMapper auditLogMapper;
-    private final InAppMessageMapper inAppMessageMapper;
     private final AccessScopeService accessScopeService;
+    private final NotificationService notificationService;
 
     @Override
     public List<GradingTaskVO> listTasks() {
@@ -219,7 +218,7 @@ public class GradingServiceImpl implements GradingService {
             } else if (!StringUtils.hasText(record.getAppealStatus())) {
                 record.setAppealStatus("NONE");
             }
-            publishScoreMessage(record);
+            notificationService.sendScorePublishedNotification(record);
         } else {
             sheet.setStatus("REJUDGING");
             record.setStatus("REJUDGING");
@@ -251,35 +250,14 @@ public class GradingServiceImpl implements GradingService {
             appeal.setProcessComment(trimValue(reviewComment, 1000));
         }
         scoreAppealMapper.updateById(appeal);
-        publishAppealResolvedMessage(scoreRecordId);
-    }
-
-    private void publishAppealResolvedMessage(Long scoreRecordId) {
         ExamRecord record = examRecordMapper.selectById(scoreRecordId);
-        if (record == null) {
-            return;
+        if (record != null) {
+            notificationService.sendScoreAppealResultNotification(
+                    record,
+                    "申诉重判完成",
+                    "你的申诉重判已经完成，《" + record.getExamName() + "》的最新成绩已重新发布。"
+            );
         }
-        InAppMessage message = new InAppMessage();
-        message.setRecipientUserId(record.getUserId());
-        message.setTitle("申诉重判完成");
-        message.setMessageType("SCORE_APPEAL_RESULT");
-        message.setContent("你的申诉重判已经完成，《" + record.getExamName() + "》的最新成绩已重新发布。");
-        message.setRelatedType("SCORE_RECORD");
-        message.setRelatedId(record.getId());
-        message.setReadFlag(0);
-        inAppMessageMapper.insert(message);
-    }
-
-    private void publishScoreMessage(ExamRecord record) {
-        InAppMessage message = new InAppMessage();
-        message.setRecipientUserId(record.getUserId());
-        message.setTitle("成绩发布提醒");
-        message.setMessageType("SCORE_PUBLISH");
-        message.setContent("考试《" + record.getExamName() + "》成绩已发布，请及时查看。");
-        message.setRelatedType("SCORE_RECORD");
-        message.setRelatedId(record.getId());
-        message.setReadFlag(0);
-        inAppMessageMapper.insert(message);
     }
 
     private GradingWorkspaceVO buildWorkspace(AnswerSheet sheet, ExamPlan plan, ExamRecord record) {

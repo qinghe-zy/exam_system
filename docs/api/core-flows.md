@@ -57,6 +57,18 @@
 - `DELETE /api/notices/{id}`
 - `GET /api/messages/my`
 - `POST /api/messages/{id}/read`
+- `GET /api/notifications/templates`
+- `POST /api/notifications/templates`
+- `PUT /api/notifications/templates/{id}`
+- `DELETE /api/notifications/templates/{id}`
+- `GET /api/notifications/delivery-logs`
+- `POST /api/notifications/exam-reminders/dispatch`
+
+说明：
+- `/api/notifications/templates` 当前用于管理通知模板
+- `/api/notifications/templates` 当前已补组织范围隔离；非管理员只能管理本组织模板，全局模板仅可查看复用
+- `/api/notifications/delivery-logs` 当前用于查看站内消息和 Mock 短信投递记录
+- `/api/notifications/exam-reminders/dispatch` 当前会立即扫描即将开始的考试并触发开考前提醒
 
 ## 四、题库
 - `GET /api/exam/questions`
@@ -79,9 +91,22 @@
 - `POST /api/exam/plans`
 - `PUT /api/exam/plans/{id}`
 - `DELETE /api/exam/plans/{id}`
+- `GET /api/exam/plans/{id}/sign-in-sheet/export`
+
+说明：
+- 考试计划当前支持 `examMode`：
+  - `NORMAL` 正常考试
+  - `MAKEUP` 补考
+  - `DEFERRED` 缓考
+  - `RETAKE` 重考
+- 当 `examMode` 不是 `NORMAL` 时，当前必须传 `sourceExamPlanId`
+- 当前还支持 `batchLabel`，用于表达基础批次名称
+- 当前还支持 `examRoom`，用于表达基础考场信息
 
 ## 六、考生端
 - `GET /api/exam/candidate/my-exams`
+- `GET /api/exam/candidate/exams/{examPlanId}/admission-ticket`
+- `POST /api/exam/candidate/exams/{examPlanId}/sign-in`
 - `GET /api/exam/candidate/exams/{examPlanId}?examPassword=...`
 - `POST /api/exam/candidate/exams/{examPlanId}/save`
 - `POST /api/exam/candidate/exams/{examPlanId}/submit`
@@ -93,6 +118,8 @@
 说明：
 - `startTime / endTime` 表示允许进入考试的时间窗口
 - 工作区接口会返回 `entryDeadlineAt` 与 `answerDeadlineAt`
+- 若考试启用了签到规则，学生当前必须先调用签到接口，再进入考试工作区
+- `admission-ticket` 当前会返回考试时间、批次、考场、座位、签到窗口、准入码和打印所需基础信息
 - 学生端展示的倒计时必须以 `answerDeadlineAt` 为准
 - 严格考试态下，工作区接口会同时返回设备检测策略，包括最小窗口尺寸、允许浏览器关键字、是否禁止移动端与是否要求全屏支持
 - `save / submit` 当前除答案外，还会持久化学生对题目的“待复查”标记

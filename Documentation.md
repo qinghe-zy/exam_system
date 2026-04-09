@@ -1,100 +1,103 @@
-# 开发记录
+# 系统说明与交付摘要
 
-## 1. 当前阶段
-- 阶段名称：分析域广度补齐阶段
-- 当前状态：按“功能点优先补齐、深度后置”的原则，在前序会话治理与考试态控制基础上，继续补齐了优秀率、组织对比与历次考试趋势分析。
+## 1. 当前交付结论
 
-## 2. 已完成内容
-### 2.1 本轮核心补全
-1. 优秀率基础版
-- 分析概览新增优秀率指标，当前按 `90 分及以上` 统计。
-- 考试表现列表同步新增优秀率列。
+当前仓库已收束为一套可启动、可验证、可验收的在线考试系统交付包，核心链路覆盖：
 
-2. 组织对比基础版
-- 分析页新增组织对比表。
-- 当前输出：
-  - 组织人数
-  - 平均分
-  - 及格率
-  - 优秀率
+- 题库管理
+- 试卷组装
+- 考试发布
+- 学生答题与自动保存
+- 阅卷与成绩治理
+- 通知协同
+- 成绩分析与质量报告
+- 登录风险、监考事件与运维脚本
 
-3. 历次考试趋势基础版
-- 分析页新增历次考试趋势表。
-- 当前按考试时间顺序展示近几场考试的：
-  - 平均分
-  - 及格率
-  - 优秀率
+## 2. 当前系统边界
 
-4. 导出链路增强
-- 分析概览导出已补充：
-  - 优秀率
-  - 组织对比
-  - 历次趋势
-- 目标是先把分析域的“功能面”补齐，复杂图表与更深解释后置。
+### 2.1 已完成并已验证
 
-### 2.2 继续保持有效的能力
-- 学生注册与找回密码基础版
-- 邮箱 / 短信验证码 mock 通道
-- 会话治理基础版
-- 设备检测基础版
-- 阅卷治理与成绩申诉基础版
-- 考试质量报告基础版
+- 注册、找回密码、验证码 Mock 通道
+- 组织范围隔离与基础按钮权限
+- 新题型（填空题、论述题、材料题）与独立题目编辑页
+- 手工 / 随机 / 策略组卷
+- 补考 / 缓考 / 重考、批次、签到、准考证、考场与座位
+- 学生待考、考试工作区、自动保存、手动保存、待复查、交卷
+- 阅卷、复核、重判、申诉
+- 通知模板、开考前提醒、Mock 短信投递日志
+- 登录失败锁定、IP 限流、健康检查、备份恢复与压测脚本
 
-## 3. 本轮改动文件 / 模块
-### 3.1 后端
-- `backend/src/main/java/com/projectexample/examsystem/service/impl/AnalyticsServiceImpl.java`
-- `backend/src/main/java/com/projectexample/examsystem/vo/AnalysisOverviewVO.java`
-- `backend/src/main/java/com/projectexample/examsystem/vo/ExamPerformanceVO.java`
-- `backend/src/main/java/com/projectexample/examsystem/vo/OrganizationComparisonVO.java`
-- `backend/src/main/java/com/projectexample/examsystem/vo/TrendPointVO.java`
-- `backend/src/test/java/com/projectexample/examsystem/ApiSmokeIntegrationTests.java`
+### 2.2 当前明确边界
 
-### 3.2 前端
-- `frontend/src/views/exam/AnalysisView.vue`
-- `frontend/src/types/exam.ts`
-- `frontend/tests/e2e/quality-report.spec.ts`
+- 外部短信、邮件、企业微信、钉钉尚未接入
+- 高级防作弊（摄像头、人脸、活体检测）尚未接入
+- 班级 / 年级 / 部门的纵向趋势分析仍可继续深化
 
-### 3.3 脚本与文档
-- `docs/api/core-flows.md`
-- `docs/modules/exam-core.md`
-- `docs/product/系统功能核查矩阵.md`
-- `docs/product/系统能力差距分析.md`
-- `scripts/verify-mysql-init.ps1`
+## 3. 关键设计口径
 
-## 4. 验证结果
-### 4.1 构建与测试
-- 后端：`mvn -q test` 通过
-- 前端：`npm.cmd run build` 通过
-- Playwright 全量回归：15 / 15 通过（串行）
+### 3.1 数据与权限
 
-### 4.2 数据库与脚本验证
-- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-mysql-init.ps1`：通过
-- 回归结果：
-  - `sys_config_item`：28
-  - `biz_score_record`：12
-  - `biz_score_appeal`：0
+- 非管理员默认按组织范围过滤数据
+- 路由、菜单、接口权限已保持一致
+- 公告与通知模板支持组织模板优先、全局模板兜底
 
-### 4.3 分析域验证
-- `ApiSmokeIntegrationTests` 已覆盖：
-  - `excellentRate`
-  - `organizationComparisons`
-  - `trendPoints`
-- `quality-report.spec.ts`：通过
-- `export-flow.spec.ts`：通过
-- `npx.cmd playwright test`：15 / 15 通过
+### 3.2 考试期保护
 
-## 5. 剩余风险
-1. 当前分析域仍是基础版，尚未覆盖学习画像、薄弱知识点推荐和教学反馈闭环。
-2. 当前通知与协同仍未补通知模板和外部通道。
-3. 当前设备检测仍是基础版，不包含摄像头/麦克风/活体等硬件能力。
-4. 当前复核与重判仍是基础版，尚未形成多老师协同、仲裁与回评机制。
+- 对已关联进行中考试的高风险更新 / 删除操作保持保护
+- 不再阻断教师准备新的题目和新的试卷，避免把备课动作一并锁死
 
-## 6. 下一步建议
-1. 继续按广度优先补通知模板与外部通知通道。
-2. 继续补更细的组织维度分析，如班级 / 年级 / 部门对比细分。
-3. 深度能力先不继续下挖，后续单独整理成专项文档。
+### 3.3 交付资源
 
-## 7. 当前执行要求
-- 功能点优先补齐，先把系统做成“功能基本完整”。
-- 复杂、深入、重依赖的能力先不深挖。
-- 深化能力在基础功能面铺满后，再单独成文并继续增强。
+- 真实页面截图：`docs/assets/screenshots/`
+- draw.io 源图与导出图：`docs/assets/diagrams/`
+- 产品级说明书：`docs/ops/产品级用户使用说明书.md`
+
+## 4. 本轮主要改动
+
+### 4.1 代码收束
+
+- 修复登录页嵌套表单导致的提交失效
+- 为登录页标签切换补齐无障碍 `tab` 语义
+- 修复题目编辑页保存逻辑，恢复独立编辑页的稳定提交
+- 调整考试期保护边界，保留高风险更新 / 删除保护，放开新题目与新试卷准备动作
+- 同步更新 Playwright 用例，使其与独立题目编辑页、学生待考按钮和当前登录存储键保持一致
+
+### 4.2 视觉与交付
+
+- 收口侧栏品牌语、顶部身份区和多页说明文案
+- 生成 10 张关键页面截图
+- 生成 5 张架构 / 流程 / 权限 / 部署 / 启动图
+- 新增产品级用户使用说明书并重写根 README
+
+## 5. 真实验证结果
+
+### 5.1 后端
+
+- `mvn -q test`
+- 集成测试覆盖注册登录、考试计划、题型增强、通知、治理与权限
+
+### 5.2 前端
+
+- `npm.cmd run build`
+- `npx.cmd playwright test`，17 / 17 通过
+
+### 5.3 数据库
+
+- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-mysql-init.ps1`
+- 本地 MySQL `exam_system` 连通性校验通过
+
+## 6. 仓库结构建议
+
+建议以以下路径作为交付阅读入口：
+
+1. `README.md`
+2. `docs/ops/产品级用户使用说明书.md`
+3. `docs/assets/diagrams/`
+4. `docs/assets/screenshots/`
+5. `docs/modules/exam-core.md`
+
+## 7. 后续维护建议
+
+- 若继续扩展通知能力，优先接入真实短信 / 邮件网关
+- 若继续扩展考试治理，优先深化班级 / 年级 / 部门维度分析
+- 若继续扩展风险控制，优先补实时告警和更细粒度的反作弊模型

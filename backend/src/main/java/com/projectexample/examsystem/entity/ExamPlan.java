@@ -14,6 +14,11 @@ public class ExamPlan extends BaseEntity {
 
     private String examCode;
     private String examName;
+    private String examMode;
+    private String batchLabel;
+    private String examRoom;
+    private Long sourceExamPlanId;
+    private String sourceExamName;
     private Long organizationId;
     private Long paperId;
     private String paperName;
@@ -26,6 +31,8 @@ public class ExamPlan extends BaseEntity {
     private Integer attemptLimit;
     private String examPassword;
     private Integer lateEntryMinutes;
+    private Integer signInRequired;
+    private Integer signInStartMinutes;
     private Integer earlySubmitMinutes;
     private Integer autoSubmitEnabled;
     private String antiCheatLevel;

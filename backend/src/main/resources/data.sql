@@ -108,6 +108,8 @@ INSERT INTO sys_menu (id, name, path, component, icon, permission_code, visible_
     (23, '登录风险记录', '/system/login-risks', 'system/LoginRiskView', 'Warning', 'sys:login-risk:view', 'ADMIN,ORG_ADMIN', 2, 7, 'PAGE', 0),
     (9, '公告管理', '/notices', 'notices/NoticeView', 'Bell', 'biz:notice:view', 'ADMIN,ORG_ADMIN,TEACHER,GRADER,PROCTOR,STUDENT', 0, 3, 'MENU', 0),
     (10, '消息中心', '/messages', 'notices/MessageCenterView', 'ChatDotRound', 'biz:message:view', 'ADMIN,ORG_ADMIN,TEACHER,GRADER,PROCTOR,STUDENT', 0, 4, 'PAGE', 0),
+    (24, '通知模板', '/notifications/templates', 'notices/NotificationTemplateView', 'Bell', 'biz:notification-template:view', 'ADMIN,ORG_ADMIN,TEACHER', 0, 7, 'PAGE', 0),
+    (25, '通知投递日志', '/notifications/delivery-logs', 'notices/NotificationDeliveryLogView', 'Document', 'biz:notification-log:view', 'ADMIN,ORG_ADMIN,TEACHER', 0, 8, 'PAGE', 0),
     (11, '考试业务', '/exam', '', 'Reading', 'exam:view', 'ADMIN,ORG_ADMIN,TEACHER,GRADER,PROCTOR', 0, 5, 'MENU', 0),
     (12, '题库管理', '/exam/questions', 'exam/QuestionBankView', 'Document', 'exam:question:view', 'ADMIN,ORG_ADMIN,TEACHER', 11, 1, 'PAGE', 0),
     (13, '试卷管理', '/exam/papers', 'exam/ExamPaperView', 'Collection', 'exam:paper:view', 'ADMIN,ORG_ADMIN,TEACHER', 11, 2, 'PAGE', 0),
@@ -121,10 +123,20 @@ INSERT INTO sys_menu (id, name, path, component, icon, permission_code, visible_
     (21, '我的成绩', '/candidate/scores', 'exam/CandidateScoreView', 'Histogram', 'candidate:score:view', 'STUDENT', 18, 2, 'PAGE', 0),
     (22, '答卷回看', '/candidate/review-center', 'exam/CandidateReviewCenterView', 'ReadingLamp', 'candidate:review:view', 'STUDENT', 18, 3, 'PAGE', 0);
 
-INSERT INTO biz_notice (id, title, category, status, content, deleted) VALUES
-    (1, '期中考试发布通知', 'exam_publish', 1, '本学期期中考试安排已发布，请相关教师完成监考准备，学生按时查看考试计划。', 0),
-    (2, '阅卷工作提醒', 'grading', 1, '已提交试卷的主观题阅卷任务已分配，请阅卷老师尽快完成评分。', 0),
-    (3, '成绩发布说明', 'score_publish', 1, '成绩发布后，学生可在成绩中心查看个人成绩和分析结果。', 0);
+INSERT INTO biz_notice (id, organization_id, title, category, status, content, deleted) VALUES
+    (1, NULL, '期中考试发布通知', 'exam_publish', 1, '本学期期中考试安排已发布，请相关教师完成监考准备，学生按时查看考试计划。', 0),
+    (2, NULL, '阅卷工作提醒', 'grading', 1, '已提交试卷的主观题阅卷任务已分配，请阅卷老师尽快完成评分。', 0),
+    (3, NULL, '成绩发布说明', 'score_publish', 1, '成绩发布后，学生可在成绩中心查看个人成绩和分析结果。', 0);
+
+INSERT INTO sys_notification_template (id, organization_id, template_code, template_name, business_type, channel_type, title_template, content_template, status, deleted) VALUES
+    (1, NULL, 'EXAM_PUBLISH_IN_APP', '考试发布站内提醒模板', 'EXAM_PUBLISH', 'IN_APP', '考试发布提醒', '你已被分配到考试《{{examName}}》，开始时间 {{startTime}}，请按考试计划准时参加。', 1, 0),
+    (2, NULL, 'EXAM_PUBLISH_SMS', '考试发布短信提醒模板', 'EXAM_PUBLISH', 'MOCK_SMS', '考试发布提醒', '【在线考试系统】你已被分配到《{{examName}}》，考试开始时间 {{startTime}}，请提前准备。', 1, 0),
+    (3, NULL, 'EXAM_REMINDER_IN_APP', '开考前站内提醒模板', 'EXAM_REMINDER', 'IN_APP', '开考前提醒', '考试《{{examName}}》将于 {{startTime}} 开始，请至少提前 {{leadMinutes}} 分钟完成设备检查并进入候考状态。', 1, 0),
+    (4, NULL, 'EXAM_REMINDER_SMS', '开考前短信提醒模板', 'EXAM_REMINDER', 'MOCK_SMS', '开考前提醒', '【在线考试系统】《{{examName}}》将于 {{startTime}} 开始，请提前 {{leadMinutes}} 分钟进入考试。', 1, 0),
+    (5, NULL, 'SCORE_PUBLISH_IN_APP', '成绩发布站内提醒模板', 'SCORE_PUBLISH', 'IN_APP', '成绩发布提醒', '考试《{{examName}}》成绩已发布，请及时查看。', 1, 0),
+    (6, NULL, 'SCORE_APPEAL_IN_APP', '成绩申诉站内提醒模板', 'SCORE_APPEAL', 'IN_APP', '成绩申诉提醒', '考生 {{candidateName}} 对《{{examName}}》提交了成绩申诉，请及时处理。', 1, 0),
+    (7, NULL, 'SCORE_APPEAL_RESULT_IN_APP', '成绩申诉结果站内提醒模板', 'SCORE_APPEAL_RESULT', 'IN_APP', '{{title}}', '{{content}}', 1, 0),
+    (8, NULL, 'SECURITY_ALERT_IN_APP', '安全告警站内提醒模板', 'SECURITY_ALERT', 'IN_APP', '{{title}}', '{{content}}', 1, 0);
 
 INSERT INTO sys_config_item (id, config_key, config_name, config_group, config_value, description_text, status, deleted) VALUES
     (1, 'exam.auto.save.interval.seconds', '考试自动保存间隔', 'exam', '20', '前端自动保存作答内容的秒数间隔', 1, 0),
@@ -154,7 +166,10 @@ INSERT INTO sys_config_item (id, config_key, config_name, config_group, config_v
     (25, 'auth.security.verification.window-minutes', '验证码发送统计窗口（分钟）', 'auth_security', '60', '统计验证码发送次数的时间窗口', 1, 0),
     (26, 'auth.security.verification.max-sends-per-window', '验证码窗口内最大发送次数', 'auth_security', '5', '同一用途、通道和目标在统计窗口内允许发送验证码的最大次数', 1, 0),
     (27, 'auth.security.alert.message.enabled', '登录安全告警消息开关', 'auth_security', 'true', '是否在触发锁定或 IP 限流时向管理角色发送站内告警消息', 1, 0),
-    (28, 'auth.security.alert.recipient.roles', '登录安全告警接收角色', 'auth_security', 'ADMIN,ORG_ADMIN', '收到登录安全告警站内消息的角色编码列表，多个角色以英文逗号分隔', 1, 0);
+    (28, 'auth.security.alert.recipient.roles', '登录安全告警接收角色', 'auth_security', 'ADMIN,ORG_ADMIN', '收到登录安全告警站内消息的角色编码列表，多个角色以英文逗号分隔', 1, 0),
+    (29, 'notice.mock-sms.enabled', '通知 mock 短信通道开关', 'notice', 'true', '是否启用 mock 短信投递日志通道', 1, 0),
+    (30, 'notice.exam-reminder.enabled', '开考前提醒开关', 'notice', 'true', '是否启用开考前提醒扫描与投递', 1, 0),
+    (31, 'notice.exam-reminder.lead-minutes', '开考前提醒提前分钟数', 'notice', '30', '距离考试开始多少分钟内触发开考前提醒', 1, 0);
 
 INSERT INTO sys_dictionary_item (id, dict_type, item_code, item_label, item_value, sort_no, status, deleted) VALUES
     (1, 'subject', 'subject_yuwen', '语文', '语文', 1, 1, 0),
@@ -678,13 +693,13 @@ INSERT INTO biz_paper_question (id, paper_id, question_id, sort_no, score, requi
     (159, 8, 299, 19, 5, 1, 0),
     (160, 8, 300, 20, 15, 1, 0);
 
-INSERT INTO biz_exam_plan (id, exam_code, exam_name, organization_id, paper_id, paper_name, subject, start_time, end_time, duration_minutes, pass_score, candidate_scope, attempt_limit, exam_password, late_entry_minutes, early_submit_minutes, auto_submit_enabled, anti_cheat_level, instruction_text, status, publish_status, deleted) VALUES
-    (1, 'KS-2026-YW-01', '2026级语文阶段测验', 2, 1, '语文期中模拟卷', '语文', TIMESTAMP '2026-03-01 08:00:00', TIMESTAMP '2026-06-30 23:59:59', 90, 105, 'ASSIGNED', 1, 'YW2026', 43200, 0, 1, 'BASIC', '请按要求完成考试，进入考试后请保持页面可见，提交前请认真检查。', 1, 1, 0),
-    (2, 'KS-2026-SX-01', '2026级数学阶段测验', 3, 2, '数学期中模拟卷', '数学', TIMESTAMP '2026-03-01 08:00:00', TIMESTAMP '2026-06-30 23:59:59', 90, 105, 'ASSIGNED', 1, 'SX2026', 43200, 0, 1, 'BASIC', '请按要求完成考试，进入考试后请保持页面可见，提交前请认真检查。', 1, 1, 0),
-    (3, 'KS-2026-YY-01', '2026级英语阶段测验', 4, 3, '英语期中模拟卷', '英语', TIMESTAMP '2026-03-01 08:00:00', TIMESTAMP '2026-06-30 23:59:59', 90, 105, 'ASSIGNED', 1, 'YY2026', 43200, 0, 1, 'BASIC', '请按要求完成考试，进入考试后请保持页面可见，提交前请认真检查。', 1, 1, 0),
-    (4, 'KS-2026-WL-01', '2026级物理阶段测验', 3, 4, '物理期中模拟卷', '物理', TIMESTAMP '2026-03-01 08:00:00', TIMESTAMP '2026-06-30 23:59:59', 90, 105, 'ASSIGNED', 1, 'WL2026', 43200, 0, 1, 'BASIC', '请按要求完成考试，进入考试后请保持页面可见，提交前请认真检查。', 1, 1, 0),
-    (5, 'KS-2026-SW-01', '2026级生物阶段测验', 5, 6, '生物期中模拟卷', '生物', TIMESTAMP '2026-03-01 08:00:00', TIMESTAMP '2026-06-30 23:59:59', 90, 105, 'ASSIGNED', 1, 'SW2026', 43200, 0, 1, 'BASIC', '请按要求完成考试，进入考试后请保持页面可见，提交前请认真检查。', 1, 1, 0),
-    (6, 'KS-2026-LS-01', '2026级历史地理综合测验', 6, 7, '历史期中模拟卷', '历史', TIMESTAMP '2026-03-01 08:00:00', TIMESTAMP '2026-06-30 23:59:59', 90, 105, 'ASSIGNED', 1, 'LS2026', 43200, 0, 1, 'BASIC', '请按要求完成考试，进入考试后请保持页面可见，提交前请认真检查。', 1, 1, 0);
+INSERT INTO biz_exam_plan (id, exam_code, exam_name, exam_mode, batch_label, source_exam_plan_id, source_exam_name, organization_id, paper_id, paper_name, subject, start_time, end_time, duration_minutes, pass_score, candidate_scope, attempt_limit, exam_password, late_entry_minutes, early_submit_minutes, auto_submit_enabled, anti_cheat_level, instruction_text, status, publish_status, deleted) VALUES
+    (1, 'KS-2026-YW-01', '2026级语文阶段测验', 'NORMAL', '第一批次', NULL, NULL, 2, 1, '语文期中模拟卷', '语文', TIMESTAMP '2026-03-01 08:00:00', TIMESTAMP '2026-03-01 18:00:00', 90, 105, 'ASSIGNED', 1, 'YW2026', 43200, 0, 1, 'BASIC', '请按要求完成考试，进入考试后请保持页面可见，提交前请认真检查。', 1, 1, 0),
+    (2, 'KS-2026-SX-01', '2026级数学阶段测验', 'NORMAL', '第一批次', NULL, NULL, 3, 2, '数学期中模拟卷', '数学', TIMESTAMP '2026-03-01 08:00:00', TIMESTAMP '2026-03-01 18:00:00', 90, 105, 'ASSIGNED', 1, 'SX2026', 43200, 0, 1, 'BASIC', '请按要求完成考试，进入考试后请保持页面可见，提交前请认真检查。', 1, 1, 0),
+    (3, 'KS-2026-YY-01', '2026级英语阶段测验', 'NORMAL', '第一批次', NULL, NULL, 4, 3, '英语期中模拟卷', '英语', TIMESTAMP '2026-03-01 08:00:00', TIMESTAMP '2026-03-01 18:00:00', 90, 105, 'ASSIGNED', 1, 'YY2026', 43200, 0, 1, 'BASIC', '请按要求完成考试，进入考试后请保持页面可见，提交前请认真检查。', 1, 1, 0),
+    (4, 'KS-2026-WL-01', '2026级物理阶段测验', 'NORMAL', '第一批次', NULL, NULL, 3, 4, '物理期中模拟卷', '物理', TIMESTAMP '2026-03-01 08:00:00', TIMESTAMP '2026-03-01 18:00:00', 90, 105, 'ASSIGNED', 1, 'WL2026', 43200, 0, 1, 'BASIC', '请按要求完成考试，进入页面可见，提交前请认真检查。', 1, 1, 0),
+    (5, 'KS-2026-SW-01', '2026级生物阶段测验', 'NORMAL', '第一批次', NULL, NULL, 5, 6, '生物期中模拟卷', '生物', TIMESTAMP '2026-03-01 08:00:00', TIMESTAMP '2026-03-01 18:00:00', 90, 105, 'ASSIGNED', 1, 'SW2026', 43200, 0, 1, 'BASIC', '请按要求完成考试，进入考试后请保持页面可见，提交前请认真检查。', 1, 1, 0),
+    (6, 'KS-2026-LS-01', '2026级历史地理综合测验', 'NORMAL', '第一批次', NULL, NULL, 6, 7, '历史期中模拟卷', '历史', TIMESTAMP '2026-03-01 08:00:00', TIMESTAMP '2026-03-01 18:00:00', 90, 105, 'ASSIGNED', 1, 'LS2026', 43200, 0, 1, 'BASIC', '请按要求完成考试，进入考试后请保持页面可见，提交前请认真检查。', 1, 1, 0);
 
 INSERT INTO biz_exam_candidate (id, exam_plan_id, user_id, candidate_name, organization_name, status, access_code, attempt_count, deleted) VALUES
     (1, 1, 15, '张晨琪', '汉语言文学一班', 'ASSIGNED', 'A0001', 0, 0),
@@ -926,3 +941,6 @@ INSERT INTO biz_login_risk_log (id, username, user_id, role_code, success_flag, 
     (2, '20260001', 15, 'STUDENT', 1, '127.0.0.1', 'Chrome/123 Demo', 'student-device-1', 'UA=Chrome Demo | Screen=1366x768', 'LOW', '首次成功登录，已建立基础风险基线', TIMESTAMP '2026-04-08 08:40:00', 0),
     (3, '20260001', 15, 'STUDENT', 0, '10.10.2.7', 'Chrome/123 Demo', 'unknown-device', 'UA=Chrome Demo | Screen=1366x768', 'MEDIUM', '登录失败，已记录基础风险信息', TIMESTAMP '2026-04-08 08:43:00', 0),
     (4, '20260001', 15, 'STUDENT', 1, '10.10.2.8', 'Chrome/123 Demo', 'student-device-2', 'UA=Chrome Demo | Screen=1366x768', 'MEDIUM', '与最近一次成功登录相比，客户端 IP 和设备指纹均发生变化', TIMESTAMP '2026-04-08 09:00:00', 0);
+
+INSERT INTO biz_notification_delivery_log (id, organization_id, business_type, channel_type, template_code, recipient_user_id, recipient_name, recipient_target, title, content, related_type, related_id, business_key, delivery_status, provider_trace, sent_at, deleted) VALUES
+    (1, 7, 'EXAM_PUBLISH', 'MOCK_SMS', 'EXAM_PUBLISH_SMS', 15, '张晨琪', '13900000001', '考试发布提醒', '【在线考试系统】你已被分配到《2026级语文阶段测验》，考试开始时间 2026-04-02 09:00，请提前准备。', 'EXAM_PLAN', 1, 'EXAM_PUBLISH:1:15:MOCK_SMS', 'DELIVERED', 'MOCK_SMS -> 13900000001', TIMESTAMP '2026-04-01 18:30:00', 0);

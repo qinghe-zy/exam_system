@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 
 import AppShellSection from '../../components/AppShellSection.vue'
 import { fetchAuditLogs, type AuditLogRecord } from '../../api/system'
+import { formatDateTime } from '../../utils/datetime'
 
 const loading = ref(false)
 const logs = ref<AuditLogRecord[]>([])
@@ -27,7 +28,9 @@ onMounted(loadData)
   >
     <section class="panel-card table-card">
       <el-table :data="logs" v-loading="loading">
-        <el-table-column prop="createTime" label="时间" min-width="180" />
+        <el-table-column label="时间" min-width="180">
+          <template #default="{ row }">{{ formatDateTime(row.createTime) }}</template>
+        </el-table-column>
         <el-table-column prop="operatorName" label="操作人" min-width="140" />
         <el-table-column prop="moduleName" label="模块" min-width="140" />
         <el-table-column prop="actionName" label="动作" min-width="140" />

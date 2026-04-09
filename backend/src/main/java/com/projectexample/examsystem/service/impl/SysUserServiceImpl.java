@@ -10,6 +10,7 @@ import com.projectexample.examsystem.exception.BusinessException;
 import com.projectexample.examsystem.mapper.OrganizationMapper;
 import com.projectexample.examsystem.mapper.SysUserMapper;
 import com.projectexample.examsystem.security.AccessScopeService;
+import com.projectexample.examsystem.security.ExamPeriodProtectionService;
 import com.projectexample.examsystem.service.SysUserService;
 import com.projectexample.examsystem.vo.CandidateImportResultVO;
 import com.projectexample.examsystem.vo.SysUserVO;
@@ -29,6 +30,7 @@ public class SysUserServiceImpl implements SysUserService {
     private final OrganizationMapper organizationMapper;
     private final PasswordEncoder passwordEncoder;
     private final AccessScopeService accessScopeService;
+    private final ExamPeriodProtectionService examPeriodProtectionService;
 
     @Override
     public SysUser findByUsername(String username) {
@@ -62,6 +64,7 @@ public class SysUserServiceImpl implements SysUserService {
 
     @Override
     public SysUserVO createUser(SysUserSaveRequest request) {
+        examPeriodProtectionService.assertMutable("新增用户");
         if (findByUsername(request.getUsername()) != null) {
             throw new BusinessException(4009, "Username already exists");
         }
@@ -74,6 +77,7 @@ public class SysUserServiceImpl implements SysUserService {
 
     @Override
     public SysUserVO updateUser(Long id, SysUserSaveRequest request) {
+        examPeriodProtectionService.assertMutable("更新用户");
         SysUser entity = requireEntity(id);
         accessScopeService.assertOrganizationAccessible(entity.getOrganizationId());
         SysUser duplicate = findByUsername(request.getUsername());
@@ -88,6 +92,7 @@ public class SysUserServiceImpl implements SysUserService {
 
     @Override
     public CandidateImportResultVO importCandidates(CandidateImportRequest request) {
+        examPeriodProtectionService.assertMutable("批量导入考生");
         List<String> imported = new ArrayList<>();
         for (CandidateImportItemRequest item : request.getItems()) {
             SysUser existing = findByUsername(item.getUsername());

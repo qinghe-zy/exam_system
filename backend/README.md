@@ -1,17 +1,25 @@
 # 后端说明
 
-## 当前定位
+## 定位
 
-当前后端已从 00-base-admin 派生，重点承担 在线考试系统 的核心业务逻辑。
+后端负责在线考试系统的认证、权限、题库、试卷、考试发布、学生答题、阅卷治理、通知协同、监考与运维接口。
 
-## 当前实现重点
+## 当前重点
 
-- 保留基础认证与系统管理基线，并扩展考试业务模块
-- 继承统一响应、统一异常、JWT、系统管理基线
-- 新增项目业务实体、DTO、VO、Mapper、Service、Controller
+- Spring Boot 3 单体架构，模块边界按认证、系统管理、考试核心、治理与通知划分
+- JWT 登录、组织范围隔离、服务端接口鉴权
+- MySQL 为正式交付口径，H2 用于本地快速启动和集成测试
 
-## 当前验证
+## 常用命令
 
-- mvn -q clean -DskipTests package
-- mvn -q test
-- MySQL profile 测试上下文通过
+```powershell
+cd backend
+mvn -q test
+mvn -q -DskipTests package
+```
+
+## 验证口径
+
+- 后端集成测试通过
+- Swagger 可访问
+- MySQL profile 可正常连接本地 `exam_system`

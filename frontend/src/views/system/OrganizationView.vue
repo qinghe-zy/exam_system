@@ -95,7 +95,7 @@ onMounted(loadData)
   <AppShellSection
     eyebrow="系统管理"
     title="组织、院系与班级管理"
-    description="组织树是数据隔离、考生归属、考试发布对象和统计口径的基础。当前页面提供学校、学院、班级等组织节点的基础维护能力。"
+    description="组织树决定数据隔离范围、考生归属和统计口径，可在这里维护学校、学院、班级等组织节点。"
   >
     <template #actions>
       <div class="hero-actions">

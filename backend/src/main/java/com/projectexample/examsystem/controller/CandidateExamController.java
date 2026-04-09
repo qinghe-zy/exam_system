@@ -5,6 +5,7 @@ import com.projectexample.examsystem.dto.CandidateAnswerSheetSaveRequest;
 import com.projectexample.examsystem.dto.CandidateEventReportRequest;
 import com.projectexample.examsystem.security.UserPrincipal;
 import com.projectexample.examsystem.service.CandidateExamService;
+import com.projectexample.examsystem.vo.CandidateAdmissionTicketVO;
 import com.projectexample.examsystem.vo.CandidateExamVO;
 import com.projectexample.examsystem.vo.CandidateExamWorkspaceVO;
 import jakarta.validation.Valid;
@@ -27,6 +28,20 @@ public class CandidateExamController {
     @PreAuthorize("hasRole('STUDENT')")
     public ApiResponse<List<CandidateExamVO>> myExams(@AuthenticationPrincipal UserPrincipal userPrincipal) {
         return ApiResponse.success(candidateExamService.listMyExams(userPrincipal.getUsername()));
+    }
+
+    @GetMapping("/exams/{examPlanId}/admission-ticket")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ApiResponse<CandidateAdmissionTicketVO> admissionTicket(@PathVariable Long examPlanId,
+                                                                   @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return ApiResponse.success(candidateExamService.getAdmissionTicket(examPlanId, userPrincipal.getUsername()));
+    }
+
+    @PostMapping("/exams/{examPlanId}/sign-in")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ApiResponse<CandidateExamVO> signIn(@PathVariable Long examPlanId,
+                                               @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return ApiResponse.success("exam signed in", candidateExamService.signIn(examPlanId, userPrincipal.getUsername()));
     }
 
     @GetMapping("/exams/{examPlanId}")

@@ -104,6 +104,12 @@ class ApiSmokeIntegrationTests {
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)));
 
+        mockMvc.perform(get("/api/exam/candidate/exams/1/admission-ticket")
+                        .header("Authorization", bearer(studentToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.examPlanId").value(1));
+
         mockMvc.perform(get("/api/exam/candidate/exams/1")
                         .queryParam("examPassword", "YW2026")
                         .header("X-Device-Fingerprint", "smoke-device-a")

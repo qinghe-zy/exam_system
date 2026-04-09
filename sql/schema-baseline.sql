@@ -1,6 +1,8 @@
 DROP TABLE IF EXISTS biz_audit_log;
+DROP TABLE IF EXISTS biz_notification_delivery_log;
 DROP TABLE IF EXISTS biz_in_app_message;
 DROP TABLE IF EXISTS biz_login_risk_log;
+DROP TABLE IF EXISTS sys_notification_template;
 DROP TABLE IF EXISTS sys_dictionary_item;
 DROP TABLE IF EXISTS sys_config_item;
 DROP TABLE IF EXISTS biz_anti_cheat_event;
@@ -83,11 +85,27 @@ CREATE TABLE sys_menu (
 
 CREATE TABLE biz_notice (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    organization_id BIGINT,
     title VARCHAR(128) NOT NULL,
     category VARCHAR(64) NOT NULL,
     status INT NOT NULL DEFAULT 1,
     content TEXT NOT NULL,
     publish_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE sys_notification_template (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    organization_id BIGINT,
+    template_code VARCHAR(128) NOT NULL,
+    template_name VARCHAR(128) NOT NULL,
+    business_type VARCHAR(64) NOT NULL,
+    channel_type VARCHAR(32) NOT NULL,
+    title_template VARCHAR(255) NOT NULL,
+    content_template TEXT NOT NULL,
+    status INT NOT NULL DEFAULT 1,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted INT NOT NULL DEFAULT 0
@@ -177,6 +195,11 @@ CREATE TABLE biz_exam_plan (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     exam_code VARCHAR(64) NOT NULL,
     exam_name VARCHAR(128) NOT NULL,
+    exam_mode VARCHAR(32) NOT NULL DEFAULT 'NORMAL',
+    batch_label VARCHAR(128),
+    exam_room VARCHAR(128),
+    source_exam_plan_id BIGINT,
+    source_exam_name VARCHAR(128),
     organization_id BIGINT,
     paper_id BIGINT NOT NULL,
     paper_name VARCHAR(128) NOT NULL,
@@ -189,6 +212,8 @@ CREATE TABLE biz_exam_plan (
     attempt_limit INT NOT NULL DEFAULT 1,
     exam_password VARCHAR(64),
     late_entry_minutes INT NOT NULL DEFAULT 15,
+    sign_in_required INT NOT NULL DEFAULT 0,
+    sign_in_start_minutes INT NOT NULL DEFAULT 60,
     early_submit_minutes INT NOT NULL DEFAULT 0,
     auto_submit_enabled INT NOT NULL DEFAULT 1,
     anti_cheat_level VARCHAR(32) NOT NULL DEFAULT 'BASIC',
@@ -208,7 +233,10 @@ CREATE TABLE biz_exam_candidate (
     organization_name VARCHAR(128),
     status VARCHAR(32) NOT NULL DEFAULT 'ASSIGNED',
     access_code VARCHAR(32),
+    seat_no VARCHAR(32),
     attempt_count INT NOT NULL DEFAULT 0,
+    signed_in_flag INT NOT NULL DEFAULT 0,
+    signed_in_at TIMESTAMP NULL,
     assigned_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -358,6 +386,28 @@ CREATE TABLE biz_in_app_message (
     related_type VARCHAR(64),
     related_id BIGINT,
     read_flag INT NOT NULL DEFAULT 0,
+    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE biz_notification_delivery_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    organization_id BIGINT,
+    business_type VARCHAR(64) NOT NULL,
+    channel_type VARCHAR(32) NOT NULL,
+    template_code VARCHAR(128) NOT NULL,
+    recipient_user_id BIGINT,
+    recipient_name VARCHAR(128),
+    recipient_target VARCHAR(128),
+    title VARCHAR(255),
+    content TEXT NOT NULL,
+    related_type VARCHAR(64),
+    related_id BIGINT,
+    business_key VARCHAR(255) NOT NULL,
+    delivery_status VARCHAR(32) NOT NULL,
+    provider_trace VARCHAR(255),
+    sent_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted INT NOT NULL DEFAULT 0

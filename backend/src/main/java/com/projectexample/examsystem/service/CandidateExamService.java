@@ -2,6 +2,7 @@ package com.projectexample.examsystem.service;
 
 import com.projectexample.examsystem.dto.CandidateAnswerSheetSaveRequest;
 import com.projectexample.examsystem.dto.CandidateEventReportRequest;
+import com.projectexample.examsystem.vo.CandidateAdmissionTicketVO;
 import com.projectexample.examsystem.vo.CandidateExamVO;
 import com.projectexample.examsystem.vo.CandidateExamWorkspaceVO;
 
@@ -10,6 +11,10 @@ import java.util.List;
 public interface CandidateExamService {
 
     List<CandidateExamVO> listMyExams(String username);
+
+    CandidateAdmissionTicketVO getAdmissionTicket(Long examPlanId, String username);
+
+    CandidateExamVO signIn(Long examPlanId, String username);
 
     CandidateExamWorkspaceVO getWorkspace(Long examPlanId, String examPassword, String username, String clientIp, String deviceFingerprint, String deviceInfo);
 

@@ -6,14 +6,12 @@ import com.projectexample.examsystem.dto.PasswordResetRequest;
 import com.projectexample.examsystem.dto.RegisterRequest;
 import com.projectexample.examsystem.dto.SendVerificationCodeRequest;
 import com.projectexample.examsystem.entity.ConfigItem;
-import com.projectexample.examsystem.entity.InAppMessage;
 import com.projectexample.examsystem.entity.LoginRiskLog;
 import com.projectexample.examsystem.entity.Organization;
 import com.projectexample.examsystem.entity.SysUser;
 import com.projectexample.examsystem.entity.VerificationCode;
 import com.projectexample.examsystem.exception.BusinessException;
 import com.projectexample.examsystem.mapper.ConfigItemMapper;
-import com.projectexample.examsystem.mapper.InAppMessageMapper;
 import com.projectexample.examsystem.mapper.LoginRiskLogMapper;
 import com.projectexample.examsystem.mapper.OrganizationMapper;
 import com.projectexample.examsystem.mapper.SysUserMapper;
@@ -21,6 +19,7 @@ import com.projectexample.examsystem.mapper.VerificationCodeMapper;
 import com.projectexample.examsystem.security.JwtTokenProvider;
 import com.projectexample.examsystem.security.RolePermissionCatalog;
 import com.projectexample.examsystem.service.AuthService;
+import com.projectexample.examsystem.service.NotificationService;
 import com.projectexample.examsystem.service.SysUserService;
 import com.projectexample.examsystem.vo.AuthRegisterOptionVO;
 import com.projectexample.examsystem.vo.AuthTokenVO;
@@ -34,10 +33,8 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Service
@@ -67,10 +64,10 @@ public class AuthServiceImpl implements AuthService {
     private final VerificationCodeMapper verificationCodeMapper;
     private final LoginRiskLogMapper loginRiskLogMapper;
     private final ConfigItemMapper configItemMapper;
-    private final InAppMessageMapper inAppMessageMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RolePermissionCatalog rolePermissionCatalog;
+    private final NotificationService notificationService;
 
     @Value("${app.auth.verification.expire-minutes:10}")
     private long verificationExpireMinutes;
@@ -505,26 +502,16 @@ public class AuthServiceImpl implements AuthService {
         if (recipients.isEmpty()) {
             return;
         }
-
-        Set<Long> recipientIds = new LinkedHashSet<>();
-        for (SysUser recipient : recipients) {
-            if (recipient.getId() == null || !recipientIds.add(recipient.getId())) {
-                continue;
-            }
-            InAppMessage message = new InAppMessage();
-            message.setRecipientUserId(recipient.getId());
-            message.setTitle("登录安全告警");
-            message.setMessageType(MESSAGE_TYPE_SECURITY_ALERT);
-            message.setContent(title + "：账号=" + log.getUsername()
-                    + "，IP=" + defaultText(log.getClientIp())
-                    + "，风险级别=" + defaultText(log.getRiskLevel())
-                    + "，原因=" + detail
-                    + "，时间=" + TIME_FORMATTER.format(log.getLoginAt()));
-            message.setRelatedType("LOGIN_RISK");
-            message.setRelatedId(log.getId());
-            message.setReadFlag(0);
-            inAppMessageMapper.insert(message);
-        }
+        notificationService.sendSecurityAlertNotification(
+                log,
+                "登录安全告警",
+                title + "：账号=" + log.getUsername()
+                        + "，IP=" + defaultText(log.getClientIp())
+                        + "，风险级别=" + defaultText(log.getRiskLevel())
+                        + "，原因=" + detail
+                        + "，时间=" + TIME_FORMATTER.format(log.getLoginAt()),
+                recipients
+        );
     }
 
     private String successRiskLevel(SysUser user, String clientIp, String deviceFingerprint) {

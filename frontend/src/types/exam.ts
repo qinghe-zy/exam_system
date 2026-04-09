@@ -113,6 +113,11 @@ export interface ExamPlan {
   id: number
   examCode: string
   examName: string
+  examMode: string
+  batchLabel?: string
+  examRoom?: string
+  sourceExamPlanId?: number
+  sourceExamName?: string
   paperId: number
   paperName: string
   subject: string
@@ -124,6 +129,8 @@ export interface ExamPlan {
   attemptLimit: number
   examPassword?: string
   lateEntryMinutes: number
+  signInRequired: number
+  signInStartMinutes: number
   earlySubmitMinutes: number
   autoSubmitEnabled: number
   antiCheatLevel: string
@@ -131,6 +138,8 @@ export interface ExamPlan {
   status: number
   publishStatus: number
   candidateCount: number
+  signedInCount?: number
+  signInRate?: number
   submittedCount: number
   candidateUserIds: number[]
 }
@@ -138,16 +147,53 @@ export interface ExamPlan {
 export interface CandidateExam {
   examPlanId: number
   examName: string
+  examMode: string
+  batchLabel?: string
+  examRoom?: string
+  sourceExamPlanId?: number
+  sourceExamName?: string
+  seatNo?: string
   paperName: string
   subject: string
   startTime: string
   endTime: string
   entryDeadlineAt?: string
+  signInOpenAt?: string
+  signInDeadlineAt?: string
+  signedInAt?: string
   answerDeadlineAt?: string
   durationMinutes: number
+  signInRequired: number
+  signedInFlag: number
   candidateStatus: string
   attemptCount: number
   answerSheetStatus: string
+}
+
+export interface CandidateAdmissionTicket {
+  examPlanId: number
+  examCode: string
+  examName: string
+  examMode: string
+  batchLabel?: string
+  examRoom?: string
+  sourceExamName?: string
+  paperName: string
+  subject: string
+  candidateName: string
+  organizationName?: string
+  accessCode?: string
+  seatNo?: string
+  startTime: string
+  endTime: string
+  entryDeadlineAt: string
+  durationMinutes: number
+  signInRequired: number
+  signInOpenAt?: string
+  signInDeadlineAt?: string
+  signedInFlag: number
+  signedInAt?: string
+  instructionText?: string
 }
 
 export interface CandidateAnswerItem {

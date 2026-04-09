@@ -4,6 +4,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import AppShellSection from '../../components/AppShellSection.vue'
 import { fetchProctorEvents } from '../../api/exam'
 import type { AntiCheatEvent } from '../../types/exam'
+import { formatDateTime } from '../../utils/datetime'
 import { labelEventType, labelSeverity } from '../../utils/labels'
 
 const loading = ref(false)
@@ -48,7 +49,7 @@ onMounted(loadData)
   <AppShellSection
     eyebrow="监考事件"
     title="基础防作弊事件已形成“触发-保存-落库-可查”闭环"
-    description="这里可以查看考试过程中的切屏、失焦、退出全屏、复制粘贴拦截、右键拦截、高风险快捷键拦截以及设备上下文记录，用于老师、监考员和管理员快速核查本场考试风险。"
+    description="集中查看切屏、失焦、退出全屏、复制粘贴拦截、右键拦截和设备上下文记录，快速定位本场考试风险。"
   >
     <section class="summary-row">
       <div class="summary-card panel-card">
@@ -80,7 +81,9 @@ onMounted(loadData)
       </div>
 
       <el-table :data="filteredEvents" v-loading="loading">
-        <el-table-column prop="occurredAt" label="发生时间" min-width="180" />
+        <el-table-column label="发生时间" min-width="180">
+          <template #default="{ row }">{{ formatDateTime(row.occurredAt) }}</template>
+        </el-table-column>
         <el-table-column prop="examName" label="考试" min-width="220" />
         <el-table-column prop="candidateName" label="考生" min-width="120" />
         <el-table-column label="事件类型" min-width="160">

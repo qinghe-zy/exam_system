@@ -14,4 +14,6 @@ public interface ExamPlanService {
     ExamPlanVO updatePlan(Long id, ExamPlanSaveRequest request);
 
     void deletePlan(Long id);
+
+    String exportSignInSheetCsv(Long id);
 }

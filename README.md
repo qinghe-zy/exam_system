@@ -1,224 +1,149 @@
 # 在线考试系统
 
-## 一、文档目的
-本文档是项目总入口，用于向甲方、教师、验收人员与后续接手开发者说明：本系统当前做到了什么、如何启动、依赖什么数据库、采用什么技术路线、哪些能力已实现、哪些能力仍是基础版或扩展预留。
+面向学校、培训机构与课程团队的在线考试平台，覆盖题库管理、试卷组装、考试发布、学生作答、阅卷治理、成绩分析、通知协同与基础风控。
 
-## 二、项目概述
-本项目是一个基于单体架构实现的在线考试系统，面向学校、培训机构和课程团队的考试组织场景。系统当前已经具备从题目录入、试卷组装、考试发布、考生答题、阅卷评分、成绩分析到基础防作弊留痕的完整主链路。
+## 项目定位
 
-当前实现坚持“清晰单体 + 明确模块边界 + 便于后续扩展”的工程策略，不在现阶段盲目拆分微服务。
+本仓库交付的不是演示型原型，而是一套可启动、可验证、可讲解、可继续维护的考试系统成果。当前版本重点解决以下场景：
 
-## 三、当前实现范围
-### 1. 已实现且可运行
-- 用户认证与 JWT 登录
-- RBAC 角色边界与菜单可见性控制
-- 学生注册与找回密码基础版
-- 邮箱 / 短信验证码 mock 通道
-- 登录风险记录基础版
-- 登录失败锁定、IP 限流与验证码发送限流基础版
-- 登录态会话治理基础版（新登录挤下旧 token、登出即失效）
-- 组织树基础管理
-- 用户管理与考生批量导入基础版
-- 服务端数据权限隔离基础版
-- 题库管理：题干、富文本题干、题型、选项、答案、解析、材料内容、附件 JSON、知识点、标签、审核状态、版本号、分值
-- 题库导入导出基础版（JSON）
-- 题目使用次数统计基础版
-- 按知识点自动组题基础版
-- 试卷管理：独立建卷页、手工组卷、随机组卷、基础策略组卷、题目分值配置、题型/难度蓝图
-- 考试计划发布：时间窗口、考试密码字段、迟到限制、提前交卷限制、参考次数限制、考生分配
-- 考生端：待考列表、考试工作区、手动保存、自动保存、答题卡、待复查标记、离页确认、交卷、已发布成绩查看、答卷回看与错题本基础版
-- 考生端：严格考试态下已补设备检测基础版，进入考试前会校验浏览器、窗口尺寸、移动端环境和全屏能力
-- 阅卷中心：客观题自动判分、主观题人工评分、成绩发布基础版
-- 阅卷治理基础版：复核、退回重判、学生成绩申诉、管理端申诉处理
-- 成绩中心与分析：成绩记录、排名、分数段、知识点掌握、题目得分率、考试质量报告基础版
-- 通知基础结构：公告/通知 CRUD + 站内消息中心 + 成绩消息跳转详情
-- 登录安全告警基础版：触发锁定或 IP 限流时向管理员发送站内 `SECURITY_ALERT`
-- 监考基础能力：切屏、失焦、退出全屏、复制/粘贴/右键/高风险快捷键拦截、设备/IP 留痕、单设备限制基础版与查询
-- 审计日志查询基础版
-- 系统配置中心基础版：系统参数、题型/标签/通知类别字典管理 + 运行时健康检查接口
-- AI 题库辅助基础版：支持 AI 生成题目草稿、AI 优化题干/答案/解析，当前通过 DeepSeek 环境变量接入
-- 运维基础交付：MySQL 初始化回归、备份脚本、恢复脚本、登录接口基础压测脚本
-- 考试进行中关键后台保护：考试计划、试卷、高风险配置组的防误操作基础版
+- 教师组织线上考试：建题、组卷、发布、分配考生、查看分析
+- 学生参加考试：待考、签到、进入考试、自动保存、交卷、查成绩、答卷回看
+- 管理与治理：组织用户维护、权限边界、监考事件、登录风险、通知模板、质量报告
 
-### 1.1 中文测试数据规模
-- 中文学科：8 个
-- 中文题目：320 道
-- 教师账号：8 个
-- 学生账号：60 个
-- 监考员、阅卷老师、管理员等基础账号：已补齐
+## 核心能力总览
 
-### 1.2 测试账号密码规则
-- 当前初始化测试账号统一密码：`123456`
-- 种子数据采用 Spring `DelegatingPasswordEncoder` 兼容格式中的 `{noop}` 前缀写入，例如 `{noop}123456`
-- 该方案适用于本地联调、演示与验收环境；正式生产环境应使用加密口令
+| 能力域 | 当前交付能力 | 验证方式 |
+| --- | --- | --- |
+| 账号与权限 | 登录、注册、找回密码、验证码 mock 通道、组织范围隔离、按钮级权限基础版 | 后端集成测试、Playwright `auth-account-flow`、权限路由回归 |
+| 题库与题型 | 单选、多选、判断、简答、填空、论述、材料题；独立题目编辑页；知识点自动组题 | 后端题型增强测试、Playwright `question-type-enhancement` |
+| 试卷与考试 | 手工/随机/策略组卷、补考/缓考/重考、批次、签到、准考证、考场与座位 | 后端考试计划测试、Playwright `teacher-paper-plan`、`exam-plan-mode` |
+| 学生端闭环 | 待考列表、设备检测、自动保存、手动保存、待复查、交卷、成绩查询、答卷回看、错题本 | Playwright `student-exam`、`candidate-review-center`、`student-score-flow` |
+| 阅卷与成绩治理 | 客观题自动判分、主观题人工评分、复核、重判、申诉、成绩发布 | 后端治理测试、Playwright `grading-flow`、`grading-governance` |
+| 分析与报告 | 排名、分数段、知识点分析、题目得分率、质量报告、导出 | Playwright `quality-report`、`export-flow` |
+| 通知与协同 | 公告、消息中心、通知模板、开考前提醒、Mock 短信投递日志 | 后端通知流测试、Playwright `notification-flow` |
+| 安全与运维 | 登录风险记录、失败锁定、IP 限流、健康检查、初始化回归、备份恢复脚本 | 后端安全测试、`verify-mysql-init.ps1`、runbook 实跑 |
 
-### 2. 基础版实现
-- 数据隔离目前以组织字段、角色边界和页面可见性为基础，尚未做到严格的全链路细粒度数据权限策略
-- 防作弊目前是基础事件采集与查看，不是完整的风险决策引擎
-- 通知与协同目前以站内公告为主，未完成短信、邮件、企业微信等外部通道
-- 组卷中的“策略组卷”目前实现为基础难度比例抽题，不是复杂规则引擎
-- 当前安全告警仍以站内消息为主，尚未接入短信、邮件、企业微信、钉钉
+## 系统角色与典型流程
 
-### 3. 扩展预留
-- AI 智能出题、AI 推荐、AI 评分
-- 摄像头/人脸识别/麦克风监考
-- 编程题沙箱与查重
-- 多租户 SaaS
-- 对外 OpenAPI 平台化集成
-- Redis 缓存、统一监控面板与更强限流熔断增强
+![系统总体架构图](docs/assets/diagrams/system-architecture.svg)
 
-## 四、技术栈
-### 后端
+![核心业务闭环流程图](docs/assets/diagrams/core-business-flow.svg)
+
+## 系统截图预览
+
+| 页面 | 预览 |
+| --- | --- |
+| 登录页 | ![登录页](docs/assets/screenshots/01-login.png) |
+| 首页看板 | ![首页看板](docs/assets/screenshots/02-dashboard.png) |
+| 题库管理 | ![题库管理](docs/assets/screenshots/05-question-bank.png) |
+| 组卷页 | ![组卷页](docs/assets/screenshots/06-paper-builder.png) |
+| 考试发布 | ![考试发布](docs/assets/screenshots/07-exam-plans.png) |
+| 学生考试工作区 | ![学生考试工作区](docs/assets/screenshots/10-student-exam.png) |
+| 阅卷中心 | ![阅卷中心](docs/assets/screenshots/08-grading.png) |
+| 成绩分析 | ![成绩分析](docs/assets/screenshots/09-analytics.png) |
+| 角色权限 | ![角色权限](docs/assets/screenshots/03-role-permissions.png) |
+| 系统配置 | ![系统配置](docs/assets/screenshots/04-system-config.png) |
+
+## 技术架构概览
+
+| 层次 | 技术方案 |
+| --- | --- |
+| 前端 | Vue 3、TypeScript、Vite、Element Plus、Pinia、Vue Router |
+| 后端 | Spring Boot 3、Spring Security、MyBatis-Plus、JWT、Knife4j/OpenAPI |
+| 数据库 | MySQL（正式口径）、H2（本地快速启动与测试） |
+| 自动化 | Maven 测试、Playwright E2E、MySQL 初始化回归脚本 |
+| 运维脚本 | 初始化、备份、恢复、压测、截图与图示生成 |
+
+## 快速启动
+
+### 1. 环境准备
+
 - Java 17+
-- Spring Boot 3
-- MyBatis-Plus
-- Spring Security
-- JWT
-- Knife4j / OpenAPI
+- Maven 3.9+
+- Node.js 20+
+- MySQL 8.x（如需走正式数据口径）
 
-### 前端
-- Vue 3
-- TypeScript
-- Vite
-- Element Plus
-- Pinia
-- Vue Router
+### 2. 启动后端
 
-### 数据库
-- MySQL：正式交付数据库
-- H2 文件模式：本地快速启动与测试上下文验证用
+默认 H2 快速模式：
 
-## 五、目录结构
-- `backend/`：后端应用与测试
-- `frontend/`：前端应用
-- `sql/`：数据库初始化脚本与基线脚本
-- `docs/`：产品、架构、数据、API、测试、运维、部署等详细文档
-- `database/`：数据库相关扩展说明目录
-- `scripts/`：脚本说明目录
-- `tests/`：测试与验证支撑目录
-- `infra/`：基础设施集成说明目录
-- `monitoring/`：监控与观测说明目录
+```powershell
+cd backend
+mvn -q -DskipTests package
+java -jar target/exam-system-backend-0.1.0-SNAPSHOT.jar
+```
 
-## 六、启动方式
-### 1. 后端启动（默认 H2）
-1. 进入目录：`backend`
-2. 执行构建：`mvn -q -DskipTests package`
-3. 启动服务：`java -jar target/exam-system-backend-0.1.0-SNAPSHOT.jar`
+MySQL 模式：
 
-### 2. 后端启动（MySQL 模式）
-需要设置环境变量：
-- `SPRING_PROFILES_ACTIVE=mysql`
-- `MYSQL_HOST=127.0.0.1`
-- `MYSQL_PORT=3306`
-- `MYSQL_DATABASE=exam_system`
-- `MYSQL_USERNAME=root`
-- `MYSQL_PASSWORD=本地密码`
+```powershell
+$env:SPRING_PROFILES_ACTIVE='mysql'
+$env:MYSQL_HOST='127.0.0.1'
+$env:MYSQL_PORT='3306'
+$env:MYSQL_DATABASE='exam_system'
+$env:MYSQL_USERNAME='root'
+$env:MYSQL_PASSWORD='123456'
+cd backend
+mvn -q -DskipTests package
+java -jar target/exam-system-backend-0.1.0-SNAPSHOT.jar
+```
 
-然后执行：
-1. 进入目录：`backend`
-2. 执行构建：`mvn -q -DskipTests package`
-3. 启动服务：`java -jar target/exam-system-backend-0.1.0-SNAPSHOT.jar`
+### 3. 启动前端
 
-### 3. 前端启动
-1. 进入目录：`frontend`
-2. 安装依赖：`npm.cmd install`
-3. 启动开发服务：`npm.cmd run dev`
+```powershell
+cd frontend
+npm.cmd install
+npm.cmd run dev
+```
 
 ### 4. 默认地址
-- 后端：`http://localhost:8083`
-- 前端：`http://localhost:5173`
 
-## 七、数据库说明
-### 1. 当前数据库名
-- `exam_system`
+- 前端：`http://127.0.0.1:5173`
+- 后端：`http://127.0.0.1:8083`
+- 接口文档：`http://127.0.0.1:8083/swagger-ui.html`
 
-### 2. 本地开发连接
-- Host：`127.0.0.1`
-- Port：`3306`
-- Username：`root`
-- Password：本地开发密码，不得作为生产默认值提交
+## 默认测试账号
 
-### 3. 初始化脚本
-- 完整初始化脚本：`sql/mysql/init.sql`
-- 运行时脚本：`backend/src/main/resources/schema.sql`、`backend/src/main/resources/data.sql`
-- 基线脚本：`sql/schema-baseline.sql`
+| 角色 | 账号 | 密码 |
+| --- | --- | --- |
+| 平台管理员 | `900001` | `123456` |
+| 教务管理员 | `900002` | `123456` |
+| 教师 | `800001` | `123456` |
+| 阅卷老师 | `810001` | `123456` |
+| 监考员 | `820001` | `123456` |
+| 学生 | `20260001` | `123456` |
 
-### 4. 数据库回归验收标准
-必须以“从空数据库开始可完整重建”为准，而不是以“当前本地已有数据可用”为准。
+## 验证结果摘要
 
-## 八、测试账号
-- 超级管理员：`900001 / 123456`
-- 教务管理员：`900002 / 123456`
-- 教师示例：`800001 / 123456`
-- 阅卷老师示例：`810001 / 123456`
-- 监考员示例：`820001 / 123456`
-- 学生示例：`20260001 / 123456`
+本轮已完成的真实验证：
 
-## 九、当前缺口清单
-### 已完成且已验证
-- 核心考试闭环一期主链路
-- 中文测试数据重建与关键 API 烟雾验证
-- Git 远端推送
+- 后端：`mvn -q test`
+- 后端打包：`mvn -q -DskipTests package`
+- 前端：`npm.cmd run build`
+- 浏览器回归：`npx.cmd playwright test`，17 条用例全部通过
+- 数据库：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-mysql-init.ps1`
+- 本地 MySQL 连通性校验：`sys_user`、`biz_exam_plan`、`sys_notification_template` 等关键表可查询
+- 图示导出：通过 draw.io CLI 生成 `.drawio + png + svg`
 
-### 已实现但不完整
-- 数据隔离仍是基础版
-- 防作弊仍是基础版
-- 通知协同仍是基础版
-- 自动化测试已达到基础可验收水平，但覆盖仍可继续扩大
-- 考试质量报告仍缺班级 / 年级 / 部门对比与趋势分析
+## 已知限制
 
-### 缺失实现或仍需增强
-- 更严格的数据权限过滤
-- 更完整的通知投递渠道
-- 更复杂的配置中心能力
-- 更广范围浏览器 E2E 与权限矩阵自动化
-- AI 当前仍缺真实本地密钥配置，未在本仓库内提交任何真实 Key
+- 邮件、短信、企业微信、钉钉仍以统一适配层与 Mock 通道为主，未接入真实外部网关
+- 监考仍是基础治理能力，暂不包含摄像头、人脸识别、活体检测等高级能力
+- 统计分析已覆盖考试与知识点层级，班级/年级/部门趋势分析仍可继续深化
+- 前端生产构建仍有大体积 chunk 警告，当前不影响功能可用性
 
-## 十、AI 配置说明
-### 1. 当前接入范围
-- 题库页支持：
-  - AI 生成候选题目草稿
-  - AI 优化当前题干、答案、解析
-- 当前入口位于题库管理页面
+## 文档导航
 
-### 2. DeepSeek 本地配置
-请仅在本地环境变量或被 `.gitignore` 忽略的本地文件中配置：
-- `AI_API_BASE_URL=https://api.deepseek.com`
-- `AI_API_KEY=你的本地私有密钥`
-- `AI_MODEL=deepseek-chat`
+- [产品级用户使用说明书](docs/ops/产品级用户使用说明书.md)
+- [开发记录与系统说明](Documentation.md)
+- [产品需求说明书](PRD.md)
+- [验收标准](ACCEPTANCE.md)
+- [设计与实现决策](DECISIONS.md)
+- [模块说明](docs/modules/exam-core.md)
+- [运行与故障处理](docs/runbooks/README.md)
+- [部署说明](docs/deployment/README.md)
 
-### 3. 不允许提交真实密钥的文件
-- `.env.example`
-- `backend/src/main/resources/application.yml`
-- 任何仓库内可跟踪的 `.env*`
-- 任何 `application-*.yml`
+## 仓库远端
 
-## 十一、已执行验证
-- 后端 `compile`
-- 后端 `test`
-- 后端 `package`
-- 前端 `build`
-- 前端 `test:e2e`
-- MySQL 空库重建并导入 `sql/mysql/init.sql`
-- MySQL 备份与恢复脚本实跑
-- 登录接口基础压测实跑
-- 中文账号登录、组织查询、用户查询、配置项查询、消息查询、题库导出、待考列表、分析接口 smoke
-- 运行时健康检查接口 smoke
-- `scripts/verify-mysql-init.ps1` 临时库初始化回归验证
-- 阅卷治理集成测试与申诉流程回归
-- 会话治理、考试计划保护、试卷保护与配置保护集成测试
-- Playwright 全量回归（15 / 15）
-- 注册 / 找回密码前端流程回归
-- 新题型与知识点自动组题回归
+当前正式远端仓库：
 
-## 十二、已知限制
-- 前端生产构建仍存在 chunk size 警告
-- 审计、监考、通知模块尚未发展为完整运营中心
-- 部分考试发布规则仍为基础实现，不是完整考试规则引擎
-
-## 十三、后续建议
-- 补浏览器级 E2E
-- 补更严格的数据权限隔离
-- 补配置中心与通知外发通道
-- 补设备检测、考试态强约束与更强防作弊能力
-- 持续完善运维、部署、故障处理文档
+- [https://github.com/qinghe-zy/exam_system.git](https://github.com/qinghe-zy/exam_system.git)

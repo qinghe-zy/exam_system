@@ -4,9 +4,10 @@ import { onBeforeRouteLeave } from 'vue-router'
 import { ElMessage } from 'element-plus'
 
 import AppShellSection from '../../components/AppShellSection.vue'
-import { fetchCandidateWorkspace, fetchMyExams, reportCandidateEvent, saveCandidateAnswers, submitCandidateAnswers } from '../../api/exam'
-import type { CandidateAnswerItem, CandidateExam, CandidateExamWorkspace } from '../../types/exam'
-import { labelAnswerSheetStatus, labelQuestionType } from '../../utils/labels'
+import { fetchCandidateAdmissionTicket, fetchCandidateWorkspace, fetchMyExams, reportCandidateEvent, saveCandidateAnswers, signInCandidateExam, submitCandidateAnswers } from '../../api/exam'
+import type { CandidateAdmissionTicket, CandidateAnswerItem, CandidateExam, CandidateExamWorkspace } from '../../types/exam'
+import { formatDateTime } from '../../utils/datetime'
+import { labelAnswerSheetStatus, labelExamMode, labelQuestionType } from '../../utils/labels'
 
 type DeviceCheckItem = {
   code: string
@@ -33,8 +34,10 @@ const countdownText = ref('--:--:--')
 const passwordDialogVisible = ref(false)
 const deviceCheckDialogVisible = ref(false)
 const submitConfirmVisible = ref(false)
+const ticketDialogVisible = ref(false)
 const pendingExamPlanId = ref<number | null>(null)
 const pendingWorkspace = ref<CandidateExamWorkspace | null>(null)
+const currentTicket = ref<CandidateAdmissionTicket | null>(null)
 const examPassword = ref('')
 const currentQuestionId = ref<number | null>(null)
 const lastSavedText = ref('尚未保存')
@@ -151,6 +154,70 @@ async function openWorkspace(examPlanId: number) {
   pendingExamPlanId.value = examPlanId
   examPassword.value = ''
   passwordDialogVisible.value = true
+}
+
+async function signInExam(examPlanId: number) {
+  await signInCandidateExam(examPlanId)
+  ElMessage.success('签到完成，当前可以查看准考证并进入考试')
+  await loadExams()
+}
+
+async function openAdmissionTicket(examPlanId: number) {
+  currentTicket.value = await fetchCandidateAdmissionTicket(examPlanId)
+  ticketDialogVisible.value = true
+}
+
+function printAdmissionTicket() {
+  if (!currentTicket.value) return
+  const ticket = currentTicket.value
+  const opened = window.open('', '_blank', 'width=980,height=720')
+  if (!opened) {
+    ElMessage.warning('浏览器阻止了打印窗口，请允许弹窗后重试')
+    return
+  }
+  opened.document.write(`
+    <html lang="zh-CN">
+      <head>
+        <title>准考证 - ${ticket.examName}</title>
+        <style>
+          body { font-family: "Microsoft YaHei", sans-serif; padding: 24px; color: #2f2a24; }
+          .sheet { border: 1px solid #d5cdc2; border-radius: 16px; padding: 24px; max-width: 860px; margin: 0 auto; }
+          h1 { margin: 0 0 8px; font-size: 28px; }
+          p { line-height: 1.7; margin: 6px 0; }
+          .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 24px; margin-top: 20px; }
+          .item { padding: 12px 14px; border-radius: 12px; background: #f8f5f0; }
+          .label { color: #7d6f60; font-size: 13px; }
+          .value { margin-top: 6px; font-size: 16px; font-weight: 600; }
+        </style>
+      </head>
+      <body>
+        <section class="sheet">
+          <h1>在线考试准考证</h1>
+          <p>请考生按时签到并在允许进入窗口内进入考试，保持设备与浏览器环境稳定。</p>
+          <div class="grid">
+            <div class="item"><div class="label">考试名称</div><div class="value">${ticket.examName}</div></div>
+            <div class="item"><div class="label">考试编码</div><div class="value">${ticket.examCode}</div></div>
+            <div class="item"><div class="label">考试类型</div><div class="value">${labelExamMode(ticket.examMode)}</div></div>
+            <div class="item"><div class="label">批次</div><div class="value">${ticket.batchLabel || '默认批次'}</div></div>
+            <div class="item"><div class="label">考场</div><div class="value">${ticket.examRoom || '待分配'}</div></div>
+            <div class="item"><div class="label">考生姓名</div><div class="value">${ticket.candidateName}</div></div>
+            <div class="item"><div class="label">组织 / 班级</div><div class="value">${ticket.organizationName || '—'}</div></div>
+            <div class="item"><div class="label">座位号</div><div class="value">${ticket.seatNo || '待分配'}</div></div>
+            <div class="item"><div class="label">考试开始</div><div class="value">${formatDateTime(ticket.startTime)}</div></div>
+            <div class="item"><div class="label">最晚进入</div><div class="value">${formatDateTime(ticket.entryDeadlineAt)}</div></div>
+            <div class="item"><div class="label">签到规则</div><div class="value">${ticket.signInRequired === 1 ? `需签到，${formatDateTime(ticket.signInOpenAt || ticket.startTime)} 开放` : '无需签到'}</div></div>
+            <div class="item"><div class="label">签到状态</div><div class="value">${ticket.signedInFlag === 1 ? `已签到（${formatDateTime(ticket.signedInAt || '')}）` : '未签到'}</div></div>
+            <div class="item"><div class="label">试卷</div><div class="value">${ticket.paperName}</div></div>
+            <div class="item"><div class="label">准入码</div><div class="value">${ticket.accessCode || '系统自动分配'}</div></div>
+          </div>
+          <p style="margin-top: 18px;">考试说明：${ticket.instructionText || '请按监考要求进行签到、入场和作答。'}</p>
+        </section>
+      </body>
+    </html>
+  `)
+  opened.document.close()
+  opened.focus()
+  opened.print()
 }
 
 async function confirmWorkspace() {
@@ -588,17 +655,6 @@ watch(
   { immediate: false }
 )
 
-function formatDateTime(value: string) {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '--'
-  return date.toLocaleString('zh-CN', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
 function handleBeforeUnload(event: BeforeUnloadEvent) {
   if (!workspaceVisible.value || !workspace.value || workspace.value.answerSheetStatus === 'SUBMITTED') {
     return
@@ -648,22 +704,55 @@ onBeforeRouteLeave((_to, _from, next) => {
 <template>
   <AppShellSection
     eyebrow="考生中心"
-    title="我的考试：先看入场窗口，再进入沉浸式考试态"
-    description="开始时间与结束时间用于控制学生允许进入考试的时间窗口。进入后页面会展示本场实际剩余作答时间，并在异常行为发生时自动保存当前答案。"
+    title="我的考试：先查看入场窗口，再进入沉浸式作答"
+    description="先确认考试类型、批次、原考试和入场窗口，再进入正式作答。进入后页面会展示本场剩余作答时间，并在异常行为发生时自动保存当前答案。"
   >
     <section class="panel-card section-card">
       <el-table :data="exams" v-loading="loading">
         <el-table-column prop="examName" label="考试名称" min-width="220" />
+        <el-table-column label="考试类型" min-width="120">
+          <template #default="{ row }">
+            <el-tag :type="row.examMode === 'NORMAL' ? 'info' : 'warning'">{{ labelExamMode(row.examMode) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="批次" min-width="120">
+          <template #default="{ row }">{{ row.batchLabel || '默认批次' }}</template>
+        </el-table-column>
+        <el-table-column label="考场 / 座位" min-width="180">
+          <template #default="{ row }">{{ row.examRoom || '待分配' }}{{ row.seatNo ? ` / ${row.seatNo}` : '' }}</template>
+        </el-table-column>
+        <el-table-column prop="sourceExamName" label="原考试" min-width="220" />
         <el-table-column prop="paperName" label="试卷" min-width="200" />
-        <el-table-column prop="startTime" label="开始时间" min-width="180" />
-        <el-table-column prop="entryDeadlineAt" label="最晚进入时间" min-width="180" />
+        <el-table-column label="开始时间" min-width="180">
+          <template #default="{ row }">{{ formatDateTime(row.startTime) }}</template>
+        </el-table-column>
+        <el-table-column label="最晚进入时间" min-width="180">
+          <template #default="{ row }">{{ formatDateTime(row.entryDeadlineAt) }}</template>
+        </el-table-column>
+        <el-table-column label="签到状态" min-width="180">
+          <template #default="{ row }">
+            <span v-if="row.signInRequired === 1">
+              {{ row.signedInFlag === 1 ? `已签到 ${formatDateTime(row.signedInAt || '')}` : `待签到（${formatDateTime(row.signInOpenAt || row.startTime)} 开放）` }}
+            </span>
+            <span v-else>无需签到</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="durationMinutes" label="作答时长" min-width="110" />
         <el-table-column label="答卷状态" min-width="120">
           <template #default="{ row }">{{ labelAnswerSheetStatus(row.answerSheetStatus) }}</template>
         </el-table-column>
         <el-table-column label="操作" min-width="120" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" plain @click="openWorkspace(row.examPlanId)">进入考试</el-button>
+            <el-button type="primary" plain :disabled="row.signInRequired === 1 && row.signedInFlag !== 1" @click="openWorkspace(row.examPlanId)">进入考试</el-button>
+            <el-button plain @click="openAdmissionTicket(row.examPlanId)">准考证</el-button>
+            <el-button
+              v-if="row.signInRequired === 1 && row.signedInFlag !== 1"
+              type="warning"
+              plain
+              @click="signInExam(row.examPlanId)"
+            >
+              签到
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -675,6 +764,45 @@ onBeforeRouteLeave((_to, _from, next) => {
       <template #footer>
         <el-button @click="passwordDialogVisible = false">取消</el-button>
         <el-button type="primary" @click="confirmWorkspace">进入考试</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="ticketDialogVisible" title="准考证 / 通知单" width="min(760px, 96vw)" append-to-body :z-index="2600">
+      <section v-if="currentTicket" class="ticket-sheet">
+        <header class="ticket-head">
+          <div>
+            <p class="eyebrow">准考证</p>
+            <h3>{{ currentTicket.examName }}</h3>
+            <p class="muted">请在签到开放时间内完成签到，并在最晚进入时间前进入正式考试。</p>
+          </div>
+          <el-tag :type="currentTicket.signedInFlag === 1 ? 'success' : 'warning'">
+            {{ currentTicket.signedInFlag === 1 ? '已签到' : '待签到' }}
+          </el-tag>
+        </header>
+        <div class="ticket-grid">
+          <article><strong>考试编码</strong><span>{{ currentTicket.examCode }}</span></article>
+          <article><strong>考试类型</strong><span>{{ labelExamMode(currentTicket.examMode) }}</span></article>
+          <article><strong>批次</strong><span>{{ currentTicket.batchLabel || '默认批次' }}</span></article>
+          <article><strong>考场</strong><span>{{ currentTicket.examRoom || '待分配' }}</span></article>
+          <article><strong>原考试</strong><span>{{ currentTicket.sourceExamName || '—' }}</span></article>
+          <article><strong>考生姓名</strong><span>{{ currentTicket.candidateName }}</span></article>
+          <article><strong>组织 / 班级</strong><span>{{ currentTicket.organizationName || '—' }}</span></article>
+          <article><strong>座位号</strong><span>{{ currentTicket.seatNo || '待分配' }}</span></article>
+          <article><strong>考试开始</strong><span>{{ formatDateTime(currentTicket.startTime) }}</span></article>
+          <article><strong>最晚进入</strong><span>{{ formatDateTime(currentTicket.entryDeadlineAt) }}</span></article>
+          <article><strong>签到规则</strong><span>{{ currentTicket.signInRequired === 1 ? `需签到（${formatDateTime(currentTicket.signInOpenAt || currentTicket.startTime)} 开放）` : '无需签到' }}</span></article>
+          <article><strong>签到状态</strong><span>{{ currentTicket.signedInFlag === 1 ? `已签到 ${formatDateTime(currentTicket.signedInAt || '')}` : '未签到' }}</span></article>
+          <article><strong>试卷</strong><span>{{ currentTicket.paperName }}</span></article>
+          <article><strong>准入码</strong><span>{{ currentTicket.accessCode || '系统自动分配' }}</span></article>
+        </div>
+        <div class="ticket-note">
+          <strong>考试说明</strong>
+          <p>{{ currentTicket.instructionText || '请携带本通知单，在签到开放时间内完成签到后进入考试。' }}</p>
+        </div>
+      </section>
+      <template #footer>
+        <el-button @click="ticketDialogVisible = false">关闭</el-button>
+        <el-button type="primary" @click="printAdmissionTicket">打印</el-button>
       </template>
     </el-dialog>
 
@@ -1087,6 +1215,49 @@ onBeforeRouteLeave((_to, _from, next) => {
   line-height: 1.6;
 }
 
+.ticket-sheet {
+  display: grid;
+  gap: 1rem;
+}
+
+.ticket-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.ticket-head h3 {
+  margin: 0.2rem 0 0;
+}
+
+.ticket-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.ticket-grid article,
+.ticket-note {
+  border: 1px solid color-mix(in oklch, var(--line) 72%, white);
+  border-radius: 18px;
+  background: color-mix(in oklch, white 94%, var(--panel-soft));
+  padding: 0.9rem 1rem;
+}
+
+.ticket-grid strong,
+.ticket-note strong {
+  display: block;
+}
+
+.ticket-grid span,
+.ticket-note p {
+  display: block;
+  margin-top: 0.45rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
 .answer-card-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -1151,6 +1322,10 @@ onBeforeRouteLeave((_to, _from, next) => {
   }
 
   .blank-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ticket-grid {
     grid-template-columns: 1fr;
   }
 }

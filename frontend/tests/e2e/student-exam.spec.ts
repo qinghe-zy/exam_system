@@ -1,3 +1,5 @@
+import path from 'node:path'
+
 import { expect, test } from '@playwright/test'
 
 import { buildActiveExamWindow } from './helpers'
@@ -49,12 +51,13 @@ test('学生登录后进入考试、作答并提交', async ({ page, request }) 
 
   await page.goto('/candidate/exams')
   const examRow = page.getByRole('row', { name: new RegExp(`学生端验证-${suffix}`) })
-  await expect(examRow.getByRole('button')).toBeVisible()
-  await examRow.getByRole('button').click()
+  await expect(examRow.getByRole('button', { name: '进入考试' })).toBeVisible()
+  await examRow.getByRole('button', { name: '进入考试' }).click()
   await page.getByPlaceholder('请输入考试口令（如有）').fill('STD2026')
   await page.getByRole('dialog').getByRole('button', { name: '进入考试' }).click()
 
   await expect(page.locator('.metric-card--timer strong')).toBeVisible()
+  await expect(page.getByRole('dialog', { name: '进入考试' })).toBeHidden()
   await page.evaluate(() => {
     let full = false
     Object.defineProperty(document, 'fullscreenElement', {
@@ -71,6 +74,12 @@ test('学生登录后进入考试、作答并提交', async ({ page, request }) 
     }
   })
   const before = await page.locator('.aside-column').boundingBox()
+  if (process.env.PLAYWRIGHT_CAPTURE_SHOT_DIR) {
+    await page.screenshot({
+      path: path.join(process.env.PLAYWRIGHT_CAPTURE_SHOT_DIR, '10-student-exam.png'),
+      fullPage: false
+    })
+  }
   await page.locator('.exam-overlay').evaluate((el) => {
     el.scrollTop = 1000
   })

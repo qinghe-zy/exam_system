@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 
 import AppShellSection from '../../components/AppShellSection.vue'
 import { fetchLoginRiskLogs, type LoginRiskLogRecord } from '../../api/system'
+import { formatDateTime } from '../../utils/datetime'
 import { labelSeverity } from '../../utils/labels'
 
 const loading = ref(false)
@@ -42,7 +43,7 @@ onMounted(loadData)
   <AppShellSection
     eyebrow="系统管理"
     title="登录风险记录"
-    description="该页面用于验收和查看登录阶段的基础风险留痕，包括失败登录、设备变化、IP 变化等可解释信息，作为后续登录风控增强的基础。"
+    description="查看登录阶段的基础风险留痕，包括失败登录、设备变化和 IP 变化等可解释信息，为后续风控增强提供依据。"
   >
     <section class="summary-row">
       <div class="summary-card panel-card">
@@ -73,7 +74,9 @@ onMounted(loadData)
       </div>
 
       <el-table :data="filteredLogs" v-loading="loading">
-        <el-table-column prop="loginAt" label="登录时间" min-width="180" />
+        <el-table-column label="登录时间" min-width="180">
+          <template #default="{ row }">{{ formatDateTime(row.loginAt) }}</template>
+        </el-table-column>
         <el-table-column prop="username" label="用户名" min-width="120" />
         <el-table-column prop="roleCode" label="角色" min-width="110" />
         <el-table-column label="结果" min-width="100">

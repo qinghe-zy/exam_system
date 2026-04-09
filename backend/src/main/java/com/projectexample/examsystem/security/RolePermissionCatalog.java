@@ -21,21 +21,24 @@ public class RolePermissionCatalog {
                     "sys:user:create", "sys:user:update", "sys:user:import",
                     "exam:question:create", "exam:question:update", "exam:question:delete", "exam:question:import", "exam:question:knowledge:auto-group",
                     "exam:paper:create", "exam:paper:update", "exam:paper:delete",
-                    "notice:create", "notice:update", "notice:delete"
+                    "notice:create", "notice:update", "notice:delete",
+                    "notification:template:create", "notification:template:update", "notification:template:delete", "notification:log:view"
             ));
             case "ORG_ADMIN" -> permissions.addAll(List.of(
                     "auth:register:view", "auth:password:reset",
                     "sys:user:create", "sys:user:update", "sys:user:import",
                     "exam:question:create", "exam:question:update", "exam:question:delete", "exam:question:import", "exam:question:knowledge:auto-group",
                     "exam:paper:create", "exam:paper:update", "exam:paper:delete",
-                    "notice:create", "notice:update", "notice:delete"
+                    "notice:create", "notice:update", "notice:delete",
+                    "notification:template:create", "notification:template:update", "notification:template:delete", "notification:log:view"
             ));
             case "TEACHER" -> permissions.addAll(List.of(
                     "auth:register:view", "auth:password:reset",
                     "sys:user:assignable:view",
                     "exam:question:create", "exam:question:update", "exam:question:delete", "exam:question:import", "exam:question:knowledge:auto-group",
                     "exam:paper:create", "exam:paper:update", "exam:paper:delete",
-                    "notice:create", "notice:update"
+                    "notice:create", "notice:update",
+                    "notification:template:create", "notification:template:update", "notification:template:delete", "notification:log:view"
             ));
             case "STUDENT" -> permissions.addAll(List.of(
                     "auth:register:view", "auth:password:reset",

@@ -7,6 +7,7 @@ import type {
   AiQuestionPolishRequest,
   AiQuestionPolishResult,
   AntiCheatEvent,
+  CandidateAdmissionTicket,
   CandidateExam,
   CandidateScoreDetail,
   CandidateWrongQuestion,
@@ -125,8 +126,25 @@ export function deleteExamPlan(id: number) {
   return http.delete(`/api/exam/plans/${id}`)
 }
 
+export async function exportExamPlanSignInSheetCsv(id: number) {
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8083'}/api/exam/plans/${id}/sign-in-sheet/export`, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('exam-system-template-token') || ''}`
+    }
+  })
+  return response.text()
+}
+
 export function fetchMyExams() {
   return http.get<never, CandidateExam[]>('/api/exam/candidate/my-exams')
+}
+
+export function fetchCandidateAdmissionTicket(examPlanId: number) {
+  return http.get<never, CandidateAdmissionTicket>(`/api/exam/candidate/exams/${examPlanId}/admission-ticket`)
+}
+
+export function signInCandidateExam(examPlanId: number) {
+  return http.post<never, CandidateExam>(`/api/exam/candidate/exams/${examPlanId}/sign-in`)
 }
 
 export function fetchCandidateWorkspace(examPlanId: number, examPassword?: string) {

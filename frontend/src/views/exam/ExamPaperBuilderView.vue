@@ -460,8 +460,8 @@ onMounted(initBuilder)
 <template>
   <AppShellSection
     eyebrow="试卷创建"
-    :title="editingId ? '编辑试卷：基础信息、组卷与预览分区处理' : '新建试卷：基础信息与组卷过程拆分为独立页面'"
-    description="当前页面按步骤组织建卷流程：先填基础信息，再进入手工选题 / 随机组卷 / 策略组卷，最后统一预览并保存。列表页不再承载庞大弹窗。"
+    :title="editingId ? '编辑试卷' : '新建试卷'"
+    description="按步骤完成试卷基础信息、组卷策略与卷面确认，确保建卷过程清晰、稳定、可追溯。"
   >
     <template #actions>
       <div class="hero-actions">

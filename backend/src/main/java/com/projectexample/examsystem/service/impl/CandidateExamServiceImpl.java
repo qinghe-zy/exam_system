@@ -33,6 +33,7 @@ import com.projectexample.examsystem.mapper.PaperQuestionMapper;
 import com.projectexample.examsystem.mapper.QuestionBankMapper;
 import com.projectexample.examsystem.mapper.SysUserMapper;
 import com.projectexample.examsystem.service.CandidateExamService;
+import com.projectexample.examsystem.vo.CandidateAdmissionTicketVO;
 import com.projectexample.examsystem.vo.CandidateAnswerItemVO;
 import com.projectexample.examsystem.vo.CandidateExamVO;
 import com.projectexample.examsystem.vo.CandidateExamWorkspaceVO;
@@ -88,23 +89,69 @@ public class CandidateExamServiceImpl implements CandidateExamService {
                     ExamPlan plan = requirePlan(candidate.getExamPlanId());
                     AnswerSheet sheet = sheetMap.get(plan.getId());
                     LocalDateTime entryDeadlineAt = computeEntryDeadline(plan);
+                    LocalDateTime signInOpenAt = computeSignInOpenAt(plan);
+                    LocalDateTime signInDeadlineAt = computeSignInDeadlineAt(plan);
                     LocalDateTime answerDeadlineAt = sheet == null ? null : computeAnswerDeadline(plan, sheet);
-                    return CandidateExamVO.builder()
-                            .examPlanId(plan.getId())
-                            .examName(plan.getExamName())
-                            .paperName(plan.getPaperName())
-                            .subject(plan.getSubject())
-                            .startTime(plan.getStartTime())
-                            .endTime(plan.getEndTime())
-                            .entryDeadlineAt(entryDeadlineAt)
-                            .answerDeadlineAt(answerDeadlineAt)
-                            .durationMinutes(plan.getDurationMinutes())
-                            .candidateStatus(candidate.getStatus())
-                            .attemptCount(candidate.getAttemptCount())
-                            .answerSheetStatus(sheet == null ? "NOT_STARTED" : sheet.getStatus())
-                            .build();
+                    return toCandidateExamVO(plan, candidate, sheet, entryDeadlineAt, signInOpenAt, signInDeadlineAt, answerDeadlineAt);
                 })
                 .toList();
+    }
+
+    @Override
+    public CandidateAdmissionTicketVO getAdmissionTicket(Long examPlanId, String username) {
+        SysUser user = requireUser(username);
+        ExamPlan plan = requirePlan(examPlanId);
+        ExamCandidate candidate = requireCandidate(plan.getId(), user.getId());
+        return CandidateAdmissionTicketVO.builder()
+                .examPlanId(plan.getId())
+                .examCode(plan.getExamCode())
+                .examName(plan.getExamName())
+                .examMode(plan.getExamMode())
+                .batchLabel(plan.getBatchLabel())
+                .examRoom(plan.getExamRoom())
+                .sourceExamName(plan.getSourceExamName())
+                .paperName(plan.getPaperName())
+                .subject(plan.getSubject())
+                .candidateName(candidate.getCandidateName())
+                .organizationName(candidate.getOrganizationName())
+                .accessCode(candidate.getAccessCode())
+                .seatNo(candidate.getSeatNo())
+                .startTime(plan.getStartTime())
+                .endTime(plan.getEndTime())
+                .entryDeadlineAt(computeEntryDeadline(plan))
+                .durationMinutes(plan.getDurationMinutes())
+                .signInRequired(defaultFlag(plan.getSignInRequired()))
+                .signInOpenAt(computeSignInOpenAt(plan))
+                .signInDeadlineAt(computeSignInDeadlineAt(plan))
+                .signedInFlag(defaultFlag(candidate.getSignedInFlag()))
+                .signedInAt(candidate.getSignedInAt())
+                .instructionText(plan.getInstructionText())
+                .build();
+    }
+
+    @Override
+    public CandidateExamVO signIn(Long examPlanId, String username) {
+        SysUser user = requireUser(username);
+        ExamPlan plan = requirePlan(examPlanId);
+        ExamCandidate candidate = requireCandidate(plan.getId(), user.getId());
+        ensureSignInAllowed(plan, candidate);
+        candidate.setSignedInFlag(1);
+        if (candidate.getSignedInAt() == null) {
+            candidate.setSignedInAt(LocalDateTime.now());
+        }
+        if ("ASSIGNED".equalsIgnoreCase(candidate.getStatus())) {
+            candidate.setStatus("SIGNED_IN");
+        }
+        examCandidateMapper.updateById(candidate);
+        AnswerSheet sheet = answerSheetMapper.selectOne(Wrappers.lambdaQuery(AnswerSheet.class)
+                .eq(AnswerSheet::getExamPlanId, plan.getId())
+                .eq(AnswerSheet::getUserId, user.getId())
+                .last("limit 1"));
+        LocalDateTime entryDeadlineAt = computeEntryDeadline(plan);
+        LocalDateTime signInOpenAt = computeSignInOpenAt(plan);
+        LocalDateTime signInDeadlineAt = computeSignInDeadlineAt(plan);
+        LocalDateTime answerDeadlineAt = sheet == null ? null : computeAnswerDeadline(plan, sheet);
+        return toCandidateExamVO(plan, candidate, sheet, entryDeadlineAt, signInOpenAt, signInDeadlineAt, answerDeadlineAt);
     }
 
     @Override
@@ -117,6 +164,7 @@ public class CandidateExamServiceImpl implements CandidateExamService {
         SysUser user = requireUser(username);
         ExamPlan plan = requirePlan(examPlanId);
         ExamCandidate candidate = requireCandidate(plan.getId(), user.getId());
+        ensureCandidateSignedIn(plan, candidate);
         AnswerSheet sheet = getOrCreateSheet(plan, user, false);
         ensurePlanOpen(plan, sheet);
         ensureAttemptAllowed(plan, candidate, sheet);
@@ -129,11 +177,46 @@ public class CandidateExamServiceImpl implements CandidateExamService {
         return buildWorkspace(plan, sheet);
     }
 
+    private CandidateExamVO toCandidateExamVO(ExamPlan plan,
+                                              ExamCandidate candidate,
+                                              AnswerSheet sheet,
+                                              LocalDateTime entryDeadlineAt,
+                                              LocalDateTime signInOpenAt,
+                                              LocalDateTime signInDeadlineAt,
+                                              LocalDateTime answerDeadlineAt) {
+        return CandidateExamVO.builder()
+                .examPlanId(plan.getId())
+                .examName(plan.getExamName())
+                .examMode(plan.getExamMode())
+                .batchLabel(plan.getBatchLabel())
+                .examRoom(plan.getExamRoom())
+                .sourceExamPlanId(plan.getSourceExamPlanId())
+                .sourceExamName(plan.getSourceExamName())
+                .paperName(plan.getPaperName())
+                .subject(plan.getSubject())
+                .seatNo(candidate.getSeatNo())
+                .startTime(plan.getStartTime())
+                .endTime(plan.getEndTime())
+                .entryDeadlineAt(entryDeadlineAt)
+                .signInOpenAt(signInOpenAt)
+                .signInDeadlineAt(signInDeadlineAt)
+                .signedInAt(candidate.getSignedInAt())
+                .answerDeadlineAt(answerDeadlineAt)
+                .durationMinutes(plan.getDurationMinutes())
+                .signInRequired(defaultFlag(plan.getSignInRequired()))
+                .signedInFlag(defaultFlag(candidate.getSignedInFlag()))
+                .candidateStatus(candidate.getStatus())
+                .attemptCount(candidate.getAttemptCount())
+                .answerSheetStatus(sheet == null ? "NOT_STARTED" : sheet.getStatus())
+                .build();
+    }
+
     @Override
     public CandidateExamWorkspaceVO saveAnswers(Long examPlanId, CandidateAnswerSheetSaveRequest request, boolean submit, String username) {
         SysUser user = requireUser(username);
         ExamPlan plan = requirePlan(examPlanId);
         ExamCandidate candidate = requireCandidate(plan.getId(), user.getId());
+        ensureCandidateSignedIn(plan, candidate);
         AnswerSheet sheet = getOrCreateSheet(plan, user, true);
         ensurePlanOpen(plan, sheet);
         ensureAttemptAllowed(plan, candidate, sheet);
@@ -464,6 +547,37 @@ public class CandidateExamServiceImpl implements CandidateExamService {
         }
     }
 
+    private void ensureSignInAllowed(ExamPlan plan, ExamCandidate candidate) {
+        if (defaultFlag(plan.getSignInRequired()) != 1) {
+            throw new BusinessException(4005, "当前考试未启用签到规则");
+        }
+        if (defaultFlag(candidate.getSignedInFlag()) == 1) {
+            throw new BusinessException(4005, "你已完成签到，无需重复操作");
+        }
+        if (plan.getPublishStatus() == null || plan.getPublishStatus() != 1) {
+            throw new BusinessException(4005, "当前考试尚未发布，暂不能签到");
+        }
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime signInOpenAt = computeSignInOpenAt(plan);
+        LocalDateTime signInDeadlineAt = computeSignInDeadlineAt(plan);
+        if (now.isBefore(signInOpenAt)) {
+            throw new BusinessException(4005, "当前尚未到签到开放时间");
+        }
+        if (now.isAfter(signInDeadlineAt)) {
+            throw new BusinessException(4005, "当前签到时间窗口已结束");
+        }
+    }
+
+    private void ensureCandidateSignedIn(ExamPlan plan, ExamCandidate candidate) {
+        if (defaultFlag(plan.getSignInRequired()) != 1) {
+            return;
+        }
+        if (defaultFlag(candidate.getSignedInFlag()) == 1) {
+            return;
+        }
+        throw new BusinessException(4005, "当前考试要求先签到，请先完成签到后再进入考试");
+    }
+
     private void ensureAttemptAllowed(ExamPlan plan, ExamCandidate candidate, AnswerSheet sheet) {
         boolean finished = isFinished(sheet);
         if (finished && candidate.getAttemptCount() != null && plan.getAttemptLimit() != null && candidate.getAttemptCount() >= plan.getAttemptLimit()) {
@@ -495,6 +609,15 @@ public class CandidateExamServiceImpl implements CandidateExamService {
             return lateDeadline.isBefore(plan.getEndTime()) ? lateDeadline : plan.getEndTime();
         }
         return plan.getEndTime();
+    }
+
+    private LocalDateTime computeSignInOpenAt(ExamPlan plan) {
+        int minutes = plan.getSignInStartMinutes() == null ? 60 : Math.max(plan.getSignInStartMinutes(), 0);
+        return plan.getStartTime().minusMinutes(minutes);
+    }
+
+    private LocalDateTime computeSignInDeadlineAt(ExamPlan plan) {
+        return computeEntryDeadline(plan);
     }
 
     private LocalDateTime computeAnswerDeadline(ExamPlan plan, AnswerSheet sheet) {
@@ -621,6 +744,10 @@ public class CandidateExamServiceImpl implements CandidateExamService {
 
     private Integer flag(boolean enabled) {
         return enabled ? 1 : 0;
+    }
+
+    private Integer defaultFlag(Integer value) {
+        return value == null ? 0 : value;
     }
 
     private String resolveClientIp(String rawIp) {

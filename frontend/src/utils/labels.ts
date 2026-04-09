@@ -25,6 +25,13 @@ const paperModeMap: Record<string, string> = {
   RANDOM: '随机组卷'
 }
 
+const examModeMap: Record<string, string> = {
+  NORMAL: '正常考试',
+  MAKEUP: '补考',
+  DEFERRED: '缓考',
+  RETAKE: '重考'
+}
+
 const answerSheetStatusMap: Record<string, string> = {
   NOT_STARTED: '未开始',
   IN_PROGRESS: '作答中',
@@ -39,10 +46,31 @@ const answerSheetStatusMap: Record<string, string> = {
 
 const messageTypeMap: Record<string, string> = {
   EXAM_PUBLISH: '考试发布提醒',
+  EXAM_REMINDER: '开考前提醒',
   SCORE_PUBLISH: '成绩发布提醒',
   SCORE_APPEAL: '成绩申诉提醒',
   SCORE_APPEAL_RESULT: '成绩申诉处理结果',
   SECURITY_ALERT: '登录安全告警'
+}
+
+const notificationBusinessTypeMap: Record<string, string> = {
+  EXAM_PUBLISH: '考试发布',
+  EXAM_REMINDER: '开考前提醒',
+  SCORE_PUBLISH: '成绩发布',
+  SCORE_APPEAL: '成绩申诉',
+  SCORE_APPEAL_RESULT: '申诉结果',
+  SECURITY_ALERT: '安全告警'
+}
+
+const notificationChannelTypeMap: Record<string, string> = {
+  IN_APP: '站内消息',
+  MOCK_SMS: 'Mock 短信'
+}
+
+const notificationDeliveryStatusMap: Record<string, string> = {
+  DELIVERED: '已投递',
+  SKIPPED: '已跳过',
+  FAILED: '失败'
 }
 
 const gradingReviewStatusMap: Record<string, string> = {
@@ -96,12 +124,28 @@ export function labelPaperMode(value?: string) {
   return value ? (paperModeMap[value] || value) : ''
 }
 
+export function labelExamMode(value?: string) {
+  return value ? (examModeMap[value] || value) : ''
+}
+
 export function labelAnswerSheetStatus(value?: string) {
   return value ? (answerSheetStatusMap[value] || value) : ''
 }
 
 export function labelMessageType(value?: string) {
   return value ? (messageTypeMap[value] || value) : ''
+}
+
+export function labelNotificationBusinessType(value?: string) {
+  return value ? (notificationBusinessTypeMap[value] || value) : ''
+}
+
+export function labelNotificationChannelType(value?: string) {
+  return value ? (notificationChannelTypeMap[value] || value) : ''
+}
+
+export function labelNotificationDeliveryStatus(value?: string) {
+  return value ? (notificationDeliveryStatusMap[value] || value) : ''
 }
 
 export function labelGradingReviewStatus(value?: string) {

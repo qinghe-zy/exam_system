@@ -1,72 +1,55 @@
 # 交接说明
 
-## 1. 当前真实状态
-- 当前仓库已经完成“核查 -> 功能补全 -> 构建/数据库/接口/脚本/压测验证 -> 文档回写”的连续闭环。
-- 当前远端 `origin` 指向：`https://github.com/qinghe-zy/exam_system.git`
-- 当前分支目标仍为 `main`
+## 1. 仓库状态
 
-## 2. 已完成内容
-### 2.1 本轮新增补全
-1. 登录态会话治理基础版
-- 当前同一账号重新登录后，旧 token 会立即失效。
-- 当前主动登出后，当前 token 会立即失效。
-- 会话治理通过 `sys_user.session_version + JWT sessionVersion` 实现。
+- 当前分支目标：`main`
+- 当前远端：`https://github.com/qinghe-zy/exam_system.git`
+- 当前仓库已完成代码、截图、图示和正式文档同步
 
-2. 考试计划防误操作
-- 当前考试计划在以下场景下不允许更新或删除：
-  - 考试已开始
-  - 已存在答卷
-- 目的是避免考试进行中被误删误改。
+## 2. 建议接手顺序
 
-3. 试卷与高风险配置只读保护
-- 当前试卷在以下场景下不允许更新或删除：
-  - 已被进行中的考试引用
-  - 已产生答卷
-- 当前 `exam` / `anti_cheat` 配置组在存在已开始考试或已有答卷时不允许更新或删除。
+1. 阅读 `README.md`
+2. 阅读 `docs/ops/产品级用户使用说明书.md`
+3. 按说明启动前后端
+4. 执行 `scripts/verify-mysql-init.ps1`
+5. 执行 `npx.cmd playwright test`
 
-4. 自动化验证口径调整
-- 由于当前已启用单账号单会话治理，Playwright 全量回归调整为串行执行，避免验证过程与产品规则冲突。
+## 3. 当前重点资源
 
-### 2.2 当前系统能力定位
-- 已形成在线考试系统核心主链路。
-- 学生端考后闭环、监考基础闭环、安全与运维基础闭环均已继续增强。
-- 仍未达到“高规格完整考试平台”的最终目标。
+- 页面截图：`docs/assets/screenshots/`
+- 流程与架构图：`docs/assets/diagrams/`
+- 模块说明：`docs/modules/exam-core.md`
+- 运维 runbook：`docs/runbooks/`
 
-## 3. 数据库与配置
-- 已更新：
-  - `backend/src/main/resources/schema.sql`
-  - `sql/schema-baseline.sql`
-  - `sql/mysql/init.sql`
-- 当前新增/调整的结构重点：
-  - `sys_user.session_version`
+## 4. 当前运行口径
 
-## 4. 验证结果
-- 后端 `mvn -q test`：通过
-- 前端 `npm.cmd run build`：通过
-- Playwright 全量回归：15 / 15 通过
-- `scripts/verify-mysql-init.ps1`：通过
-- 会话治理与考试计划保护：通过
-- 试卷与配置只读保护：通过
+- 前端默认地址：`http://127.0.0.1:5173`
+- 后端默认地址：`http://127.0.0.1:8083`
+- Swagger：`http://127.0.0.1:8083/swagger-ui.html`
 
-## 5. 当前剩余问题
-1. 更强考试态控制仍未覆盖更多后台模块，例如组织、用户、通知等考试期只读保护和更细多窗口识别。
-2. 设备检测仍是基础版，尚未覆盖摄像头、麦克风、活体或更强设备指纹校验。
-3. 质量报告仍缺班级/年级/部门对比与趋势分析。
-4. 复核、重判仍未扩展到多老师协同、仲裁和流水阅卷。
-5. 当前申诉通知仍未对接外部通道。
+## 5. 关键验证命令
 
-## 6. 下一步建议
-1. 优先补更强考试态控制，如更多后台模块的考试期只读保护和更细多窗口识别。
-2. 优先补通知模板与外部通知通道。
-3. 优先补班级/年级/部门对比与趋势分析。
+```powershell
+cd backend
+mvn -q test
+mvn -q -DskipTests package
 
-## 7. 特别说明
-- 如需继续开发，请先参考：
-  - `docs/product/系统功能核查矩阵.md`
-  - `docs/product/系统能力差距分析.md`
-  - `EVALS.md`
-- 当前续跑原则：
-  - 功能点优先补齐
-  - 复杂深入功能暂不深究
-  - 深化能力后续单独整理成专项文档
-- 当前若再次启动后端，请注意先检查 `8083` 端口是否已被现有实例占用。
+cd ..\\frontend
+npm.cmd run build
+npx.cmd playwright test
+
+cd ..
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-mysql-init.ps1
+```
+
+## 6. 当前已知限制
+
+- 真实短信 / 邮件 / 企业微信 / 钉钉未接入
+- 高级防作弊能力未接入
+- 趋势分析和组织对比仍可继续深化
+
+## 7. 接手注意事项
+
+- 若运行 `mvn clean` 或 `mvn package` 失败，请先确认后端 `java` 进程未占用 `backend/target/*.jar`
+- 若需要 MySQL 口径，请使用环境变量启用 `mysql` profile
+- 若继续生成图示，请执行 `node scripts/generate-drawio-diagrams.mjs` 后再调用 draw.io CLI 导出

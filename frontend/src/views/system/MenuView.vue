@@ -23,7 +23,7 @@ onMounted(loadMenus)
   <AppShellSection
     eyebrow="系统管理"
     title="菜单与路由权限"
-    description="菜单页用于展示当前系统的菜单节点、路由路径、权限编码与菜单类型，便于核对角色可见范围与系统导航结构。"
+    description="查看菜单节点、路由路径与权限编码，核对系统导航结构和角色可见范围。"
   >
     <section class="panel-card table-card">
       <el-table

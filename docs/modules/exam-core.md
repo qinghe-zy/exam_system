@@ -18,9 +18,10 @@
 
 ### 3. 考试发布
 - 页面：`ExamPlanView`
-- 接口：`/api/exam/plans*`
-- 表：`biz_exam_plan`、`biz_exam_candidate`
-- 当前能力：考试发布、考生分配、考试密码、迟到限制、提前交卷限制、参考次数限制基础版
+- 接口：`/api/exam/plans*`、`/api/notifications/exam-reminders/dispatch`
+- 表：`biz_exam_plan`、`biz_exam_candidate`、`sys_notification_template`、`biz_notification_delivery_log`
+- 当前通知模板已补 `organization_id`，支持组织模板覆盖全局模板。
+- 当前能力：考试发布、考生分配、考试密码、迟到限制、提前交卷限制、参考次数限制基础版、开考前提醒扫描基础版、补考 / 缓考 / 重考基础版、原考试关联基础版、批次名称基础版、签到规则基础版、准考证 / 通知单基础版、考场 / 座位基础版、签到名单导出基础版
 
 ### 4. 考生端
 - 页面：`CandidateExamView`、`CandidateScoreView`、`CandidateReviewCenterView`
@@ -28,6 +29,10 @@
 - 表：`biz_answer_sheet`、`biz_answer_item`、`biz_score_record`
 - 当前能力：
   - 待考列表、进入考试、进入窗口说明、实际作答倒计时
+  - 待考列表可展示考试类型、批次和原考试信息
+  - 待考列表可展示签到状态，并支持学生签到
+  - 提供准考证 / 通知单基础版查看与打印
+  - 可展示考场与座位信息
   - 严格考试态下的设备检测基础版（浏览器 / 窗口尺寸 / 移动端 / 全屏能力）
   - 固定答题卡、自动保存、手动保存、提交确认
   - 待复查标记与离页确认
@@ -65,6 +70,18 @@
   - 同一客户端 IP 触发频率限制后阻断登录
   - 同一验证码目标具备冷却时间和窗口次数限制
   - 触发安全事件时向管理员和机构管理员发送 `SECURITY_ALERT`
+  - 考试期间继续保护高风险更新 / 删除操作，但不阻断教师准备新的题目和新的试卷
+
+### 9. 通知协同基础版
+- 页面：`NoticeView`、`MessageCenterView`、`NotificationTemplateView`、`NotificationDeliveryLogView`
+- 接口：`/api/notices*`、`/api/messages/*`、`/api/notifications/*`
+- 表：`biz_in_app_message`、`sys_notification_template`、`biz_notification_delivery_log`
+- 当前能力：
+  - 公告管理、消息中心、通知模板管理
+  - 考试发布、开考前提醒、成绩发布、申诉结果、安全告警统一通知分发
+  - `IN_APP` 与 `MOCK_SMS` 两类投递通道
+  - 投递日志查看与手动触发开考前提醒扫描
+  - 公告与通知模板组织隔离基础版
 
 ### 9. AI 题库辅助
 - 页面：`QuestionBankView`
@@ -82,4 +99,4 @@
 ## 四、当前限制
 - 多设备登录限制与登录风险记录已实现基础版，但尚未覆盖完整登录态会话治理
 - 更强设备检测、摄像头/麦克风等能力仍未实现
-- 高级分析、更复杂规则引擎和外部告警通道仍未实现
+- 高级分析、更复杂规则引擎和真实外部通知网关仍未实现

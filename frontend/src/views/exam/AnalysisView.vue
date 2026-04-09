@@ -94,7 +94,7 @@ async function exportQualityReport() {
   <AppShellSection
     eyebrow="成绩分析"
     title="查看成绩分布、参与情况与及格率"
-    description="分析页将原始成绩记录转化为教学与运营可读的统计结果，当前基础版还提供正式质量报告视图与 Markdown 导出。"
+    description="将成绩记录转化为教学与运营可读的统计结果，并支持查看质量报告与导出分析材料。"
   >
     <template #actions>
       <el-button plain @click="openQualityReport">查看质量报告</el-button>

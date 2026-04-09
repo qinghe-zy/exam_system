@@ -77,9 +77,9 @@ function isGroup(menu: SystemMenu) {
   <div class="layout-shell">
     <aside class="sidebar panel-card">
       <div class="brand-block">
-        <span class="eyebrow">当前系统</span>
+        <span class="eyebrow">系统导航</span>
         <h2>在线考试系统</h2>
-        <p>考试业务演示与验收平台</p>
+        <p>面向考试组织、阅卷治理与运营协同的统一工作台</p>
       </div>
 
       <el-menu :default-active="route.path" class="nav-menu" @select="handleSelect">
@@ -105,8 +105,8 @@ function isGroup(menu: SystemMenu) {
     <main class="main-panel">
       <header class="topbar panel-card">
         <div>
-          <span class="eyebrow">当前账号</span>
-          <p class="welcome-text">当前登录：{{ authStore.currentUser?.nickname || '未登录用户' }}</p>
+          <span class="eyebrow">登录身份</span>
+          <p class="welcome-text">{{ authStore.currentUser?.nickname || '未登录用户' }}</p>
         </div>
         <el-dropdown @command="handleCommand">
           <span class="account-pill">

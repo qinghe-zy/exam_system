@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### 交付收束
+- 修复登录页嵌套表单导致的“进入系统”失效问题，并补齐标签切换的无障碍 `tab` 语义
+- 修复独立题目编辑页的保存链路，恢复“新建题目 -> 返回题库列表”的真实闭环
+- 调整考试期只读保护边界：继续保护进行中考试关联内容的高风险更新 / 删除，但不再阻断新题目与新试卷准备动作
+- 同步修正 Playwright 回归用例，使其与登录页、独立题目编辑页、学生待考按钮和当前登录 token 键保持一致
+- 生成产品级交付资源：关键页面截图、draw.io 源图与导出图、重构版 README、产品级用户使用说明书
+
 ### 新增
 - 新增学生考试中“待复查”持久化标记
 - 新增学生答卷回看中心页 `CandidateReviewCenterView`
@@ -32,6 +39,24 @@
 - 新增考试计划保护集成测试：`ExamPlanProtectionIntegrationTests.java`
 - 新增试卷保护集成测试：`ExamPaperProtectionIntegrationTests.java`
 - 新增配置中心保护集成测试：`ConfigCenterProtectionIntegrationTests.java`
+- 新增通知模板表 `sys_notification_template`
+- 新增通知投递日志表 `biz_notification_delivery_log`
+- 新增统一通知服务 `NotificationService`
+- 新增开考前提醒调度器 `NotificationReminderScheduler`
+- 新增通知模板页面 `NotificationTemplateView`
+- 新增通知投递日志页面 `NotificationDeliveryLogView`
+- 新增通知链路集成测试：`NotificationFlowIntegrationTests.java`
+- 新增通知浏览器回归：`notification-flow.spec.ts`
+- 新增考试计划字段 `exam_mode`、`batch_label`、`source_exam_plan_id`、`source_exam_name`
+- 新增考试计划字段 `sign_in_required`、`sign_in_start_minutes`
+- 新增考生签到字段 `signed_in_flag`、`signed_in_at`
+- 新增考试计划字段 `exam_room`
+- 新增考生座位字段 `seat_no`
+- 新增考试类型集成测试：`ExamPlanModeIntegrationTests.java`
+- 新增考试类型浏览器回归：`exam-plan-mode.spec.ts`
+- 新增内容隔离集成测试：`ContentIsolationIntegrationTests.java`
+- 新增签到 / 准考证集成测试：`ExamCheckInAdmissionIntegrationTests.java`
+- 新增考场 / 座位导出集成测试：`ExamRoomSeatExportIntegrationTests.java`
 
 ### 变更
 - 学生考试工作区保存 / 提交接口同步持久化待复查状态
@@ -62,12 +87,33 @@
 - 考试进行中或已有答卷时，考试计划不再允许被更新或删除
 - 考试进行中或已有答卷时，试卷不再允许被更新或删除
 - 考试进行中或已有答卷时，高风险配置组不再允许被更新或删除
+- 考试发布、成绩发布、成绩申诉结果与登录安全告警当前统一按模板渲染并写入投递日志
+- 当前新增 `Mock 短信` 通道，能够在不接真实网关的前提下形成外发投递留痕
+- 当前新增手动触发开考前提醒扫描接口：`POST /api/notifications/exam-reminders/dispatch`
+- MySQL 初始化回归结果中的菜单数量由 23 增加到 25，配置数量由 28 增加到 31
+- 教师端考试发布页当前支持配置正常考试 / 补考 / 缓考 / 重考、原考试关联和批次名称
+- 学生端待考列表当前可识别考试类型、批次和原考试信息
+- 新增统一日期时间格式化工具 `frontend/src/utils/datetime.ts`
+- 统一收口考试发布、学生待考、通知模板、通知投递日志、消息中心、公告、审计日志、登录风险与监考事件等页面的时间展示格式
+- 收紧登录页、通知页、考试页、消息中心、审计日志、登录风险页和监考事件页中的原型式 / 联调用语
+- 公告与通知模板新增 `organization_id` 组织范围字段，补齐服务端组织隔离边界
+- 通知模板分发改为“同组织模板优先、全局模板兜底”，避免组织覆盖模板与默认模板重复投递
+- 非管理员当前无法越权修改其他组织或全局公告 / 模板
+- `scripts/verify-mysql-init.ps1` 新增公告与通知模板组织范围字段校验
+- 教师端考试发布页新增签到规则配置，学生端待考列表新增签到状态、签到按钮与准考证 / 通知单基础版
+- 学生进入考试前当前会先校验签到要求，签到后才能进入正式考试
+- `scripts/verify-mysql-init.ps1` 新增签到规则与考生签到字段校验
+- 教师端考试发布页新增考场配置，学生待考列表与准考证 / 通知单新增考场、座位展示
+- 新增签到名单导出接口：`GET /api/exam/plans/{id}/sign-in-sheet/export`
+- `scripts/verify-mysql-init.ps1` 新增考场与座位字段校验
+- 教师端考试发布列表新增签到人数与签到率展示
 
 ### 验证
 - 后端 `mvn -q test`
 - 后端 `mvn -q -DskipTests package`
 - 前端 `npm.cmd run build`
 - 数据库回归脚本 `scripts/verify-mysql-init.ps1`
+- 本轮再次确认本地 MySQL `exam_system` 可直连，且通知模板、通知投递日志、考试计划扩展字段均可查询
 - 数据库备份脚本 `scripts/backup-mysql.ps1`
 - 数据库恢复脚本 `scripts/restore-mysql.ps1`
 - 登录接口基础压测脚本 `scripts/load-test-login.ps1`
@@ -81,4 +127,9 @@
 - Playwright 定向回归：`grading-governance.spec.ts`
 - Playwright 定向回归：`quality-report.spec.ts`
 - Playwright 定向回归：`device-check.spec.ts`
-- Playwright 全量回归（15 / 15）
+- Playwright 定向回归：`notification-flow.spec.ts`
+- Playwright 定向回归：`exam-plan-mode.spec.ts`、`notification-flow.spec.ts`、`student-exam.spec.ts`、`student-score-flow.spec.ts`
+- Playwright 定向回归：`notification-flow.spec.ts`、`exam-plan-mode.spec.ts`（2 / 2）
+- Playwright 全量回归（17 / 17）
+- 后端定向测试：`NotificationFlowIntegrationTests`、`ContentIsolationIntegrationTests`、`ExamPeriodReadonlyProtectionIntegrationTests`、`ConfigCenterProtectionIntegrationTests`
+- 本地 MySQL `exam_system` 实库校验：`biz_notice.organization_id`、`sys_notification_template.organization_id`

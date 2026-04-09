@@ -6,6 +6,9 @@ import com.projectexample.examsystem.service.ExamPlanService;
 import com.projectexample.examsystem.vo.ExamPlanVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,5 +44,14 @@ public class ExamPlanController {
     public ApiResponse<Void> delete(@PathVariable Long id) {
         examPlanService.deletePlan(id);
         return ApiResponse.success("exam plan deleted", null);
+    }
+
+    @GetMapping(value = "/{id}/sign-in-sheet/export", produces = "text/csv;charset=UTF-8")
+    @PreAuthorize("hasAnyRole('ADMIN','ORG_ADMIN','TEACHER')")
+    public ResponseEntity<String> exportSignInSheet(@PathVariable Long id) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=exam-sign-in-sheet.csv")
+                .contentType(new MediaType("text", "csv"))
+                .body(examPlanService.exportSignInSheetCsv(id));
     }
 }

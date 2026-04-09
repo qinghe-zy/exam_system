@@ -12,6 +12,7 @@ import com.projectexample.examsystem.mapper.AnswerSheetMapper;
 import com.projectexample.examsystem.mapper.ConfigItemMapper;
 import com.projectexample.examsystem.mapper.DictionaryItemMapper;
 import com.projectexample.examsystem.mapper.ExamPlanMapper;
+import com.projectexample.examsystem.security.ExamPeriodProtectionService;
 import com.projectexample.examsystem.service.ConfigCenterService;
 import com.projectexample.examsystem.vo.ConfigItemVO;
 import com.projectexample.examsystem.vo.DictionaryItemVO;
@@ -30,6 +31,7 @@ public class ConfigCenterServiceImpl implements ConfigCenterService {
     private final DictionaryItemMapper dictionaryItemMapper;
     private final ExamPlanMapper examPlanMapper;
     private final AnswerSheetMapper answerSheetMapper;
+    private final ExamPeriodProtectionService examPeriodProtectionService;
     private static final Set<String> PROTECTED_CONFIG_GROUPS = Set.of("exam", "anti_cheat");
 
     @Override
@@ -40,6 +42,7 @@ public class ConfigCenterServiceImpl implements ConfigCenterService {
 
     @Override
     public ConfigItemVO createConfig(ConfigItemSaveRequest request) {
+        examPeriodProtectionService.assertMutable("新增配置项");
         assertConfigMutable(request.getConfigGroup(), "新增");
         ConfigItem item = new ConfigItem();
         apply(item, request);
@@ -49,6 +52,7 @@ public class ConfigCenterServiceImpl implements ConfigCenterService {
 
     @Override
     public ConfigItemVO updateConfig(Long id, ConfigItemSaveRequest request) {
+        examPeriodProtectionService.assertMutable("更新配置项");
         ConfigItem item = requireConfig(id);
         assertConfigMutable(item.getConfigGroup(), "更新");
         apply(item, request);
@@ -58,6 +62,7 @@ public class ConfigCenterServiceImpl implements ConfigCenterService {
 
     @Override
     public void deleteConfig(Long id) {
+        examPeriodProtectionService.assertMutable("删除配置项");
         ConfigItem item = requireConfig(id);
         assertConfigMutable(item.getConfigGroup(), "删除");
         configItemMapper.deleteById(id);
@@ -71,6 +76,7 @@ public class ConfigCenterServiceImpl implements ConfigCenterService {
 
     @Override
     public DictionaryItemVO createDictionary(DictionaryItemSaveRequest request) {
+        examPeriodProtectionService.assertMutable("新增字典项");
         DictionaryItem item = new DictionaryItem();
         apply(item, request);
         dictionaryItemMapper.insert(item);
@@ -79,6 +85,7 @@ public class ConfigCenterServiceImpl implements ConfigCenterService {
 
     @Override
     public DictionaryItemVO updateDictionary(Long id, DictionaryItemSaveRequest request) {
+        examPeriodProtectionService.assertMutable("更新字典项");
         DictionaryItem item = requireDictionary(id);
         apply(item, request);
         dictionaryItemMapper.updateById(item);
@@ -87,6 +94,7 @@ public class ConfigCenterServiceImpl implements ConfigCenterService {
 
     @Override
     public void deleteDictionary(Long id) {
+        examPeriodProtectionService.assertMutable("删除字典项");
         requireDictionary(id);
         dictionaryItemMapper.deleteById(id);
     }

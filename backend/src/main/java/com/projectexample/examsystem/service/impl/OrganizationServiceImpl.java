@@ -6,6 +6,7 @@ import com.projectexample.examsystem.entity.Organization;
 import com.projectexample.examsystem.exception.BusinessException;
 import com.projectexample.examsystem.mapper.OrganizationMapper;
 import com.projectexample.examsystem.security.AccessScopeService;
+import com.projectexample.examsystem.security.ExamPeriodProtectionService;
 import com.projectexample.examsystem.service.OrganizationService;
 import com.projectexample.examsystem.vo.OrganizationVO;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     private final OrganizationMapper organizationMapper;
     private final AccessScopeService accessScopeService;
+    private final ExamPeriodProtectionService examPeriodProtectionService;
 
     @Override
     public List<OrganizationVO> listOrganizations() {
@@ -36,6 +38,7 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     @Override
     public OrganizationVO createOrganization(OrganizationSaveRequest request) {
+        examPeriodProtectionService.assertMutable("新增组织");
         accessScopeService.assertOrganizationAccessible(request.getParentId());
         Organization entity = new Organization();
         apply(entity, request);
@@ -45,6 +48,7 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     @Override
     public OrganizationVO updateOrganization(Long id, OrganizationSaveRequest request) {
+        examPeriodProtectionService.assertMutable("更新组织");
         Organization entity = requireEntity(id);
         accessScopeService.assertOrganizationAccessible(entity.getId());
         accessScopeService.assertOrganizationAccessible(request.getParentId());
@@ -55,6 +59,7 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     @Override
     public void deleteOrganization(Long id) {
+        examPeriodProtectionService.assertMutable("删除组织");
         requireEntity(id);
         accessScopeService.assertOrganizationAccessible(id);
         long children = organizationMapper.selectCount(Wrappers.lambdaQuery(Organization.class).eq(Organization::getParentId, id));

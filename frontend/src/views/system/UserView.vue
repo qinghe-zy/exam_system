@@ -158,7 +158,7 @@ onMounted(loadData)
   <AppShellSection
     eyebrow="系统管理"
     title="用户、角色与考生导入"
-    description="当前页面除了展示用户清单，还支持基础用户维护和考生批量导入，用于补齐组织归属、角色边界和考试对象准备链路。"
+    description="统一维护教师、学生与管理账号，并完成组织归属、角色分配和考生导入等准备工作。"
   >
     <template #actions>
       <div class="hero-actions">

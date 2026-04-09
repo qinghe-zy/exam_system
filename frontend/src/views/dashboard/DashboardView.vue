@@ -22,7 +22,7 @@ onMounted(() => {
   <AppShellSection
     eyebrow="首页看板"
     title="在线考试系统运行概览"
-    description="首页看板集中展示题库规模、已发布考试、待阅卷任务和后续工作建议，便于管理员、教师和验收人员快速掌握系统状态。"
+    description="集中查看题库规模、已发布考试、待阅卷任务和近期待办，让管理端先看到最需要处理的事项。"
   >
     <div class="metrics-grid">
       <MetricCard
@@ -36,12 +36,12 @@ onMounted(() => {
 
     <section class="panel-card detail-grid">
       <article>
-        <span class="eyebrow">当前摘要</span>
+        <span class="eyebrow">今日概览</span>
         <h3>{{ overview.headline }}</h3>
         <p class="muted">{{ overview.summary }}</p>
       </article>
       <article>
-        <span class="eyebrow">后续动作</span>
+        <span class="eyebrow">建议动作</span>
         <ul>
           <li v-for="item in overview.nextActions" :key="item">{{ item }}</li>
         </ul>

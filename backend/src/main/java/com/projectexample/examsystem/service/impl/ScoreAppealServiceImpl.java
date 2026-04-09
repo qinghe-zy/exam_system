@@ -7,7 +7,6 @@ import com.projectexample.examsystem.entity.AnswerSheet;
 import com.projectexample.examsystem.entity.AuditLog;
 import com.projectexample.examsystem.entity.ExamPlan;
 import com.projectexample.examsystem.entity.ExamRecord;
-import com.projectexample.examsystem.entity.InAppMessage;
 import com.projectexample.examsystem.entity.ScoreAppeal;
 import com.projectexample.examsystem.entity.SysUser;
 import com.projectexample.examsystem.exception.BusinessException;
@@ -15,10 +14,10 @@ import com.projectexample.examsystem.mapper.AnswerSheetMapper;
 import com.projectexample.examsystem.mapper.AuditLogMapper;
 import com.projectexample.examsystem.mapper.ExamPlanMapper;
 import com.projectexample.examsystem.mapper.ExamRecordMapper;
-import com.projectexample.examsystem.mapper.InAppMessageMapper;
 import com.projectexample.examsystem.mapper.ScoreAppealMapper;
 import com.projectexample.examsystem.mapper.SysUserMapper;
 import com.projectexample.examsystem.security.AccessScopeService;
+import com.projectexample.examsystem.service.NotificationService;
 import com.projectexample.examsystem.service.ScoreAppealService;
 import com.projectexample.examsystem.vo.ScoreAppealVO;
 import lombok.RequiredArgsConstructor;
@@ -26,9 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -39,9 +36,9 @@ public class ScoreAppealServiceImpl implements ScoreAppealService {
     private final ExamPlanMapper examPlanMapper;
     private final AnswerSheetMapper answerSheetMapper;
     private final SysUserMapper sysUserMapper;
-    private final InAppMessageMapper inAppMessageMapper;
     private final AuditLogMapper auditLogMapper;
     private final AccessScopeService accessScopeService;
+    private final NotificationService notificationService;
 
     @Override
     public List<ScoreAppealVO> listAppeals(Long scoreRecordId) {
@@ -95,7 +92,11 @@ public class ScoreAppealServiceImpl implements ScoreAppealService {
         record.setAppealStatus("SUBMITTED");
         examRecordMapper.updateById(record);
 
-        publishAppealMessageToManagers(record, appeal);
+        List<SysUser> managers = sysUserMapper.selectList(Wrappers.lambdaQuery(SysUser.class)
+                .in(SysUser::getRoleCode, List.of("ADMIN", "ORG_ADMIN", "GRADER"))
+                .eq(SysUser::getStatus, 1)
+                .orderByAsc(SysUser::getId));
+        notificationService.sendScoreAppealSubmittedNotification(record, appeal, managers);
         writeAuditLog(user, "SCORE_APPEAL", "SUBMIT_APPEAL", "SCORE_RECORD", record.getId(),
                 "考生提交成绩申诉：" + record.getExamName());
         return toVO(scoreAppealMapper.selectById(appeal.getId()));
@@ -126,7 +127,11 @@ public class ScoreAppealServiceImpl implements ScoreAppealService {
         if ("REJECT".equals(action)) {
             appeal.setStatus("REJECTED");
             record.setAppealStatus("REJECTED");
-            publishAppealResultMessage(record, "成绩申诉处理结果", "你的成绩申诉未通过，处理意见：" + defaultText(appeal.getProcessComment()));
+            notificationService.sendScoreAppealResultNotification(
+                    record,
+                    "成绩申诉处理结果",
+                    "你的成绩申诉未通过，处理意见：" + defaultText(appeal.getProcessComment())
+            );
         } else {
             appeal.setStatus("APPROVED_REJUDGE");
             record.setAppealStatus("APPROVED_REJUDGE");
@@ -135,7 +140,11 @@ public class ScoreAppealServiceImpl implements ScoreAppealService {
             record.setStatus("REJUDGING");
             sheet.setStatus("REJUDGING");
             answerSheetMapper.updateById(sheet);
-            publishAppealResultMessage(record, "成绩申诉处理结果", "你的成绩申诉已通过，系统已进入重判流程。");
+            notificationService.sendScoreAppealResultNotification(
+                    record,
+                    "成绩申诉处理结果",
+                    "你的成绩申诉已通过，系统已进入重判流程。"
+            );
         }
 
         scoreAppealMapper.updateById(appeal);
@@ -152,40 +161,6 @@ public class ScoreAppealServiceImpl implements ScoreAppealService {
         if (activeCount != null && activeCount > 0) {
             throw new BusinessException(4005, "当前成绩已有处理中申诉，请等待处理完成后再提交");
         }
-    }
-
-    private void publishAppealMessageToManagers(ExamRecord record, ScoreAppeal appeal) {
-        List<SysUser> managers = sysUserMapper.selectList(Wrappers.lambdaQuery(SysUser.class)
-                .in(SysUser::getRoleCode, List.of("ADMIN", "ORG_ADMIN", "GRADER"))
-                .eq(SysUser::getStatus, 1)
-                .orderByAsc(SysUser::getId));
-        Set<Long> sent = new LinkedHashSet<>();
-        for (SysUser item : managers) {
-            if (item.getId() == null || !sent.add(item.getId())) {
-                continue;
-            }
-            InAppMessage message = new InAppMessage();
-            message.setRecipientUserId(item.getId());
-            message.setTitle("成绩申诉提醒");
-            message.setMessageType("SCORE_APPEAL");
-            message.setContent("考生 " + record.getCandidateName() + " 对《" + record.getExamName() + "》提交了成绩申诉，请及时处理。");
-            message.setRelatedType("SCORE_APPEAL");
-            message.setRelatedId(appeal.getId());
-            message.setReadFlag(0);
-            inAppMessageMapper.insert(message);
-        }
-    }
-
-    private void publishAppealResultMessage(ExamRecord record, String title, String content) {
-        InAppMessage message = new InAppMessage();
-        message.setRecipientUserId(record.getUserId());
-        message.setTitle(title);
-        message.setMessageType("SCORE_APPEAL_RESULT");
-        message.setContent(content);
-        message.setRelatedType("SCORE_RECORD");
-        message.setRelatedId(record.getId());
-        message.setReadFlag(0);
-        inAppMessageMapper.insert(message);
     }
 
     private ScoreAppeal requireAppeal(Long appealId) {

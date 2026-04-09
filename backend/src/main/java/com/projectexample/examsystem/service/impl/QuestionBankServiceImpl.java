@@ -11,6 +11,7 @@ import com.projectexample.examsystem.exception.BusinessException;
 import com.projectexample.examsystem.mapper.PaperQuestionMapper;
 import com.projectexample.examsystem.mapper.QuestionBankMapper;
 import com.projectexample.examsystem.security.AccessScopeService;
+import com.projectexample.examsystem.security.ExamPeriodProtectionService;
 import com.projectexample.examsystem.service.QuestionBankService;
 import com.projectexample.examsystem.vo.QuestionBankVO;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ public class QuestionBankServiceImpl implements QuestionBankService {
     private final QuestionBankMapper questionBankMapper;
     private final PaperQuestionMapper paperQuestionMapper;
     private final AccessScopeService accessScopeService;
+    private final ExamPeriodProtectionService examPeriodProtectionService;
 
     @Override
     public List<QuestionBankVO> listQuestions() {
@@ -61,6 +63,7 @@ public class QuestionBankServiceImpl implements QuestionBankService {
 
     @Override
     public QuestionBankVO updateQuestion(Long id, QuestionBankSaveRequest request) {
+        examPeriodProtectionService.assertMutable("更新题目");
         QuestionBank entity = requireEntity(id);
         apply(entity, request);
         questionBankMapper.updateById(entity);
@@ -69,6 +72,7 @@ public class QuestionBankServiceImpl implements QuestionBankService {
 
     @Override
     public void deleteQuestion(Long id) {
+        examPeriodProtectionService.assertMutable("删除题目");
         requireEntity(id);
         questionBankMapper.deleteById(id);
     }

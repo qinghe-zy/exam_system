@@ -23,7 +23,7 @@ onMounted(loadRoles)
   <AppShellSection
     eyebrow="系统管理"
     title="角色与职责边界"
-    description="角色页用于展示当前系统内置角色及其职责边界，帮助验收人员和管理员快速确认权限体系的基础划分。"
+    description="查看系统内置角色与职责边界，快速确认管理端、教师、阅卷老师、监考员和学生的权限分工。"
   >
     <section class="panel-card table-card">
       <el-table :data="roles" v-loading="loading">

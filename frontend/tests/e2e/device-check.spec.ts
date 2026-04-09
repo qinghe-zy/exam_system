@@ -51,8 +51,8 @@ test('严格考试态下，设备检测不通过会阻止进入考试工作区',
 
   await page.goto('/candidate/exams')
   const examRow = page.getByRole('row', { name: new RegExp(`设备检测验证-${suffix}`) })
-  await expect(examRow.getByRole('button')).toBeVisible()
-  await examRow.getByRole('button').click()
+  await expect(examRow.getByRole('button', { name: '进入考试' })).toBeVisible()
+  await examRow.getByRole('button', { name: '进入考试' }).click()
   await page.getByPlaceholder('请输入考试口令（如有）').fill('DEV2026')
   await page.getByRole('dialog').getByRole('button', { name: '进入考试' }).click()
 

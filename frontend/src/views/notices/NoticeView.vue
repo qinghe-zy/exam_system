@@ -13,14 +13,17 @@ import {
 } from '../../api/notice'
 import AppShellSection from '../../components/AppShellSection.vue'
 import { useAuthStore } from '../../stores/auth'
+import { formatDateTime } from '../../utils/datetime'
 
 const authStore = useAuthStore()
 
 const loading = ref(false)
 const dialogVisible = ref(false)
+const detailVisible = ref(false)
 const dialogMode = ref<'create' | 'edit'>('create')
 const currentId = ref<number | null>(null)
 const formRef = ref<FormInstance>()
+const detailRecord = ref<Notice | null>(null)
 
 const filters = reactive({
   pageNum: 1,
@@ -86,6 +89,11 @@ async function openEditDialog(id: number) {
   dialogVisible.value = true
 }
 
+async function openDetailDialog(id: number) {
+  detailRecord.value = await fetchNotice(id)
+  detailVisible.value = true
+}
+
 async function submitForm() {
   if (!formRef.value) return
   await formRef.value.validate(async (valid) => {
@@ -133,7 +141,7 @@ onMounted(loadPage)
   <AppShellSection
     eyebrow="公告管理"
     title="考试通知与成绩说明公告"
-    description="公告页用于维护考试发布通知、阅卷安排说明、成绩发布说明等站内公告，是通知与流程协同的基础能力之一。"
+    description="维护考试发布通知、阅卷安排说明、成绩发布说明等站内公告，为通知与流程协同提供统一入口。"
   >
     <section class="panel-card filter-card">
       <div class="filter-grid">
@@ -161,14 +169,16 @@ onMounted(loadPage)
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="updateTime" label="更新时间" min-width="180" />
+        <el-table-column label="更新时间" min-width="180">
+          <template #default="{ row }">{{ formatDateTime(row.updateTime) }}</template>
+        </el-table-column>
         <el-table-column label="操作" min-width="180" fixed="right">
           <template #default="{ row }">
+            <el-button link type="success" @click="openDetailDialog(row.id)">查看</el-button>
             <template v-if="canManageNotice">
               <el-button link type="primary" @click="openEditDialog(row.id)">编辑</el-button>
               <el-button link type="danger" @click="handleDelete(row.id)">删除</el-button>
             </template>
-            <span v-else class="muted">仅查看</span>
           </template>
         </el-table-column>
       </el-table>
@@ -214,6 +224,28 @@ onMounted(loadPage)
         <el-button type="primary" @click="submitForm">保存</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog
+      v-model="detailVisible"
+      title="公告详情"
+      width="min(760px, 92vw)"
+      destroy-on-close
+      @closed="detailRecord = null"
+    >
+      <div v-if="detailRecord" class="detail-shell">
+        <div class="detail-meta">
+          <el-tag :type="detailRecord.status === 1 ? 'success' : 'info'">{{ detailRecord.status === 1 ? '已发布' : '草稿' }}</el-tag>
+          <span>分类：{{ detailRecord.category }}</span>
+          <span>发布时间：{{ formatDateTime(detailRecord.publishTime) }}</span>
+          <span>更新时间：{{ formatDateTime(detailRecord.updateTime) }}</span>
+        </div>
+        <h3 class="detail-title">{{ detailRecord.title }}</h3>
+        <div class="detail-content">{{ detailRecord.content }}</div>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="detailVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </AppShellSection>
 </template>
 
@@ -239,6 +271,32 @@ onMounted(loadPage)
   display: flex;
   justify-content: flex-end;
   margin-top: 1rem;
+}
+
+.detail-shell {
+  display: grid;
+  gap: 1rem;
+}
+
+.detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  color: var(--muted);
+}
+
+.detail-title {
+  margin: 0;
+  font-family: 'Literata', Georgia, serif;
+}
+
+.detail-content {
+  line-height: 1.8;
+  white-space: pre-wrap;
+  border: 1px solid color-mix(in oklch, var(--line) 78%, white);
+  border-radius: 16px;
+  background: color-mix(in oklch, white 94%, var(--panel-soft));
+  padding: 1rem;
 }
 
 @media (max-width: 980px) {

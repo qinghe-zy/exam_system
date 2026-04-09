@@ -5,6 +5,7 @@ import { ElMessage } from 'element-plus'
 import AppShellSection from '../../components/AppShellSection.vue'
 import { exportExamRecordsCsv, fetchExamRecords, fetchScoreAppeals, processScoreAppeal } from '../../api/exam'
 import type { ExamRecord, ScoreAppeal } from '../../types/exam'
+import { formatDateTime } from '../../utils/datetime'
 import { labelAnswerSheetStatus, labelAppealStatus, labelGradingReviewStatus } from '../../utils/labels'
 
 const loading = ref(false)
@@ -65,7 +66,7 @@ onMounted(loadData)
   <AppShellSection
     eyebrow="成绩中心"
     title="成绩记录、复核与申诉状态"
-    description="成绩记录不再只读展示，当前基础版已支持查看复核状态、申诉状态，并对学生申诉执行驳回或转入重判。"
+    description="在这里可以查看成绩记录、复核状态和申诉状态，并对学生申诉执行驳回或转入重判。"
   >
     <template #actions>
       <el-button type="primary" plain @click="exportCsv">导出成绩单</el-button>
@@ -75,7 +76,9 @@ onMounted(loadData)
         <el-table-column prop="candidateName" label="考生" min-width="140" />
         <el-table-column prop="examName" label="考试" min-width="220" />
         <el-table-column prop="paperName" label="试卷" min-width="220" />
-        <el-table-column prop="submittedAt" label="提交时间" min-width="180" />
+        <el-table-column label="提交时间" min-width="180">
+          <template #default="{ row }">{{ formatDateTime(row.submittedAt) }}</template>
+        </el-table-column>
         <el-table-column prop="objectiveScore" label="客观分" min-width="100" />
         <el-table-column prop="subjectiveScore" label="主观分" min-width="100" />
         <el-table-column prop="finalScore" label="总分" min-width="90" />
@@ -128,15 +131,15 @@ onMounted(loadData)
         <section class="panel-card section-card">
           <div class="appeal-header">
             <strong>申诉记录</strong>
-            <span class="muted">基础版支持“驳回”或“转入重判”两种治理动作。</span>
+            <span class="muted">当前支持“驳回”或“转入重判”两种治理动作。</span>
           </div>
           <el-empty v-if="!appeals.length" description="当前成绩暂无申诉记录" />
-          <article v-for="appeal in appeals" :key="appeal.id" class="appeal-card">
-            <div class="appeal-card-head">
-              <div>
-                <p class="eyebrow">提交时间：{{ appeal.submittedAt }}</p>
-                <h3>{{ labelAppealStatus(appeal.status) }}</h3>
-              </div>
+            <article v-for="appeal in appeals" :key="appeal.id" class="appeal-card">
+              <div class="appeal-card-head">
+                <div>
+                  <p class="eyebrow">提交时间：{{ formatDateTime(appeal.submittedAt) }}</p>
+                  <h3>{{ labelAppealStatus(appeal.status) }}</h3>
+                </div>
               <div class="appeal-actions" v-if="appeal.status === 'SUBMITTED'">
                 <el-button type="warning" plain @click="processAppealItem(appeal.id, 'REJECT')">驳回</el-button>
                 <el-button type="danger" @click="processAppealItem(appeal.id, 'REJUDGE')">转入重判</el-button>
@@ -145,7 +148,7 @@ onMounted(loadData)
             <p><strong>申诉原因：</strong>{{ appeal.appealReason }}</p>
             <p><strong>期望结果：</strong>{{ appeal.expectedOutcome || '未填写' }}</p>
             <p><strong>处理意见：</strong>{{ appeal.processComment || '待处理' }}</p>
-            <p class="muted">处理人：{{ appeal.processedByName || '待处理' }} · 处理时间：{{ appeal.processedAt || '--' }}</p>
+            <p class="muted">处理人：{{ appeal.processedByName || '待处理' }} · 处理时间：{{ formatDateTime(appeal.processedAt) }}</p>
           </article>
         </section>
       </section>

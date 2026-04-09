@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-04-09T00:00:00.000Z" agent="Codex" version="24.7.17" type="device">
+  <diagram id="deployment-topology" name="Page-1">
+    <mxGraphModel dx="1600" dy="960" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="960" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="n2" value="教师 / 学生 / 管理员浏览器" style="shape=mxgraph.flowchart.terminator;whiteSpace=wrap;html=1;rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="40" y="220" width="240" height="76" as="geometry"/></mxCell>
+        <mxCell id="n3" value="前端应用
+Vue 3 + Vite + Element Plus" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" vertex="1" parent="1"><mxGeometry x="360" y="220" width="280" height="82" as="geometry"/></mxCell>
+        <mxCell id="n4" value="后端应用
+Spring Boot 3 + Spring Security + MyBatis-Plus" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" vertex="1" parent="1"><mxGeometry x="740" y="220" width="340" height="82" as="geometry"/></mxCell>
+        <mxCell id="n5" value="MySQL
+正式业务数据" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=15;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="1"><mxGeometry x="1180" y="150" width="220" height="82" as="geometry"/></mxCell>
+        <mxCell id="n6" value="本地 H2
+快速启动 / 集成测试" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=15;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="1"><mxGeometry x="1180" y="290" width="220" height="76" as="geometry"/></mxCell>
+        <mxCell id="n7" value="文档与脚本
+初始化、备份恢复、压测、Playwright" style="shape=note;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1"><mxGeometry x="740" y="390" width="340" height="88" as="geometry"/></mxCell>
+        <mxCell id="n8" value="可选 AI 网关
+仅环境变量接入，不提交真实 Key" style="shape=note;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1"><mxGeometry x="1180" y="420" width="220" height="82" as="geometry"/></mxCell>
+        <mxCell id="e200" value="HTTPS / SPA" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#4a4a4a;fontSize=12;" edge="1" parent="1" source="n2" target="n3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e201" value="REST API / JWT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#4a4a4a;fontSize=12;" edge="1" parent="1" source="n3" target="n4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e202" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#4a4a4a;fontSize=12;" edge="1" parent="1" source="n4" target="n5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e203" value="本地开发 / 测试" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#7f8c8d;dashed=1;fontSize=12;" edge="1" parent="1" source="n4" target="n6"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e204" value="运维支持" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#7f8c8d;dashed=1;fontSize=12;" edge="1" parent="1" source="n7" target="n4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e205" value="可选外部调用" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#7f8c8d;dashed=1;fontSize=12;" edge="1" parent="1" source="n8" target="n4"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

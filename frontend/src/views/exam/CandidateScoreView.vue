@@ -6,6 +6,7 @@ import { ElMessage } from 'element-plus'
 import AppShellSection from '../../components/AppShellSection.vue'
 import { fetchMyExamRecordDetail, fetchMyExamRecords, fetchMyScoreAppeals, submitScoreAppeal } from '../../api/exam'
 import type { CandidateScoreDetail, CandidateScoreItem, ExamRecord, ScoreAppeal } from '../../types/exam'
+import { formatDateTime } from '../../utils/datetime'
 import { labelAnswerSheetStatus, labelAppealStatus, labelGradingReviewStatus, labelQuestionType } from '../../utils/labels'
 
 const route = useRoute()
@@ -105,19 +106,6 @@ async function closeDetail() {
   await router.replace({ path: '/candidate/scores', query: nextQuery })
 }
 
-function formatDateTime(value?: string) {
-  if (!value) return '--'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
 onMounted(async () => {
   await loadRecords()
   const recordId = Number(route.query.recordId || 0)
@@ -131,7 +119,7 @@ onMounted(async () => {
   <AppShellSection
     eyebrow="我的成绩"
     title="已发布成绩、申诉与逐题解析"
-    description="学生只可查看已经发布的成绩记录。当前基础版还支持在成绩详情页提交申诉，并查看申诉处理状态。"
+    description="学生只能查看已发布的成绩记录，并可在成绩详情页提交申诉、查看处理进度和逐题解析。"
   >
     <section class="panel-card section-card">
       <el-table :data="records" v-loading="loading">
@@ -199,7 +187,7 @@ onMounted(async () => {
         <section class="panel-card detail-panel" v-if="detail">
           <div class="detail-panel-head">
             <strong>成绩申诉</strong>
-            <span class="muted">基础版支持提交一条处理中申诉；若已在处理中，则需等待结果。</span>
+            <span class="muted">当前仅支持提交一条处理中申诉；若已在处理中，则需等待结果。</span>
           </div>
           <div class="appeal-form">
             <el-input

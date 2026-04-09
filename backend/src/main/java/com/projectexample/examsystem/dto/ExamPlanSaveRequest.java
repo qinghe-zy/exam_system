@@ -17,6 +17,11 @@ public class ExamPlanSaveRequest {
     @NotBlank(message = "Exam name is required")
     private String examName;
 
+    private String examMode;
+    private String batchLabel;
+    private String examRoom;
+    private Long sourceExamPlanId;
+
     @NotNull(message = "Paper id is required")
     private Long paperId;
 
@@ -40,6 +45,8 @@ public class ExamPlanSaveRequest {
 
     private String examPassword;
     private Integer lateEntryMinutes;
+    private Integer signInRequired;
+    private Integer signInStartMinutes;
     private Integer earlySubmitMinutes;
     private Integer autoSubmitEnabled;
     private String antiCheatLevel;

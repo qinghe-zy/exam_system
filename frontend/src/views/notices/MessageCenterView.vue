@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 
 import AppShellSection from '../../components/AppShellSection.vue'
 import { fetchMyMessages, markMessageRead, type InAppMessage } from '../../api/message'
+import { formatDateTime } from '../../utils/datetime'
 import { labelMessageType } from '../../utils/labels'
 
 const router = useRouter()
@@ -48,11 +49,13 @@ onMounted(loadData)
   <AppShellSection
     eyebrow="消息中心"
     title="站内消息与流程提醒"
-    description="该页面展示考试发布提醒、成绩发布提醒等站内消息。当前版本先实现站内消息链路，邮件、短信、企业微信等外部通道仍为扩展位。"
+    description="展示考试发布提醒、成绩发布提醒等站内消息，并支持跳转到相关考试或成绩详情。"
   >
     <section class="panel-card section-card">
       <el-table :data="messages" v-loading="loading">
-        <el-table-column prop="createTime" label="时间" min-width="180" />
+        <el-table-column label="时间" min-width="180">
+          <template #default="{ row }">{{ formatDateTime(row.createTime) }}</template>
+        </el-table-column>
         <el-table-column prop="title" label="标题" min-width="180" />
         <el-table-column label="类型" min-width="140"><template #default="{ row }">{{ labelMessageType(row.messageType) }}</template></el-table-column>
         <el-table-column prop="content" label="内容" min-width="320" show-overflow-tooltip />

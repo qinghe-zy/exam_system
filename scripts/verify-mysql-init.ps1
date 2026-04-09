@@ -13,6 +13,8 @@ $result = mysql --host=127.0.0.1 --port=3306 --user=root --password=123456 -D $t
 SELECT 'menus', COUNT(*) FROM sys_menu
 UNION ALL SELECT 'users', COUNT(*) FROM sys_user
 UNION ALL SELECT 'configs', COUNT(*) FROM sys_config_item
+UNION ALL SELECT 'notification_templates', COUNT(*) FROM sys_notification_template
+UNION ALL SELECT 'notification_logs', COUNT(*) FROM biz_notification_delivery_log
 UNION ALL SELECT 'questions', COUNT(*) FROM biz_question_bank
 UNION ALL SELECT 'papers', COUNT(*) FROM biz_exam_paper
 UNION ALL SELECT 'plans', COUNT(*) FROM biz_exam_plan
@@ -26,7 +28,35 @@ WHERE TABLE_SCHEMA = '$tempDb'
 UNION ALL SELECT 'score_governance_columns', COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
 WHERE TABLE_SCHEMA = '$tempDb'
   AND TABLE_NAME = 'biz_score_record'
-  AND COLUMN_NAME IN ('review_status', 'appeal_status');
+  AND COLUMN_NAME IN ('review_status', 'appeal_status')
+UNION ALL SELECT 'exam_plan_mode_columns', COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = '$tempDb'
+  AND TABLE_NAME = 'biz_exam_plan'
+  AND COLUMN_NAME IN ('exam_mode', 'batch_label', 'source_exam_plan_id', 'source_exam_name')
+UNION ALL SELECT 'exam_plan_signin_columns', COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = '$tempDb'
+  AND TABLE_NAME = 'biz_exam_plan'
+  AND COLUMN_NAME IN ('sign_in_required', 'sign_in_start_minutes')
+UNION ALL SELECT 'exam_plan_room_columns', COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = '$tempDb'
+  AND TABLE_NAME = 'biz_exam_plan'
+  AND COLUMN_NAME IN ('exam_room')
+UNION ALL SELECT 'exam_candidate_signin_columns', COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = '$tempDb'
+  AND TABLE_NAME = 'biz_exam_candidate'
+  AND COLUMN_NAME IN ('signed_in_flag', 'signed_in_at')
+UNION ALL SELECT 'exam_candidate_room_columns', COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = '$tempDb'
+  AND TABLE_NAME = 'biz_exam_candidate'
+  AND COLUMN_NAME IN ('seat_no')
+UNION ALL SELECT 'notice_scope_columns', COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = '$tempDb'
+  AND TABLE_NAME = 'biz_notice'
+  AND COLUMN_NAME IN ('organization_id')
+UNION ALL SELECT 'notification_template_scope_columns', COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = '$tempDb'
+  AND TABLE_NAME = 'sys_notification_template'
+  AND COLUMN_NAME IN ('organization_id');
 "@
 
 Write-Host $result
@@ -38,9 +68,11 @@ foreach ($line in $result -split "`r?`n") {
   $checks[$parts[0]] = [int]$parts[1]
 }
 
-if ($checks['menus'] -lt 23) { throw "菜单数量异常：$($checks['menus'])" }
+if ($checks['menus'] -lt 25) { throw "菜单数量异常：$($checks['menus'])" }
 if ($checks['users'] -lt 74) { throw "用户数量异常：$($checks['users'])" }
-if ($checks['configs'] -lt 28) { throw "配置项数量异常：$($checks['configs'])" }
+if ($checks['configs'] -lt 31) { throw "配置项数量异常：$($checks['configs'])" }
+if ($checks['notification_templates'] -lt 8) { throw "通知模板数量异常：$($checks['notification_templates'])" }
+if ($checks['notification_logs'] -lt 1) { throw "通知投递日志数量异常：$($checks['notification_logs'])" }
 if ($checks['questions'] -lt 320) { throw "题目数量异常：$($checks['questions'])" }
 if ($checks['papers'] -lt 8) { throw "试卷数量异常：$($checks['papers'])" }
 if ($checks['plans'] -lt 6) { throw "考试数量异常：$($checks['plans'])" }
@@ -49,6 +81,13 @@ if ($checks['appeals'] -lt 0) { throw "申诉表校验异常：$($checks['appeal
 if ($checks['login_risks'] -lt 4) { throw "登录风险种子数量异常：$($checks['login_risks'])" }
 if ($checks['user_security_columns'] -lt 4) { throw "用户安全字段缺失：$($checks['user_security_columns'])" }
 if ($checks['score_governance_columns'] -lt 2) { throw "成绩治理字段缺失：$($checks['score_governance_columns'])" }
+if ($checks['exam_plan_mode_columns'] -lt 4) { throw "考试计划扩展字段缺失：$($checks['exam_plan_mode_columns'])" }
+if ($checks['exam_plan_signin_columns'] -lt 2) { throw "考试签到规则字段缺失：$($checks['exam_plan_signin_columns'])" }
+if ($checks['exam_plan_room_columns'] -lt 1) { throw "考试考场字段缺失：$($checks['exam_plan_room_columns'])" }
+if ($checks['exam_candidate_signin_columns'] -lt 2) { throw "考生签到字段缺失：$($checks['exam_candidate_signin_columns'])" }
+if ($checks['exam_candidate_room_columns'] -lt 1) { throw "考生座位字段缺失：$($checks['exam_candidate_room_columns'])" }
+if ($checks['notice_scope_columns'] -lt 1) { throw "公告组织范围字段缺失：$($checks['notice_scope_columns'])" }
+if ($checks['notification_template_scope_columns'] -lt 1) { throw "通知模板组织范围字段缺失：$($checks['notification_template_scope_columns'])" }
 
 mysql --host=127.0.0.1 --port=3306 --user=root --password=123456 -e "DROP DATABASE IF EXISTS $tempDb;"
 

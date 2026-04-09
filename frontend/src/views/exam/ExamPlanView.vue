@@ -3,7 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 
 import AppShellSection from '../../components/AppShellSection.vue'
-import { createExamPlan, deleteExamPlan, fetchExamPlans, fetchPapers, updateExamPlan } from '../../api/exam'
+import { createExamPlan, deleteExamPlan, exportExamPlanSignInSheetCsv, fetchExamPlans, fetchPapers, updateExamPlan } from '../../api/exam'
 import { fetchAssignableCandidates, type SystemUser } from '../../api/system'
 import type { ExamPaper, ExamPlan } from '../../types/exam'
 
@@ -19,6 +19,11 @@ const formRef = ref<FormInstance>()
 const form = reactive<Omit<ExamPlan, 'id' | 'candidateCount' | 'submittedCount' | 'paperName' | 'subject'>>({
   examCode: '',
   examName: '',
+  examMode: 'NORMAL',
+  batchLabel: '',
+  examRoom: '',
+  sourceExamPlanId: undefined,
+  sourceExamName: '',
   paperId: 0,
   startTime: '',
   endTime: '',
@@ -28,6 +33,8 @@ const form = reactive<Omit<ExamPlan, 'id' | 'candidateCount' | 'submittedCount' 
   attemptLimit: 1,
   examPassword: '',
   lateEntryMinutes: 0,
+  signInRequired: 0,
+  signInStartMinutes: 60,
   earlySubmitMinutes: 0,
   autoSubmitEnabled: 1,
   antiCheatLevel: 'BASIC',
@@ -42,10 +49,22 @@ const rules: FormRules<typeof form> = {
   examName: [{ required: true, message: '请输入考试名称', trigger: 'blur' }],
   paperId: [{ required: true, message: '请选择试卷', trigger: 'change' }],
   startTime: [{ required: true, message: '请选择开始时间', trigger: 'change' }],
-  endTime: [{ required: true, message: '请选择结束时间', trigger: 'change' }]
+  endTime: [{ required: true, message: '请选择结束时间', trigger: 'change' }],
+  sourceExamPlanId: [{
+    validator: (_rule, value, callback) => {
+      if (form.examMode !== 'NORMAL' && !value) {
+        callback(new Error('补考、缓考或重考必须关联原考试'))
+        return
+      }
+      callback()
+    },
+    trigger: 'change'
+  }]
 }
 
 const selectedPaper = computed(() => papers.value.find((item) => item.id === form.paperId))
+const availableSourcePlans = computed(() => plans.value.filter((item) => item.id !== editingId.value))
+const selectedSourcePlan = computed(() => availableSourcePlans.value.find((item) => item.id === form.sourceExamPlanId))
 const selectedCandidates = computed(() => users.value.filter((user) => form.candidateUserIds.includes(user.id)))
 const effectiveEntryDeadlineText = computed(() => {
   if (!form.startTime || !form.endTime) return '请先设置考试开始和结束时间'
@@ -60,8 +79,23 @@ const answerRuleText = computed(() => {
   if (!form.endTime) return '系统会在考试窗口结束时自动交卷'
   const end = new Date(form.endTime)
   if (Number.isNaN(end.getTime())) return '系统会在考试窗口结束时自动交卷'
-  return `学生进入后，实际可作答时长 = min(考试时长 ${form.durationMinutes} 分钟, 距离 ${formatDateTime(end)} 的剩余时间)`
+  return `学生进入后，实际可作答时长取“考试时长 ${form.durationMinutes} 分钟”和“距离 ${formatDateTime(end)} 的剩余时间”中的较短值。`
 })
+const signInRuleText = computed(() => {
+  if (form.signInRequired !== 1) return '当前未启用签到，学生可在允许进入窗口内直接进入考试。'
+  if (!form.startTime) return '请先设置考试开始时间'
+  const start = new Date(form.startTime)
+  if (Number.isNaN(start.getTime())) return '请检查考试开始时间'
+  const open = new Date(start.getTime() - form.signInStartMinutes * 60_000)
+  return `签到将于 ${formatDateTime(open)} 开放，并持续到最晚进入时间。`
+})
+
+const examModeTagType: Record<string, 'info' | 'warning'> = {
+  NORMAL: 'info',
+  MAKEUP: 'warning',
+  DEFERRED: 'warning',
+  RETAKE: 'warning'
+}
 
 async function loadData() {
   loading.value = true
@@ -79,6 +113,11 @@ function resetForm() {
   Object.assign(form, {
     examCode: '',
     examName: '',
+    examMode: 'NORMAL',
+    batchLabel: '',
+    examRoom: '',
+    sourceExamPlanId: undefined,
+    sourceExamName: '',
     paperId: 0,
     startTime: '',
     endTime: '',
@@ -88,6 +127,8 @@ function resetForm() {
     attemptLimit: 1,
     examPassword: '',
     lateEntryMinutes: 0,
+    signInRequired: 0,
+    signInStartMinutes: 60,
     earlySubmitMinutes: 0,
     autoSubmitEnabled: 1,
     antiCheatLevel: 'BASIC',
@@ -111,6 +152,11 @@ function openEdit(row: ExamPlan) {
   Object.assign(form, {
     examCode: row.examCode,
     examName: row.examName,
+    examMode: row.examMode || 'NORMAL',
+    batchLabel: row.batchLabel || '',
+    examRoom: row.examRoom || '',
+    sourceExamPlanId: row.sourceExamPlanId,
+    sourceExamName: row.sourceExamName || '',
     paperId: row.paperId,
     startTime: row.startTime,
     endTime: row.endTime,
@@ -120,6 +166,8 @@ function openEdit(row: ExamPlan) {
     attemptLimit: row.attemptLimit,
     examPassword: row.examPassword || '',
     lateEntryMinutes: row.lateEntryMinutes,
+    signInRequired: row.signInRequired,
+    signInStartMinutes: row.signInStartMinutes,
     earlySubmitMinutes: row.earlySubmitMinutes,
     autoSubmitEnabled: row.autoSubmitEnabled,
     antiCheatLevel: row.antiCheatLevel,
@@ -143,12 +191,33 @@ watch(
   }
 )
 
+watch(
+  () => form.examMode,
+  (examMode) => {
+    if (examMode === 'NORMAL') {
+      form.sourceExamPlanId = undefined
+      form.sourceExamName = ''
+    }
+  }
+)
+
+watch(
+  selectedSourcePlan,
+  (plan) => {
+    form.sourceExamName = plan?.examName || ''
+  }
+)
+
 async function submit() {
   if (!formRef.value) return
   await formRef.value.validate(async (valid) => {
     if (!valid) return
     if (new Date(form.endTime).getTime() <= new Date(form.startTime).getTime()) {
       ElMessage.error('考试结束时间必须晚于开始时间')
+      return
+    }
+    if (form.examMode !== 'NORMAL' && !form.sourceExamPlanId) {
+      ElMessage.error('补考、缓考或重考必须关联原考试')
       return
     }
     if (selectedPaper.value && form.passScore > selectedPaper.value.totalScore) {
@@ -177,6 +246,18 @@ async function removeItem(id: number) {
   await loadData()
 }
 
+async function exportSignInSheet(id: number) {
+  const csv = await exportExamPlanSignInSheetCsv(id)
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `exam-sign-in-sheet-${id}.csv`
+  link.click()
+  URL.revokeObjectURL(url)
+  ElMessage.success('签到名单导出已开始')
+}
+
 function formatDateTime(value: string | Date) {
   const date = value instanceof Date ? value : new Date(value)
   if (Number.isNaN(date.getTime())) return '--'
@@ -189,14 +270,21 @@ function formatDateTime(value: string | Date) {
   })
 }
 
+function labelExamMode(value: string) {
+  if (value === 'MAKEUP') return '补考'
+  if (value === 'DEFERRED') return '缓考'
+  if (value === 'RETAKE') return '重考'
+  return '正常考试'
+}
+
 onMounted(loadData)
 </script>
 
 <template>
   <AppShellSection
     eyebrow="考试发布"
-    title="新建考试：试卷、时间窗口、入场规则一次说明白"
-    description="这里管理真正面向学生的考试发布记录。先选定试卷，再明确进入窗口、作答时长、自动交卷和考生范围，避免老师发布后还要反复解释规则。"
+    title="考试安排与发布"
+    description="在这里统一设置考试类型、批次、入场窗口、作答规则和参考名单，确保发布信息一次收口。"
   >
     <template #actions>
       <div class="hero-actions">
@@ -207,12 +295,43 @@ onMounted(loadData)
     <section class="panel-card section-card">
       <el-table :data="plans" v-loading="loading">
         <el-table-column prop="examCode" label="考试编码" min-width="130" />
-        <el-table-column prop="examName" label="考试名称" min-width="220" />
-        <el-table-column prop="paperName" label="试卷" min-width="220" />
-        <el-table-column prop="startTime" label="开始时间" min-width="180" />
-        <el-table-column prop="endTime" label="结束时间" min-width="180" />
+        <el-table-column prop="examName" label="考试名称" min-width="220" show-overflow-tooltip />
+        <el-table-column label="考试类型" min-width="120">
+          <template #default="{ row }">
+            <el-tag :type="examModeTagType[row.examMode] || 'info'">{{ labelExamMode(row.examMode) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="批次" min-width="120">
+          <template #default="{ row }">{{ row.batchLabel || '默认批次' }}</template>
+        </el-table-column>
+        <el-table-column label="考场" min-width="140">
+          <template #default="{ row }">{{ row.examRoom || '待分配' }}</template>
+        </el-table-column>
+        <el-table-column label="原考试" min-width="220" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.sourceExamName || '—' }}</template>
+        </el-table-column>
+        <el-table-column prop="paperName" label="试卷" min-width="220" show-overflow-tooltip />
+        <el-table-column label="开始时间" min-width="180">
+          <template #default="{ row }">{{ formatDateTime(row.startTime) }}</template>
+        </el-table-column>
+        <el-table-column label="结束时间" min-width="180">
+          <template #default="{ row }">{{ formatDateTime(row.endTime) }}</template>
+        </el-table-column>
+        <el-table-column label="签到规则" min-width="160">
+          <template #default="{ row }">
+            {{ row.signInRequired === 1 ? `需签到（提前 ${row.signInStartMinutes} 分钟开放）` : '无需签到' }}
+          </template>
+        </el-table-column>
         <el-table-column prop="durationMinutes" label="时长" min-width="90" />
         <el-table-column prop="candidateCount" label="考生数" min-width="90" />
+        <el-table-column label="已签到" min-width="100">
+          <template #default="{ row }">{{ row.signedInCount || 0 }}</template>
+        </el-table-column>
+        <el-table-column label="签到率" min-width="120">
+          <template #default="{ row }">
+            <el-progress :percentage="Number(row.signInRate || 0)" :stroke-width="10" :show-text="true" />
+          </template>
+        </el-table-column>
         <el-table-column prop="submittedCount" label="已提交" min-width="90" />
         <el-table-column label="发布状态" min-width="110">
           <template #default="{ row }">
@@ -221,6 +340,7 @@ onMounted(loadData)
         </el-table-column>
         <el-table-column label="操作" min-width="160" fixed="right">
           <template #default="{ row }">
+            <el-button link @click="exportSignInSheet(row.id)">导出签到名单</el-button>
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
             <el-button link type="danger" @click="removeItem(row.id)">删除</el-button>
           </template>
@@ -254,12 +374,26 @@ onMounted(loadData)
             </div>
 
             <div class="field-grid field-grid--four">
-              <el-form-item label="考试编码" prop="examCode"><el-input v-model="form.examCode" placeholder="如：KS-2026-YW-02" /></el-form-item>
-              <el-form-item label="考试名称" prop="examName"><el-input v-model="form.examName" placeholder="请输入学生可见的考试名称" /></el-form-item>
+              <el-form-item label="考试编码" prop="examCode"><el-input v-model="form.examCode" placeholder="考试编码" /></el-form-item>
+              <el-form-item label="考试名称" prop="examName"><el-input v-model="form.examName" placeholder="考试名称" /></el-form-item>
+              <el-form-item label="考试类型">
+                <el-select v-model="form.examMode">
+                  <el-option label="正常考试" value="NORMAL" />
+                  <el-option label="补考" value="MAKEUP" />
+                  <el-option label="缓考" value="DEFERRED" />
+                  <el-option label="重考" value="RETAKE" />
+                </el-select>
+              </el-form-item>
               <el-form-item label="试卷" prop="paperId">
                 <el-select v-model="form.paperId" filterable>
                   <el-option v-for="paper in papers" :key="paper.id" :label="paper.paperName" :value="paper.id" />
                 </el-select>
+              </el-form-item>
+              <el-form-item label="批次名称">
+                <el-input v-model="form.batchLabel" placeholder="批次名称" />
+              </el-form-item>
+              <el-form-item label="考场">
+                <el-input v-model="form.examRoom" placeholder="例如 第一教学楼 201 教室" />
               </el-form-item>
               <el-form-item label="发布状态">
                 <el-select v-model="form.publishStatus">
@@ -269,6 +403,17 @@ onMounted(loadData)
               </el-form-item>
             </div>
 
+            <el-form-item v-if="form.examMode !== 'NORMAL'" label="关联原考试" prop="sourceExamPlanId">
+              <el-select v-model="form.sourceExamPlanId" filterable clearable placeholder="选择原考试">
+                <el-option
+                  v-for="plan in availableSourcePlans"
+                  :key="plan.id"
+                  :label="`${plan.examName}（${plan.examCode}）`"
+                  :value="plan.id"
+                />
+              </el-select>
+            </el-form-item>
+
             <div v-if="selectedPaper" class="paper-brief">
               <div class="brief-card">
                 <strong>{{ selectedPaper.paperName }}</strong>
@@ -276,7 +421,16 @@ onMounted(loadData)
               </div>
               <div class="brief-card">
                 <strong>卷面说明</strong>
-                <p>{{ selectedPaper.descriptionText || '当前试卷未填写卷面说明。' }}</p>
+                <p>{{ selectedPaper.descriptionText || '暂无卷面说明。' }}</p>
+              </div>
+              <div class="brief-card">
+                <strong>考试安排摘要</strong>
+                <p>
+                  {{ labelExamMode(form.examMode) }}
+                  <span v-if="form.batchLabel"> · {{ form.batchLabel }}</span>
+                  <span v-if="form.examRoom"> · {{ form.examRoom }}</span>
+                  <span v-if="selectedSourcePlan"> · 原考试：{{ selectedSourcePlan.examName }}</span>
+                </p>
               </div>
             </div>
           </section>
@@ -297,6 +451,15 @@ onMounted(loadData)
               <el-form-item label="允许迟到分钟">
                 <el-input-number v-model="form.lateEntryMinutes" :min="0" :max="720" />
               </el-form-item>
+              <el-form-item label="签到规则">
+                <el-select v-model="form.signInRequired">
+                  <el-option :value="0" label="不启用签到" />
+                  <el-option :value="1" label="启用签到" />
+                </el-select>
+              </el-form-item>
+              <el-form-item v-if="form.signInRequired === 1" label="签到开放提前分钟">
+                <el-input-number v-model="form.signInStartMinutes" :min="0" :max="1440" />
+              </el-form-item>
               <el-form-item label="允许提前交卷分钟">
                 <el-input-number v-model="form.earlySubmitMinutes" :min="0" :max="300" />
               </el-form-item>
@@ -304,7 +467,7 @@ onMounted(loadData)
                 <el-input-number v-model="form.attemptLimit" :min="1" :max="5" />
               </el-form-item>
               <el-form-item label="考试口令">
-                <el-input v-model="form.examPassword" placeholder="可留空，留空则学生直接进入" />
+                <el-input v-model="form.examPassword" placeholder="不设置则可直接进入" />
               </el-form-item>
             </div>
 
@@ -314,12 +477,16 @@ onMounted(loadData)
                 <p>{{ effectiveEntryDeadlineText }}</p>
               </div>
               <div class="rule-card">
+                <strong>签到规则</strong>
+                <p>{{ signInRuleText }}</p>
+              </div>
+              <div class="rule-card">
                 <strong>学生实际作答规则</strong>
                 <p>{{ answerRuleText }}</p>
               </div>
               <div class="rule-card">
                 <strong>自动交卷条件</strong>
-                <p>{{ form.autoSubmitEnabled === 1 ? '倒计时归零后自动交卷，并以当前已保存答案作为最终卷面。' : '关闭自动交卷后，系统仍会在答题时间结束后禁止继续保存。' }}</p>
+                <p>{{ form.autoSubmitEnabled === 1 ? '倒计时归零后自动交卷，以最近一次保存内容作为最终卷面。' : '关闭自动交卷后，到时会停止继续保存答案。' }}</p>
               </div>
             </div>
           </section>
@@ -348,7 +515,7 @@ onMounted(loadData)
             </div>
 
             <el-form-item label="考试说明">
-              <el-input v-model="form.instructionText" type="textarea" :rows="3" placeholder="这里写给学生看的考试说明、纪律要求和交卷提醒" />
+              <el-input v-model="form.instructionText" type="textarea" :rows="3" placeholder="填写学生入场提醒、纪律要求和交卷说明" />
             </el-form-item>
 
             <el-form-item label="考生名单">
